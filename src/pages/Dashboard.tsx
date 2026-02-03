@@ -1,5 +1,6 @@
 import React from 'react';
 import { Notice } from '@/types/notice';
+import app from "@/lib/firebase";
 import { useNotices } from '@/hooks/useNotices';
 import AdminLayout from '@/components/layout/AdminLayout';
 import CategoryFilter from '@/components/notice/CategoryFilter';
