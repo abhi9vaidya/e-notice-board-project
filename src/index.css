@@ -1,0 +1,245 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* RBU Color Palette - Dark Blue & Orange Theme */
+    --background: 0 0% 98%;
+    --foreground: 216 50% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 216 50% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 216 50% 17%;
+    --primary: 21 91% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 216 50% 17%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 220 15% 94%;
+    --muted-foreground: 216 30% 40%;
+    --accent: 12 93% 77%;
+    --accent-foreground: 216 50% 17%;
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
+    --ring: 21 91% 55%;
+    --radius: 0.5rem;
+    
+    /* Sidebar - Dark Blue */
+    --sidebar-background: 216 70% 15%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 21 91% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 216 60% 22%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 216 50% 25%;
+    --sidebar-ring: 21 91% 55%;
+    
+    /* Category Colors */
+    --category-placement: 21 91% 55%;
+    --category-placement-bg: 21 80% 95%;
+    --category-academic: 216 70% 35%;
+    --category-academic-bg: 216 50% 95%;
+    --category-project: 160 45% 40%;
+    --category-project-bg: 160 35% 95%;
+    --category-spiritual: 280 40% 50%;
+    --category-spiritual-bg: 280 30% 96%;
+    --category-exams: 0 70% 50%;
+    --category-exams-bg: 0 60% 96%;
+    --category-timetable: 200 60% 45%;
+    --category-timetable-bg: 200 50% 95%;
+    --category-research: 270 50% 50%;
+    --category-research-bg: 270 40% 96%;
+    --category-alumni: 35 80% 50%;
+    --category-alumni-bg: 35 70% 96%;
+    --category-achievements: 45 90% 50%;
+    --category-achievements-bg: 45 80% 96%;
+    
+    /* Priority Colors */
+    --priority-high: 0 70% 50%;
+    --priority-high-bg: 0 60% 96%;
+    --priority-medium: 21 91% 55%;
+    --priority-medium-bg: 21 80% 96%;
+    --priority-low: 216 70% 45%;
+    --priority-low-bg: 216 50% 96%;
+    
+    /* TV Display */
+    --tv-gradient-start: 216 70% 15%;
+    --tv-gradient-end: 216 80% 8%;
+    --tv-card-bg: 216 60% 12%;
+  }
+
+  .dark {
+    --background: 216 70% 8%;
+    --foreground: 0 0% 98%;
+    --card: 216 60% 12%;
+    --card-foreground: 0 0% 98%;
+    --popover: 216 60% 12%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 21 91% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 216 50% 20%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 216 40% 18%;
+    --muted-foreground: 216 20% 60%;
+    --accent: 12 93% 77%;
+    --accent-foreground: 216 70% 10%;
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 216 40% 22%;
+    --input: 216 40% 22%;
+    --ring: 21 91% 55%;
+    
+    /* Sidebar - Darker Blue */
+    --sidebar-background: 216 80% 6%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 21 91% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 216 60% 15%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 216 50% 18%;
+    --sidebar-ring: 21 91% 55%;
+    
+    /* Category Colors - Dark Mode */
+    --category-placement: 21 85% 60%;
+    --category-placement-bg: 21 70% 15%;
+    --category-academic: 216 60% 50%;
+    --category-academic-bg: 216 50% 15%;
+    --category-project: 160 45% 45%;
+    --category-project-bg: 160 35% 14%;
+    --category-spiritual: 280 40% 55%;
+    --category-spiritual-bg: 280 30% 15%;
+    --category-exams: 0 65% 55%;
+    --category-exams-bg: 0 55% 15%;
+    --category-timetable: 200 55% 50%;
+    --category-timetable-bg: 200 45% 15%;
+    --category-research: 270 45% 55%;
+    --category-research-bg: 270 35% 15%;
+    --category-alumni: 35 75% 55%;
+    --category-alumni-bg: 35 65% 15%;
+    --category-achievements: 45 85% 55%;
+    --category-achievements-bg: 45 75% 15%;
+    
+    /* Priority Colors - Dark Mode */
+    --priority-high: 0 65% 55%;
+    --priority-high-bg: 0 55% 15%;
+    --priority-medium: 21 85% 60%;
+    --priority-medium-bg: 21 70% 15%;
+    --priority-low: 216 60% 50%;
+    --priority-low-bg: 216 50% 15%;
+  }
+
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground font-sans antialiased; }
+  h1, h2, h3, h4, h5, h6 { font-family: 'Playfair Display', serif; }
+}
+
+@layer components {
+  .card-hover { @apply transition-all duration-300 ease-out; }
+  .card-hover:hover { @apply shadow-xl -translate-y-1; }
+  
+  .glow-recent { 
+    animation: glow-pulse 2s ease-in-out infinite; 
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.4); 
+  }
+  @keyframes glow-pulse { 
+    0%, 100% { box-shadow: 0 0 20px hsl(var(--primary) / 0.3); } 
+    50% { box-shadow: 0 0 35px hsl(var(--primary) / 0.6); } 
+  }
+  
+  .priority-high-pulse { animation: priority-pulse 1.5s ease-in-out infinite; }
+  @keyframes priority-pulse { 
+    0%, 100% { opacity: 1; transform: scale(1); } 
+    50% { opacity: 0.85; transform: scale(1.02); } 
+  }
+  
+  .shake { animation: shake 0.5s ease-in-out; }
+  @keyframes shake { 
+    0%, 100% { transform: translateX(0); } 
+    25% { transform: translateX(-8px); } 
+    75% { transform: translateX(8px); } 
+  }
+  
+  .gradient-primary { 
+    background: linear-gradient(135deg, hsl(21 91% 55%) 0%, hsl(12 93% 77%) 100%); 
+  }
+  
+  .gradient-rbu {
+    background: linear-gradient(135deg, hsl(216 70% 15%) 0%, hsl(21 91% 55%) 100%);
+  }
+  
+  .gradient-tv { 
+    background: linear-gradient(180deg, hsl(var(--tv-gradient-start)) 0%, hsl(var(--tv-gradient-end)) 100%); 
+  }
+  
+  .spiritual-banner { 
+    background: linear-gradient(90deg, hsl(280 35% 35%) 0%, hsl(280 30% 45%) 50%, hsl(280 35% 35%) 100%); 
+  }
+  
+  .tv-card { 
+    background: hsl(var(--tv-card-bg) / 0.9); 
+    backdrop-filter: blur(10px); 
+    border: 1px solid hsl(var(--primary) / 0.2); 
+  }
+  
+  .tv-card-urgent { 
+    border-left: 4px solid hsl(var(--priority-high)); 
+    animation: urgent-glow 2s ease-in-out infinite; 
+  }
+  @keyframes urgent-glow { 
+    0%, 100% { box-shadow: 0 0 15px hsl(var(--priority-high) / 0.3); } 
+    50% { box-shadow: 0 0 30px hsl(var(--priority-high) / 0.5); } 
+  }
+  
+  .splash-gradient { 
+    background: linear-gradient(135deg, hsl(216 70% 15%) 0%, hsl(216 80% 8%) 50%, hsl(216 70% 12%) 100%); 
+  }
+  
+  .splash-logo { animation: splash-pulse 2s ease-in-out infinite; }
+  @keyframes splash-pulse { 
+    0%, 100% { transform: scale(1); } 
+    50% { transform: scale(1.05); } 
+  }
+  
+  .slide-up { animation: slideUp 0.5s ease-out forwards; }
+  @keyframes slideUp { 
+    from { opacity: 0; transform: translateY(30px); } 
+    to { opacity: 1; transform: translateY(0); } 
+  }
+  
+  .fade-in { animation: fadeIn 0.6s ease-out forwards; }
+  @keyframes fadeIn { 
+    from { opacity: 0; } 
+    to { opacity: 1; } 
+  }
+  
+  .glass { 
+    background: hsl(var(--card) / 0.8); 
+    backdrop-filter: blur(12px); 
+    border: 1px solid hsl(var(--border) / 0.5); 
+  }
+  
+  /* RBU Header Stripe */
+  .rbu-header-stripe {
+    background: linear-gradient(90deg, hsl(216 70% 15%) 0%, hsl(21 91% 55%) 50%, hsl(216 70% 15%) 100%);
+  }
+}
+
+@layer utilities {
+  .text-gradient { 
+    background: linear-gradient(135deg, hsl(21 91% 55%) 0%, hsl(12 93% 77%) 100%); 
+    -webkit-background-clip: text; 
+    -webkit-text-fill-color: transparent; 
+    background-clip: text; 
+  }
+  
+  .text-gradient-rbu {
+    background: linear-gradient(135deg, hsl(216 70% 25%) 0%, hsl(21 91% 55%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
