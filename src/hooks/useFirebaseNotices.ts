@@ -1,7 +1,4 @@
-/**
- * React hook for notices using Firestore.
- * Replaces the old mockNotices-based hook.
- */
+// hooks for firestore notices
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -16,7 +13,7 @@ import {
 } from '@/integrations/firebase/noticesService';
 import type { Notice } from '@/integrations/firebase/types';
 
-// ── Faculty dashboard hook ────────────────────────────────────────────────────
+// faculty notices hook
 
 export const useNotices = () => {
     const [notices, setNotices] = useState<Notice[]>([]);
@@ -85,7 +82,7 @@ export const useNotices = () => {
     return { notices, loading, refetch: fetchNotices, addNotice, editNotice, removeNotice };
 };
 
-// ── TV Display hook — real-time ───────────────────────────────────────────────
+// tv notices hook (realtime)
 
 export const useActiveNotices = () => {
     const [notices, setNotices] = useState<Notice[]>([]);

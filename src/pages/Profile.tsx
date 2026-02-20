@@ -32,7 +32,7 @@ const Profile: React.FC = () => {
   const { faculty, logout, updateFaculty } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: faculty?.name || '',
@@ -76,7 +76,7 @@ const Profile: React.FC = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        updateFaculty({ profilePhoto: reader.result as string });
+        updateFaculty({ profilePhotoUrl: reader.result as string });
       };
       reader.readAsDataURL(file);
     }
@@ -88,15 +88,15 @@ const Profile: React.FC = () => {
       const video = document.createElement('video');
       video.srcObject = stream;
       await video.play();
-      
+
       const canvas = document.createElement('canvas');
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       canvas.getContext('2d')?.drawImage(video, 0, 0);
-      
+
       const dataUrl = canvas.toDataURL('image/jpeg');
-      updateFaculty({ profilePhoto: dataUrl });
-      
+      updateFaculty({ profilePhotoUrl: dataUrl });
+
       stream.getTracks().forEach(track => track.stop());
     } catch (error) {
       console.error('Camera access denied:', error);
@@ -104,6 +104,7 @@ const Profile: React.FC = () => {
     }
   };
 
+  // get first letters
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -116,23 +117,23 @@ const Profile: React.FC = () => {
   return (
     <AdminLayout title="Profile" subtitle="Manage your account settings">
       <div className="container max-w-4xl px-4 py-8">
-        {/* Profile Header Card */}
+        {/* header card */}
         <Card className="mb-6 overflow-hidden border-0 shadow-xl">
           <div className="h-32 bg-gradient-to-r from-primary via-primary/90 to-primary/80 relative">
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0wIDBoNDB2NDBIMHoiLz48cGF0aCBkPSJNMjAgMjBtLTIgMGEyIDIgMCAxIDAgNCAwIDIgMiAwIDEgMC00IDB6IiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDUpIi8+PC9nPjwvc3ZnPg==')] opacity-30" />
           </div>
           <CardContent className="relative pt-0 pb-6">
-            {/* Avatar Section */}
+            {/* avatar area */}
             <div className="flex flex-col items-center -mt-16 mb-4">
               <div className="relative group">
                 <Avatar className="h-32 w-32 border-4 border-background shadow-xl">
-                  <AvatarImage src={faculty.profilePhoto} alt={faculty.name} />
+                  <AvatarImage src={faculty.profilePhotoUrl} alt={faculty.name} />
                   <AvatarFallback className="text-3xl font-bold bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
                     {getInitials(faculty.name)}
                   </AvatarFallback>
                 </Avatar>
-                
-                {/* Photo Upload Options */}
+
+                {/* photo options */}
                 <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button
                     size="icon"
@@ -161,7 +162,7 @@ const Profile: React.FC = () => {
                   onChange={handlePhotoUpload}
                 />
               </div>
-              
+
               <h2 className="text-2xl font-bold text-foreground mt-4">{faculty.name}</h2>
               <p className="text-muted-foreground">{faculty.department}</p>
               <div className="flex items-center gap-2 mt-2">
@@ -174,7 +175,7 @@ const Profile: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Personal Information Card */}
+        {/* info card */}
         <Card className="mb-6 border-0 shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
@@ -285,7 +286,7 @@ const Profile: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Appearance & Settings Card */}
+        {/* theme settings */}
         <Card className="mb-6 border-0 shadow-lg">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
@@ -353,7 +354,7 @@ const Profile: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Danger Zone */}
+        {/* logout block */}
         <Card className="border-destructive/50 shadow-lg">
           <CardHeader>
             <CardTitle className="text-lg text-destructive">Danger Zone</CardTitle>

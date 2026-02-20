@@ -24,11 +24,11 @@ const Dashboard: React.FC = () => {
 
   const filteredNotices = notices.filter(n => selectedCategory === 'all' || n.category === selectedCategory && !n.isArchived);
 
-  // Stats based on filteredNotices
+  // stats for cards
   const activeNotices = filteredNotices.length;
   const highPriorityNotices = filteredNotices.filter(n => n.priority === 'high').length;
 
-  // Recent notices (updated in last 5 hours)
+  // check if new (last 5 hrs)
   const isRecent = (notice: Notice) => {
     const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000);
     return notice.updatedAt > fiveHoursAgo;
@@ -41,7 +41,7 @@ const Dashboard: React.FC = () => {
       subtitle="Overview of your notice board"
     >
       <div className="container px-4 py-6 md:px-6">
-        {/* Stats Cards */}
+        {/* statistics */}
         <div className="grid gap-4 mb-6 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -96,7 +96,7 @@ const Dashboard: React.FC = () => {
           </Card>
         </div>
 
-        {/* Top Actions Bar */}
+        {/* actions */}
         <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-xl font-bold text-foreground">Notice Board</h2>
@@ -122,7 +122,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Filters */}
+        {/* category filter */}
         <div className="flex flex-col gap-4 mb-6 lg:flex-row lg:items-center lg:justify-between">
           <CategoryFilter
             selectedCategory={selectedCategory}
@@ -135,7 +135,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Notices Table */}
+        {/* table of notices */}
         <NoticeTable
           notices={filteredNotices}
           isRecent={isRecent}

@@ -17,7 +17,7 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Convert Firestore profile doc to Faculty app type
+// convert firestore profile to faculty type
 const profileToFaculty = (uid: string, data: FirestoreProfile): Faculty => ({
   id: uid,
   name: data.name,
@@ -35,13 +35,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     loading: true,
   });
 
-  // Listen to Firebase Auth state changes
+  // listen for auth changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
       if (user) {
         // Fetch faculty profile from Firestore
         try {
-          // Restore name from sessionStorage if it's a shared account
+          // restore name if share account in session
           const storedName = sessionStorage.getItem('faculty_name');
           const profileRef = doc(db, 'profiles', user.uid);
           const profileSnap = await getDoc(profileRef);
@@ -52,14 +52,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               ...facultyData,
               name: storedName || facultyData.name
             });
-            // If it's a shared account, we ONLY consider authenticated if we have a session name
+            // check if session name exists
             setAuthState({
               isAuthenticated: !!storedName,
               faculty: storedName ? faculty : null,
               loading: false
             });
           } else {
-            // Profile doesn't exist yet — create a minimal one
+            // create new profile if none exists
             const newProfile: FirestoreProfile = {
               name: storedName || user.displayName || user.email?.split('@')[0] || 'Faculty',
               department: 'Computer Science & Engineering',
@@ -96,14 +96,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return false;
       }
 
-      // Store the name for this session BEFORE sign-in to ensure 
-      // the onAuthStateChanged listener picks it up
+      // store name in session before sign in
       sessionStorage.setItem('faculty_name', name);
 
-      // Log in with shared Firebase account
+      // sign in with shared account
       const userCredential = await signInWithEmailAndPassword(auth, sharedEmail, password);
 
-      // Manually trigger a profile fetch or update state if listener is slow
+      // update state manually
       if (userCredential.user) {
         const profileRef = doc(db, 'profiles', userCredential.user.uid);
         const profileSnap = await getDoc(profileRef);

@@ -61,7 +61,7 @@ const AddEditNoticePage: React.FC = () => {
     isArchived: false,
   });
 
-  // Update faculty name/id when context changes
+  // update name if context changes
   useEffect(() => {
     if (faculty && !editId) {
       setFormData(prev => ({
@@ -106,7 +106,7 @@ const AddEditNoticePage: React.FC = () => {
     try {
       let finalImageUrl = formData.imageUrl;
 
-      // If there's a new file to upload
+      // check for new file upload
       if (uploadedFile) {
         toast({
           title: "Uploading file",
@@ -165,7 +165,7 @@ const AddEditNoticePage: React.FC = () => {
           </CardHeader>
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Notice Title */}
+              {/* title field */}
               <div className="space-y-2">
                 <Label htmlFor="title" className="text-sm font-medium">
                   Notice Title <span className="text-destructive">*</span>
@@ -182,7 +182,7 @@ const AddEditNoticePage: React.FC = () => {
                 />
               </div>
 
-              {/* Description */}
+              {/* details field */}
               <div className="space-y-2">
                 <Label htmlFor="description" className="text-sm font-medium">
                   Description <span className="text-destructive">*</span>
@@ -200,7 +200,7 @@ const AddEditNoticePage: React.FC = () => {
                 />
               </div>
 
-              {/* File Upload */}
+              {/* file upload block */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Upload File (PDF/Image)</Label>
                 <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
@@ -226,9 +226,9 @@ const AddEditNoticePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Category and Priority Row */}
+              {/* category and priority */}
               <div className="grid gap-6 md:grid-cols-2">
-                {/* Category */}
+                {/* dropdown for category */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
                     Category <span className="text-destructive">*</span>
@@ -252,7 +252,7 @@ const AddEditNoticePage: React.FC = () => {
                   </Select>
                 </div>
 
-                {/* Priority Toggle */}
+                {/* high priority switch */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">High Priority</Label>
                   <div className="flex items-center gap-3 h-11 px-3 rounded-md border bg-background">
@@ -270,9 +270,9 @@ const AddEditNoticePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Date Row */}
+              {/* date pickers */}
               <div className="grid gap-6 md:grid-cols-2">
-                {/* Start Date */}
+                {/* date to start displaying */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
                     Start Date <span className="text-destructive">*</span>
@@ -305,7 +305,7 @@ const AddEditNoticePage: React.FC = () => {
                   </Popover>
                 </div>
 
-                {/* Expiry Date */}
+                {/* date to stop displaying */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
                     Expiry Date <span className="text-destructive">*</span>
@@ -339,7 +339,7 @@ const AddEditNoticePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Action Buttons */}
+              {/* save and cancel buttons */}
               <div className="flex items-center justify-end gap-3 pt-6 border-t">
                 <Button
                   type="button"

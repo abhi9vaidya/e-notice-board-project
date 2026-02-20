@@ -1,6 +1,4 @@
-// Firebase configuration
-// Replace these values with your Firebase project credentials from:
-// Firebase Console → Project Settings → Your Apps → SDK setup and configuration
+// firebase setup
 
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
@@ -16,10 +14,10 @@ const firebaseConfig = {
     appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
+// init firebase
 export const app = initializeApp(firebaseConfig);
 
-// Firebase services
+// export services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);

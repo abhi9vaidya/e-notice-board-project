@@ -31,7 +31,7 @@ import { cn } from '@/lib/utils';
 import { format, differenceInHours, differenceInMinutes, isTomorrow } from 'date-fns';
 import rbuLogo from '@/assets/rbu-logo.png';
 
-// Enhanced category configuration with better icons
+// categories with icons
 const categoryConfig: Record<string, { icon: React.ElementType; label: string; gradient: string }> = {
   academic: { icon: GraduationCap, label: 'Academic', gradient: 'from-blue-500 to-cyan-600' },
   examinations: { icon: FileText, label: 'Examinations', gradient: 'from-red-500 to-rose-600' },
@@ -47,13 +47,13 @@ const TVDisplay: React.FC = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Check if deadline is approaching (within 4 hours)
+  // check if deadline is close
   const isDeadlineApproaching = useCallback((notice: Notice): boolean => {
     const hoursLeft = differenceInHours(new Date(notice.endTime), new Date());
     return hoursLeft >= 0 && hoursLeft <= 4;
   }, []);
 
-  // Get time remaining string
+  // get time left
   const getTimeRemaining = useCallback((notice: Notice): string | null => {
     const now = new Date();
     const endTime = new Date(notice.endTime);
@@ -72,7 +72,7 @@ const TVDisplay: React.FC = () => {
     return null;
   }, []);
 
-  // Filter and categorize notices from the real-time hook
+  // filter and sort notices
   const displayNotices = useMemo(() => {
     if (!activeNotices) return [];
 
@@ -92,7 +92,7 @@ const TVDisplay: React.FC = () => {
       });
   }, [activeNotices, isDeadlineApproaching]);
 
-  // Separate urgent, normal, and tomorrow's notices
+  // split urgent and normal
   const { urgentNotices, normalNotices, tomorrowNotices } = useMemo(() => {
     const urgent = displayNotices.filter(n =>
       n.priority === 'high' || isDeadlineApproaching(n)
@@ -107,13 +107,13 @@ const TVDisplay: React.FC = () => {
     return { urgentNotices: urgent, normalNotices: normal, tomorrowNotices: tomorrow };
   }, [displayNotices, isDeadlineApproaching]);
 
-  // Check if notice is recent
+  // check if new
   const isRecent = useCallback((notice: Notice): boolean => {
     const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000);
     return new Date(notice.updatedAt) > fiveHoursAgo;
   }, []);
 
-  // Auto-slide for urgent notices
+  // auto slide
   useEffect(() => {
     if (urgentNotices.length <= 1) return;
 
@@ -126,13 +126,13 @@ const TVDisplay: React.FC = () => {
     return () => clearInterval(slideInterval);
   }, [urgentNotices.length]);
 
-  // Clock update
+  // update time
   useEffect(() => {
     const clockInterval = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(clockInterval);
   }, []);
 
-  // Network status
+  // check online status
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -144,12 +144,12 @@ const TVDisplay: React.FC = () => {
     };
   }, []);
 
-  // Get category config with fallback
+  // get icons
   const getCategoryConfig = (category: string) => {
     return categoryConfig[category] || categoryConfig.other;
   };
 
-  // Render urgent notice card (large hero style)
+  // render big card
   const renderUrgentCard = (notice: Notice) => {
     const config = getCategoryConfig(notice.category);
     const CategoryIcon = config.icon;
@@ -168,7 +168,7 @@ const TVDisplay: React.FC = () => {
           boxShadow: '0 0 60px rgba(243, 111, 39, 0.15), 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
         }}
       >
-        {/* Animated glow border */}
+        {/* border effect */}
         <div className="absolute inset-0 rounded-2xl">
           <motion.div
             className="absolute inset-0 rounded-2xl opacity-60"
@@ -185,7 +185,7 @@ const TVDisplay: React.FC = () => {
           />
         </div>
 
-        {/* Priority indicator bar with glow */}
+        {/* top highlight */}
         <motion.div
           className="absolute top-0 left-0 right-0 h-1.5"
           style={{
@@ -196,7 +196,7 @@ const TVDisplay: React.FC = () => {
           transition={{ duration: 2, repeat: Infinity }}
         />
 
-        {/* Deadline warning badge */}
+        {/* time left badge */}
         {timeRemaining && (
           <motion.div
             className="absolute top-6 right-6 z-10"
@@ -248,7 +248,7 @@ const TVDisplay: React.FC = () => {
             )}
           </div>
 
-          {/* Content */}
+          {/* card content */}
           <div className="flex-1 flex items-center gap-8">
             {notice.imageUrl && (
               <motion.div
@@ -277,7 +277,7 @@ const TVDisplay: React.FC = () => {
             </div>
           </div>
 
-          {/* Footer */}
+          {/* card footer */}
           <div
             className="flex items-center justify-between mt-6 pt-5"
             style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}
@@ -296,7 +296,7 @@ const TVDisplay: React.FC = () => {
     );
   };
 
-  // Render normal notice card (smaller grid style)
+  // render small card
   const renderNormalCard = (notice: Notice, index: number) => {
     const config = getCategoryConfig(notice.category);
     const CategoryIcon = config.icon;
@@ -362,7 +362,7 @@ const TVDisplay: React.FC = () => {
         background: 'linear-gradient(180deg, #0a1628 0%, #050a14 50%, #0a1628 100%)'
       }}
     >
-      {/* Top Header Bar */}
+      {/* header bar */}
       <motion.header
         className="relative px-8 py-5 flex items-center justify-between shrink-0"
         style={{
@@ -374,7 +374,7 @@ const TVDisplay: React.FC = () => {
         animate={{ y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Left: Logo and Title */}
+        {/* logo and name */}
         <motion.div
           className="flex items-center gap-6"
           initial={{ opacity: 0, x: -30 }}
@@ -413,14 +413,14 @@ const TVDisplay: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Right: Status indicators */}
+        {/* status bar */}
         <motion.div
           className="flex items-center gap-5"
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
         >
-          {/* Refresh indicator */}
+          {/* refresh icon */}
           <div
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm"
             style={{
@@ -437,7 +437,7 @@ const TVDisplay: React.FC = () => {
             <span className="text-slate-400 hidden lg:inline">Auto-refresh</span>
           </div>
 
-          {/* Connection Status */}
+          {/* live or offline */}
           <motion.div
             className={cn(
               'flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold',
@@ -454,7 +454,7 @@ const TVDisplay: React.FC = () => {
             {isOnline ? 'Live' : 'Offline'}
           </motion.div>
 
-          {/* Current Time */}
+          {/* clock */}
           <div
             className="text-right rounded-xl px-6 py-3"
             style={{
@@ -479,7 +479,7 @@ const TVDisplay: React.FC = () => {
         </motion.div>
       </motion.header>
 
-      {/* Main Content */}
+      {/* main notices list */}
       <div className="flex-1 p-6 overflow-hidden flex flex-col gap-6">
         {displayNotices.length === 0 ? (
           <motion.div
@@ -515,7 +515,7 @@ const TVDisplay: React.FC = () => {
           </motion.div>
         ) : (
           <>
-            {/* Urgent Notices Section - Top */}
+            {/* priority list */}
             {urgentNotices.length > 0 && (
               <motion.section
                 className="shrink-0 h-[48%] min-h-[300px]"
@@ -556,7 +556,7 @@ const TVDisplay: React.FC = () => {
                     {urgentNotices[urgentSlideIndex] && renderUrgentCard(urgentNotices[urgentSlideIndex])}
                   </AnimatePresence>
 
-                  {/* Navigation Arrows */}
+                  {/* side buttons */}
                   {urgentNotices.length > 1 && (
                     <>
                       <button
@@ -584,7 +584,7 @@ const TVDisplay: React.FC = () => {
                     </>
                   )}
 
-                  {/* Dots indicator */}
+                  {/* dots at bottom */}
                   {urgentNotices.length > 1 && (
                     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3">
                       {urgentNotices.map((_, index) => (
@@ -609,7 +609,7 @@ const TVDisplay: React.FC = () => {
               </motion.section>
             )}
 
-            {/* Normal Notices Section - Middle */}
+            {/* normal list */}
             {normalNotices.length > 0 && (
               <motion.section
                 className="flex-1 min-h-0"
@@ -644,7 +644,7 @@ const TVDisplay: React.FC = () => {
         )}
       </div>
 
-      {/* Bottom Ticker - Tomorrow's Notices */}
+      {/* bottom scroll */}
       <motion.div
         className="shrink-0 py-5 overflow-hidden"
         style={{

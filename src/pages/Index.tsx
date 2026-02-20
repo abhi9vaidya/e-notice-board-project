@@ -4,14 +4,13 @@ import PasswordScreen from './PasswordScreen';
 import Dashboard from './Dashboard';
 import SplashScreen from '@/components/SplashScreen';
 
-// Main entry point - handles authentication routing and splash screen
-// TODO: Add proper route guards when integrating with Firebase Auth
-
+// main index page
+// handles login and splash
 const Index: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
 
-  // Check if splash was already shown this session
+  // check if splash already shown
   useEffect(() => {
     const splashShown = sessionStorage.getItem('splashShown');
     if (splashShown) {

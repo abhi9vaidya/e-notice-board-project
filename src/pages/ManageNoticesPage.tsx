@@ -91,7 +91,7 @@ const ManageNoticesPage: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    removeNotice(id, false); // soft delete (archive)
+    removeNotice(id, false); // archive only
   };
 
   return (
@@ -100,10 +100,10 @@ const ManageNoticesPage: React.FC = () => {
       subtitle="View, edit, and delete existing notices"
     >
       <div className="container py-6 px-4 md:px-6">
-        {/* Action Bar */}
+        {/* search and filter */}
         <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center flex-1">
-            {/* Search */}
+            {/* search input */}
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -114,7 +114,7 @@ const ManageNoticesPage: React.FC = () => {
               />
             </div>
 
-            {/* Category Filter */}
+            {/* filter dropdown */}
             <Select
               value={categoryFilter}
               onValueChange={(value: Category | "all") => setCategoryFilter(value)}
@@ -140,7 +140,7 @@ const ManageNoticesPage: React.FC = () => {
           </Button>
         </div>
 
-        {/* Notices Table */}
+        {/* list of notices */}
         <Card>
           <CardHeader className="border-b bg-muted/30 py-4">
             <CardTitle className="flex items-center gap-2 text-lg">
