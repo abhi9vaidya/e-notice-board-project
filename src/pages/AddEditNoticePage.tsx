@@ -23,8 +23,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarIcon, Upload, Save, X, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useNotices, NoticeFormData } from "@/hooks/useNotices";
-import { Category, Priority } from "@/types/notice";
+import { useNotices } from "@/hooks/useFirebaseNotices";
+import { CreateNoticeInput } from "@/integrations/firebase/noticesService";
+import { Category, Priority } from "@/integrations/firebase/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 
@@ -40,18 +41,19 @@ const AddEditNoticePage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("edit");
-  const { notices, addNotice, updateNotice } = useNotices();
+  const { notices, addNotice, editNotice } = useNotices();
   const { toast } = useToast();
 
   const { faculty } = useAuth();
 
-  const [formData, setFormData] = useState<NoticeFormData>({
+  const [formData, setFormData] = useState<CreateNoticeInput>({
     title: "",
     description: "",
     category: "academic",
     priority: "medium",
     template: "standard",
     facultyName: faculty?.name || "Admin",
+    facultyId: faculty?.id || "unknown",
     startTime: new Date(),
     endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   });
@@ -70,6 +72,7 @@ const AddEditNoticePage: React.FC = () => {
           priority: notice.priority,
           template: notice.template,
           facultyName: notice.facultyName,
+          facultyId: notice.facultyId,
           startTime: new Date(notice.startTime),
           endTime: new Date(notice.endTime),
           imageUrl: notice.imageUrl,
@@ -82,14 +85,14 @@ const AddEditNoticePage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const dataToSubmit: NoticeFormData = {
+
+    const dataToSubmit: CreateNoticeInput = {
       ...formData,
       priority: isHighPriority ? "high" : formData.priority,
     };
 
     if (editId) {
-      updateNotice(editId, dataToSubmit);
+      editNotice(editId, dataToSubmit);
       toast({
         title: "Notice Updated",
         description: "The notice has been successfully updated.",

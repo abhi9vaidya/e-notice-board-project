@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Notice } from '@/types/notice';
+import { Notice } from '@/integrations/firebase/types';
+import { useActiveNotices } from '@/hooks/useFirebaseNotices';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Wifi, 
-  WifiOff, 
-  Clock, 
+import {
+  Wifi,
+  WifiOff,
+  Clock,
   User,
   Briefcase,
   BookOpen,
@@ -43,30 +44,8 @@ const categoryConfig: Record<string, { icon: React.ElementType; label: string; g
   other: { icon: MoreHorizontal, label: 'Other', gradient: 'from-slate-500 to-gray-600' },
 };
 
-const NOTICES_STORAGE_KEY = 'active-notices';
-
-// Load notices from localStorage
-const loadNotices = (): Notice[] => {
-  const stored = localStorage.getItem(NOTICES_STORAGE_KEY);
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      return parsed.map((notice: Notice) => ({
-        ...notice,
-        startTime: new Date(notice.startTime),
-        endTime: new Date(notice.endTime),
-        createdAt: new Date(notice.createdAt),
-        updatedAt: new Date(notice.updatedAt),
-      }));
-    } catch {
-      return [];
-    }
-  }
-  return [];
-};
-
 const TVDisplay: React.FC = () => {
-  const [notices, setNotices] = useState<Notice[]>([]);
+  const { notices: activeNotices, loading } = useActiveNotices();
   const [urgentSlideIndex, setUrgentSlideIndex] = useState(0);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -83,10 +62,10 @@ const TVDisplay: React.FC = () => {
     const endTime = new Date(notice.endTime);
     const hoursLeft = differenceInHours(endTime, now);
     const minutesLeft = differenceInMinutes(endTime, now) % 60;
-    
+
     if (hoursLeft < 0) return null;
     if (hoursLeft === 0 && minutesLeft <= 0) return null;
-    
+
     if (hoursLeft <= 4) {
       if (hoursLeft === 0) {
         return `${minutesLeft}m left`;
@@ -96,41 +75,41 @@ const TVDisplay: React.FC = () => {
     return null;
   }, []);
 
-  // Filter and categorize notices
-  const getActiveNotices = useCallback(() => {
-    const now = new Date();
-    const allNotices = loadNotices();
-    return allNotices
-      .filter(notice => new Date(notice.endTime) > now && notice.category !== 'spiritual')
+  // Filter and categorize notices from the real-time hook
+  const displayNotices = useMemo(() => {
+    if (!activeNotices) return [];
+
+    return activeNotices
+      .filter(notice => notice.category !== 'spiritual')
       .sort((a, b) => {
         const aApproaching = isDeadlineApproaching(a);
         const bApproaching = isDeadlineApproaching(b);
         if (aApproaching && !bApproaching) return -1;
         if (!aApproaching && bApproaching) return 1;
-        
+
         const priorityOrder = { high: 0, medium: 1, low: 2 };
         if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
           return priorityOrder[a.priority] - priorityOrder[b.priority];
         }
-        
+
         return new Date(a.endTime).getTime() - new Date(b.endTime).getTime();
       });
-  }, [isDeadlineApproaching]);
+  }, [activeNotices, isDeadlineApproaching]);
 
   // Separate urgent, normal, and tomorrow's notices
   const { urgentNotices, normalNotices, tomorrowNotices } = useMemo(() => {
-    const urgent = notices.filter(n => 
+    const urgent = displayNotices.filter(n =>
       n.priority === 'high' || isDeadlineApproaching(n)
     );
-    const normal = notices.filter(n => 
+    const normal = displayNotices.filter(n =>
       n.priority !== 'high' && !isDeadlineApproaching(n)
     );
-    const tomorrow = notices.filter(n => {
+    const tomorrow = displayNotices.filter(n => {
       const startDate = new Date(n.startTime);
       return isTomorrow(startDate);
     });
     return { urgentNotices: urgent, normalNotices: normal, tomorrowNotices: tomorrow };
-  }, [notices, isDeadlineApproaching]);
+  }, [displayNotices, isDeadlineApproaching]);
 
   // Check if notice is recent
   const isRecent = useCallback((notice: Notice): boolean => {
@@ -138,23 +117,12 @@ const TVDisplay: React.FC = () => {
     return new Date(notice.updatedAt) > fiveHoursAgo;
   }, []);
 
-  // Initialize and auto-refresh
-  useEffect(() => {
-    const refreshNotices = () => {
-      setNotices(getActiveNotices());
-    };
-    
-    refreshNotices();
-    const refreshInterval = setInterval(refreshNotices, 10 * 1000);
-    return () => clearInterval(refreshInterval);
-  }, [getActiveNotices]);
-
   // Auto-slide for urgent notices
   useEffect(() => {
     if (urgentNotices.length <= 1) return;
 
     const slideInterval = setInterval(() => {
-      setUrgentSlideIndex((prev) => 
+      setUrgentSlideIndex((prev) =>
         (prev + 1) % urgentNotices.length
       );
     }, 6000);
@@ -190,7 +158,7 @@ const TVDisplay: React.FC = () => {
     const config = getCategoryConfig(notice.category);
     const CategoryIcon = config.icon;
     const timeRemaining = getTimeRemaining(notice);
-    
+
     return (
       <motion.div
         key={notice.id}
@@ -206,7 +174,7 @@ const TVDisplay: React.FC = () => {
       >
         {/* Animated glow border */}
         <div className="absolute inset-0 rounded-2xl">
-          <motion.div 
+          <motion.div
             className="absolute inset-0 rounded-2xl opacity-60"
             style={{
               background: 'linear-gradient(90deg, transparent 0%, rgba(243, 111, 39, 0.4) 50%, transparent 100%)',
@@ -215,33 +183,33 @@ const TVDisplay: React.FC = () => {
             animate={{ backgroundPosition: ['200% 0%', '-200% 0%'] }}
             transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
           />
-          <div 
+          <div
             className="absolute inset-0 rounded-2xl"
             style={{ border: '1px solid rgba(243, 111, 39, 0.4)' }}
           />
         </div>
 
         {/* Priority indicator bar with glow */}
-        <motion.div 
+        <motion.div
           className="absolute top-0 left-0 right-0 h-1.5"
-          style={{ 
+          style={{
             background: 'linear-gradient(90deg, #F36F27, #FAA292, #F36F27)',
             boxShadow: '0 0 20px rgba(243, 111, 39, 0.6)'
           }}
           animate={{ opacity: [1, 0.6, 1] }}
           transition={{ duration: 2, repeat: Infinity }}
         />
-        
+
         {/* Deadline warning badge */}
         {timeRemaining && (
-          <motion.div 
+          <motion.div
             className="absolute top-6 right-6 z-10"
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 1.5, repeat: Infinity }}
           >
-            <div 
+            <div
               className="flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-lg text-white"
-              style={{ 
+              style={{
                 background: 'linear-gradient(135deg, #dc2626 0%, #F36F27 100%)',
                 boxShadow: '0 0 30px rgba(220, 38, 38, 0.5)'
               }}
@@ -251,7 +219,7 @@ const TVDisplay: React.FC = () => {
             </div>
           </motion.div>
         )}
-        
+
         <div className="relative p-8 h-full flex flex-col">
           {/* Header badges */}
           <div className="flex items-center gap-3 mb-6">
@@ -263,9 +231,9 @@ const TVDisplay: React.FC = () => {
               animate={{ scale: [1, 1.08, 1] }}
               transition={{ duration: 1.2, repeat: Infinity }}
             >
-              <div 
+              <div
                 className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-white"
-                style={{ 
+                style={{
                   background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
                   boxShadow: '0 0 15px rgba(220, 38, 38, 0.4)'
                 }}
@@ -275,7 +243,7 @@ const TVDisplay: React.FC = () => {
               </div>
             </motion.div>
             {isRecent(notice) && (
-              <div 
+              <div
                 className="px-4 py-2 rounded-lg font-bold text-white"
                 style={{ background: 'linear-gradient(135deg, #F36F27 0%, #FAA292 100%)' }}
               >
@@ -287,21 +255,21 @@ const TVDisplay: React.FC = () => {
           {/* Content */}
           <div className="flex-1 flex items-center gap-8">
             {notice.imageUrl && (
-              <motion.div 
+              <motion.div
                 className="w-80 h-52 rounded-xl overflow-hidden shrink-0"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 style={{ boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)' }}
               >
-                <img 
-                  src={notice.imageUrl} 
+                <img
+                  src={notice.imageUrl}
                   alt={notice.title}
                   className="w-full h-full object-cover"
                 />
               </motion.div>
             )}
             <div className="flex-1 min-w-0">
-              <h2 
+              <h2
                 className="text-5xl font-bold text-white mb-5 leading-tight"
                 style={{ fontFamily: "'Playfair Display', serif", textShadow: '0 2px 10px rgba(0,0,0,0.3)' }}
               >
@@ -314,7 +282,7 @@ const TVDisplay: React.FC = () => {
           </div>
 
           {/* Footer */}
-          <div 
+          <div
             className="flex items-center justify-between mt-6 pt-5"
             style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}
           >
@@ -336,7 +304,7 @@ const TVDisplay: React.FC = () => {
   const renderNormalCard = (notice: Notice, index: number) => {
     const config = getCategoryConfig(notice.category);
     const CategoryIcon = config.icon;
-    
+
     return (
       <motion.div
         key={notice.id}
@@ -356,9 +324,9 @@ const TVDisplay: React.FC = () => {
             <CategoryIcon className="h-4 w-4" />
             {notice.customCategory || config.label}
           </div>
-          <div 
+          <div
             className="px-3 py-1.5 rounded-md text-sm font-medium"
-            style={{ 
+            style={{
               background: notice.priority === 'medium' ? 'rgba(243, 111, 39, 0.2)' : 'rgba(100, 116, 139, 0.2)',
               color: notice.priority === 'medium' ? '#FAA292' : '#94a3b8'
             }}
@@ -366,8 +334,8 @@ const TVDisplay: React.FC = () => {
             {notice.priority === 'medium' ? 'IMPORTANT' : 'INFO'}
           </div>
         </div>
-        
-        <h3 
+
+        <h3
           className="text-xl font-bold text-white mb-2 line-clamp-2"
           style={{ fontFamily: "'Playfair Display', serif" }}
         >
@@ -376,7 +344,7 @@ const TVDisplay: React.FC = () => {
         <p className="text-slate-400 line-clamp-2 mb-4 text-base">
           {notice.description}
         </p>
-        
+
         <div className="flex items-center justify-between text-sm text-slate-500">
           <span className="flex items-center gap-2">
             <User className="h-4 w-4" />
@@ -392,14 +360,14 @@ const TVDisplay: React.FC = () => {
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen flex flex-col overflow-hidden"
       style={{
         background: 'linear-gradient(180deg, #0a1628 0%, #050a14 50%, #0a1628 100%)'
       }}
     >
       {/* Top Header Bar */}
-      <motion.header 
+      <motion.header
         className="relative px-8 py-5 flex items-center justify-between shrink-0"
         style={{
           background: 'linear-gradient(90deg, rgba(10, 22, 40, 0.95) 0%, rgba(20, 35, 60, 0.9) 50%, rgba(10, 22, 40, 0.95) 100%)',
@@ -411,14 +379,14 @@ const TVDisplay: React.FC = () => {
         transition={{ duration: 0.6 }}
       >
         {/* Left: Logo and Title */}
-        <motion.div 
+        <motion.div
           className="flex items-center gap-6"
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
         >
           {/* RBU Logo - Fixed Top Left */}
-          <div 
+          <div
             className="h-16 w-16 rounded-xl flex items-center justify-center p-1.5"
             style={{
               background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)',
@@ -426,21 +394,21 @@ const TVDisplay: React.FC = () => {
               boxShadow: '0 0 20px rgba(243, 111, 39, 0.15)'
             }}
           >
-            <img 
-              src={rbuLogo} 
-              alt="RBU Logo" 
+            <img
+              src={rbuLogo}
+              alt="RBU Logo"
               className="h-13 w-13 object-contain"
             />
           </div>
-          
+
           <div>
-            <h1 
+            <h1
               className="text-3xl font-bold text-white tracking-wide"
               style={{ fontFamily: "'Playfair Display', serif", textShadow: '0 2px 10px rgba(0,0,0,0.3)' }}
             >
               Ramdeobaba University
             </h1>
-            <p 
+            <p
               className="text-base font-semibold tracking-widest uppercase"
               style={{ color: '#F36F27' }}
             >
@@ -450,16 +418,16 @@ const TVDisplay: React.FC = () => {
         </motion.div>
 
         {/* Right: Status indicators */}
-        <motion.div 
+        <motion.div
           className="flex items-center gap-5"
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
         >
           {/* Refresh indicator */}
-          <div 
+          <div
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm"
-            style={{ 
+            style={{
               background: 'rgba(30, 40, 60, 0.8)',
               border: '1px solid rgba(100, 116, 139, 0.2)'
             }}
@@ -474,7 +442,7 @@ const TVDisplay: React.FC = () => {
           </div>
 
           {/* Connection Status */}
-          <motion.div 
+          <motion.div
             className={cn(
               'flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold',
             )}
@@ -491,15 +459,15 @@ const TVDisplay: React.FC = () => {
           </motion.div>
 
           {/* Current Time */}
-          <div 
+          <div
             className="text-right rounded-xl px-6 py-3"
-            style={{ 
-              background: 'rgba(30, 40, 60, 0.8)', 
+            style={{
+              background: 'rgba(30, 40, 60, 0.8)',
               border: '1px solid rgba(243, 111, 39, 0.3)',
               boxShadow: '0 0 20px rgba(243, 111, 39, 0.1)'
             }}
           >
-            <motion.div 
+            <motion.div
               className="text-3xl font-bold tabular-nums tracking-wider"
               style={{ color: '#F36F27', textShadow: '0 0 15px rgba(243, 111, 39, 0.4)' }}
               key={format(currentTime, 'ss')}
@@ -517,8 +485,8 @@ const TVDisplay: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 p-6 overflow-hidden flex flex-col gap-6">
-        {notices.length === 0 ? (
-          <motion.div 
+        {displayNotices.length === 0 ? (
+          <motion.div
             className="h-full flex items-center justify-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -529,7 +497,7 @@ const TVDisplay: React.FC = () => {
                 transition={{ duration: 3, repeat: Infinity }}
                 className="mb-8"
               >
-                <div 
+                <div
                   className="h-44 w-44 mx-auto rounded-2xl flex items-center justify-center"
                   style={{
                     background: 'linear-gradient(135deg, rgba(30, 40, 60, 0.9) 0%, rgba(20, 30, 50, 0.95) 100%)',
@@ -540,7 +508,7 @@ const TVDisplay: React.FC = () => {
                   <img src={rbuLogo} alt="RBU" className="h-36 w-36 object-contain" />
                 </div>
               </motion.div>
-              <h2 
+              <h2
                 className="text-5xl font-bold text-white mb-4"
                 style={{ fontFamily: "'Playfair Display', serif", textShadow: '0 2px 10px rgba(0,0,0,0.3)' }}
               >
@@ -553,7 +521,7 @@ const TVDisplay: React.FC = () => {
           <>
             {/* Urgent Notices Section - Top */}
             {urgentNotices.length > 0 && (
-              <motion.section 
+              <motion.section
                 className="shrink-0 h-[48%] min-h-[300px]"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -565,15 +533,15 @@ const TVDisplay: React.FC = () => {
                   >
                     <Zap className="h-7 w-7" style={{ color: '#F36F27' }} />
                   </motion.div>
-                  <h2 
+                  <h2
                     className="text-2xl font-bold text-white tracking-wide"
                     style={{ fontFamily: "'Playfair Display', serif" }}
                   >
                     Priority Notices
                   </h2>
-                  <div 
+                  <div
                     className="px-4 py-1.5 rounded-full font-bold text-lg"
-                    style={{ 
+                    style={{
                       background: 'linear-gradient(135deg, #F36F27 0%, #FAA292 100%)',
                       color: 'white'
                     }}
@@ -586,7 +554,7 @@ const TVDisplay: React.FC = () => {
                     </span>
                   )}
                 </div>
-                
+
                 <div className="relative h-[calc(100%-3.5rem)]">
                   <AnimatePresence mode="wait">
                     {urgentNotices[urgentSlideIndex] && renderUrgentCard(urgentNotices[urgentSlideIndex])}
@@ -632,8 +600,8 @@ const TVDisplay: React.FC = () => {
                             height: '10px',
                             width: index === urgentSlideIndex ? '40px' : '10px',
                             borderRadius: '5px',
-                            background: index === urgentSlideIndex 
-                              ? 'linear-gradient(90deg, #F36F27, #FAA292)' 
+                            background: index === urgentSlideIndex
+                              ? 'linear-gradient(90deg, #F36F27, #FAA292)'
                               : 'rgba(100, 116, 139, 0.4)',
                             boxShadow: index === urgentSlideIndex ? '0 0 15px rgba(243, 111, 39, 0.5)' : 'none'
                           }}
@@ -647,7 +615,7 @@ const TVDisplay: React.FC = () => {
 
             {/* Normal Notices Section - Middle */}
             {normalNotices.length > 0 && (
-              <motion.section 
+              <motion.section
                 className="flex-1 min-h-0"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -655,20 +623,20 @@ const TVDisplay: React.FC = () => {
               >
                 <div className="flex items-center gap-4 mb-4">
                   <Bell className="h-6 w-6 text-slate-400" />
-                  <h2 
+                  <h2
                     className="text-xl font-bold text-white tracking-wide"
                     style={{ fontFamily: "'Playfair Display', serif" }}
                   >
                     Latest Notices
                   </h2>
-                  <div 
+                  <div
                     className="px-3 py-1 rounded-full text-sm font-medium"
                     style={{ background: 'rgba(100, 116, 139, 0.3)', color: '#94a3b8' }}
                   >
                     {normalNotices.length}
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 h-[calc(100%-3rem)] overflow-hidden">
                   <AnimatePresence mode="popLayout">
                     {normalNotices.slice(0, 3).map((notice, index) => renderNormalCard(notice, index))}
@@ -681,7 +649,7 @@ const TVDisplay: React.FC = () => {
       </div>
 
       {/* Bottom Ticker - Tomorrow's Notices */}
-      <motion.div 
+      <motion.div
         className="shrink-0 py-5 overflow-hidden"
         style={{
           background: 'linear-gradient(90deg, rgba(10, 22, 40, 0.98) 0%, rgba(243, 111, 39, 0.08) 50%, rgba(10, 22, 40, 0.98) 100%)',
@@ -699,27 +667,27 @@ const TVDisplay: React.FC = () => {
           >
             <Calendar className="h-6 w-6" style={{ color: '#F36F27' }} />
           </motion.div>
-          <span 
+          <span
             className="text-base font-bold uppercase tracking-[0.2em]"
             style={{ color: '#F36F27' }}
           >
             Tomorrow's Notices
           </span>
-          <div 
+          <div
             className="flex-1 h-px"
             style={{ background: 'linear-gradient(90deg, rgba(243, 111, 39, 0.5) 0%, transparent 100%)' }}
           />
         </div>
-        
+
         <div className="relative overflow-hidden h-12">
           {tomorrowNotices.length > 0 ? (
             <motion.div
               className="flex items-center gap-20 whitespace-nowrap absolute"
               animate={{ x: ['0%', '-50%'] }}
-              transition={{ 
-                duration: Math.max(tomorrowNotices.length * 10, 20), 
-                repeat: Infinity, 
-                ease: 'linear' 
+              transition={{
+                duration: Math.max(tomorrowNotices.length * 10, 20),
+                repeat: Infinity,
+                ease: 'linear'
               }}
             >
               {/* Duplicate notices for seamless loop */}
@@ -727,12 +695,12 @@ const TVDisplay: React.FC = () => {
                 const config = getCategoryConfig(notice.category);
                 return (
                   <div key={`${notice.id}-${index}`} className="flex items-center gap-4">
-                    <span 
+                    <span
                       className="h-3 w-3 rounded-full"
                       style={{ background: '#F36F27', boxShadow: '0 0 10px rgba(243, 111, 39, 0.6)' }}
                     />
                     <span className="text-xl text-white font-semibold">{notice.title}</span>
-                    <span 
+                    <span
                       className={cn('px-3 py-1 rounded-md text-sm font-medium text-white bg-gradient-to-r', config.gradient)}
                     >
                       {notice.customCategory || config.label}

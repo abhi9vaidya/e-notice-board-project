@@ -1,5 +1,5 @@
 import React from 'react';
-import { Notice, Category, Priority } from '@/types/notice';
+import { Notice, Category, Priority } from '@/integrations/firebase/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,43 +39,43 @@ interface NoticeTableProps {
 }
 
 const categoryConfig: Record<Category, { icon: React.ReactNode; label: string; className: string }> = {
-  placement: { 
-    icon: <Briefcase className="h-4 w-4" />, 
+  placement: {
+    icon: <Briefcase className="h-4 w-4" />,
     label: 'Placement',
     className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
   },
-  academic: { 
-    icon: <BookOpen className="h-4 w-4" />, 
+  academic: {
+    icon: <BookOpen className="h-4 w-4" />,
     label: 'Academic',
     className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
   },
-  project: { 
-    icon: <FolderKanban className="h-4 w-4" />, 
+  project: {
+    icon: <FolderKanban className="h-4 w-4" />,
     label: 'Project',
     className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
   },
-  spiritual: { 
-    icon: <Sparkles className="h-4 w-4" />, 
+  spiritual: {
+    icon: <Sparkles className="h-4 w-4" />,
     label: 'Spiritual',
     className: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
   },
-  other: { 
-    icon: <MoreHorizontal className="h-4 w-4" />, 
+  other: {
+    icon: <MoreHorizontal className="h-4 w-4" />,
     label: 'Other',
     className: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
   },
 };
 
 const priorityConfig: Record<Priority, { label: string; className: string }> = {
-  high: { 
+  high: {
     label: 'High',
     className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
   },
-  medium: { 
+  medium: {
     label: 'Medium',
     className: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
   },
-  low: { 
+  low: {
     label: 'Low',
     className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
   },
@@ -112,7 +112,7 @@ const NoticeTable: React.FC<NoticeTableProps> = ({
             const recent = isRecent(notice);
 
             return (
-              <TableRow 
+              <TableRow
                 key={notice.id}
                 className={cn(
                   'group',
@@ -123,9 +123,9 @@ const NoticeTable: React.FC<NoticeTableProps> = ({
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
                     {notice.imageUrl && (
-                      <img 
-                        src={notice.imageUrl} 
-                        alt="" 
+                      <img
+                        src={notice.imageUrl}
+                        alt=""
                         className="h-10 w-10 rounded-lg object-cover shrink-0"
                       />
                     )}
@@ -184,8 +184,8 @@ const NoticeTable: React.FC<NoticeTableProps> = ({
                         <Edit className="h-4 w-4" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => onDelete(notice.id)} 
+                      <DropdownMenuItem
+                        onClick={() => onDelete(notice.id)}
                         className="gap-2 text-destructive focus:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />

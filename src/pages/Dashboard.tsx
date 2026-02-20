@@ -1,7 +1,6 @@
-import React from 'react';
-import { Notice } from '@/types/notice';
-import app from "@/lib/firebase";
-import { useNotices } from '@/hooks/useNotices';
+import React, { useState } from 'react';
+import { Notice } from '@/integrations/firebase/types';
+import { useNotices } from '@/hooks/useFirebaseNotices';
 import AdminLayout from '@/components/layout/AdminLayout';
 import CategoryFilter from '@/components/notice/CategoryFilter';
 import NoticeTable from '@/components/notice/NoticeTable';
@@ -14,21 +13,27 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const {
     notices,
-    allNotices,
-    selectedCategory,
-    setSelectedCategory,
-    isRecent,
-    deleteNotice,
+    removeNotice,
   } = useNotices();
+
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   const handleEditClick = (notice: Notice) => {
     navigate(`/add-notice?edit=${notice.id}`);
   };
 
-  // Stats
-  const activeNotices = notices.length;
-  const highPriorityNotices = notices.filter(n => n.priority === 'high').length;
-  const recentNotices = notices.filter(isRecent).length;
+  const filteredNotices = notices.filter(n => selectedCategory === 'all' || n.category === selectedCategory && !n.isArchived);
+
+  // Stats based on filteredNotices
+  const activeNotices = filteredNotices.length;
+  const highPriorityNotices = filteredNotices.filter(n => n.priority === 'high').length;
+
+  // Recent notices (updated in last 5 hours)
+  const isRecent = (notice: Notice) => {
+    const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000);
+    return notice.updatedAt > fiveHoursAgo;
+  };
+  const recentNotices = filteredNotices.filter(isRecent).length;
 
   return (
     <AdminLayout
@@ -85,7 +90,7 @@ const Dashboard: React.FC = () => {
               <LayoutGrid className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{allNotices.length}</div>
+              <div className="text-2xl font-bold">{notices.length}</div>
               <p className="text-xs text-muted-foreground">All time</p>
             </CardContent>
           </Card>
@@ -107,7 +112,7 @@ const Dashboard: React.FC = () => {
                 <span className="hidden sm:inline">TV Display</span>
               </Button>
             </Link>
-            <Button 
+            <Button
               onClick={() => navigate('/add-notice')}
               className="gap-2"
             >
@@ -123,29 +128,29 @@ const Dashboard: React.FC = () => {
             selectedCategory={selectedCategory}
             onCategoryChange={setSelectedCategory}
           />
-          
+
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <LayoutGrid className="h-4 w-4" />
-            Showing <span className="font-semibold text-foreground">{notices.length}</span> active notice{notices.length !== 1 ? 's' : ''}
+            Showing <span className="font-semibold text-foreground">{filteredNotices.length}</span> active notice{filteredNotices.length !== 1 ? 's' : ''}
           </div>
         </div>
 
         {/* Notices Table */}
         <NoticeTable
-          notices={notices}
+          notices={filteredNotices}
           isRecent={isRecent}
           onEdit={handleEditClick}
-          onDelete={deleteNotice}
+          onDelete={(id) => removeNotice(id, false)} // soft delete (archive)
         />
 
-        {notices.length === 0 && (
+        {filteredNotices.length === 0 && (
           <div className="text-center py-16 bg-card rounded-xl border shadow-sm">
             <div className="mx-auto h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
               <LayoutGrid className="h-8 w-8 text-muted-foreground" />
             </div>
             <h3 className="text-lg font-semibold text-foreground mb-2">No notices found</h3>
             <p className="text-muted-foreground mb-4">
-              {selectedCategory === 'all' 
+              {selectedCategory === 'all'
                 ? 'Get started by adding your first notice.'
                 : `No active notices in the ${selectedCategory} category.`}
             </p>

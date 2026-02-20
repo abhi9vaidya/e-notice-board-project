@@ -31,23 +31,23 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash2, 
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
   FileText,
   AlertTriangle,
   ArrowUpDown
 } from "lucide-react";
 import { format } from "date-fns";
-import { useNotices } from "@/hooks/useNotices";
-import { Category } from "@/types/notice";
+import { useNotices } from "@/hooks/useFirebaseNotices";
+import { Category } from "@/integrations/firebase/types";
 import { cn } from "@/lib/utils";
 
 const ManageNoticesPage: React.FC = () => {
   const navigate = useNavigate();
-  const { notices, deleteNotice } = useNotices();
+  const { notices, removeNotice } = useNotices();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<Category | "all">("all");
 
@@ -55,7 +55,8 @@ const ManageNoticesPage: React.FC = () => {
     const matchesSearch = notice.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       notice.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === "all" || notice.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    const isNotArchived = !notice.isArchived;
+    return matchesSearch && matchesCategory && isNotArchived;
   });
 
   const getCategoryBadge = (category: Category) => {
@@ -88,7 +89,7 @@ const ManageNoticesPage: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    deleteNotice(id);
+    removeNotice(id, false); // soft delete (archive)
   };
 
   return (
@@ -210,7 +211,7 @@ const ManageNoticesPage: React.FC = () => {
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          
+
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button
