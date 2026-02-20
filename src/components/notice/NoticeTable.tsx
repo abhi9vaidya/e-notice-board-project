@@ -113,8 +113,8 @@ const NoticeTable: React.FC<NoticeTableProps> = ({
         </TableHeader>
         <TableBody>
           {notices.map((notice) => {
-            const category = categoryConfig[notice.category];
-            const priority = priorityConfig[notice.priority];
+            const category = categoryConfig[notice.category as Category] || categoryConfig.other;
+            const priority = priorityConfig[notice.priority as Priority] || priorityConfig.medium;
             const recent = isRecent(notice);
 
             return (

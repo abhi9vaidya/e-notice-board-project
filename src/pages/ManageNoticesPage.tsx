@@ -59,8 +59,8 @@ const ManageNoticesPage: React.FC = () => {
     return matchesSearch && matchesCategory && isNotArchived;
   });
 
-  const getCategoryBadge = (category: Category) => {
-    const styles: Record<Category, string> = {
+  const getCategoryBadge = (category: string) => {
+    const styles: Record<string, string> = {
       academic: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
       examinations: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
       placements: "bg-primary/10 text-primary border-primary/20",
@@ -68,8 +68,9 @@ const ManageNoticesPage: React.FC = () => {
       announcements: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
       other: "bg-muted text-muted-foreground",
     };
+    const style = styles[category] || styles.other;
     return (
-      <Badge variant="outline" className={cn("capitalize", styles[category])}>
+      <Badge variant="outline" className={cn("capitalize", style)}>
         {category}
       </Badge>
     );

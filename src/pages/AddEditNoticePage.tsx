@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { uploadToGoogleDrive } from "@/integrations/google/googleDriveService";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarIcon, Upload, Save, X, FileText } from "lucide-react";
+import { CalendarIcon, Upload, Save, X, FileText, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useNotices } from "@/hooks/useFirebaseNotices";
@@ -73,6 +74,7 @@ const AddEditNoticePage: React.FC = () => {
 
   const [isHighPriority, setIsHighPriority] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (editId) {
@@ -97,38 +99,59 @@ const AddEditNoticePage: React.FC = () => {
     }
   }, [editId, notices]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsUploading(true);
 
-    const dataToSubmit: CreateNoticeInput = {
-      ...formData,
-      priority: isHighPriority ? "high" : formData.priority,
-    };
+    try {
+      let finalImageUrl = formData.imageUrl;
 
-    if (editId) {
-      editNotice(editId, dataToSubmit);
+      // If there's a new file to upload
+      if (uploadedFile) {
+        toast({
+          title: "Uploading file",
+          description: "Please wait while we save your file to Google Drive...",
+        });
+        finalImageUrl = await uploadToGoogleDrive(uploadedFile);
+      }
+
+      const dataToSubmit: CreateNoticeInput = {
+        ...formData,
+        imageUrl: finalImageUrl,
+        priority: isHighPriority ? "high" : formData.priority,
+      };
+
+      if (editId) {
+        await editNotice(editId, dataToSubmit);
+        toast({
+          title: "Notice Updated",
+          description: "The notice has been successfully updated.",
+        });
+      } else {
+        await addNotice(dataToSubmit);
+        toast({
+          title: "Notice Created",
+          description: "The notice has been successfully created.",
+        });
+      }
+
+      navigate("/manage-notices");
+    } catch (error) {
+      console.error("Submission error:", error);
       toast({
-        title: "Notice Updated",
-        description: "The notice has been successfully updated.",
+        title: "Upload Failed",
+        description: "There was an error uploading your file. Please check your connection.",
+        variant: "destructive",
       });
-    } else {
-      addNotice(dataToSubmit);
-      toast({
-        title: "Notice Created",
-        description: "The notice has been successfully created.",
-      });
+    } finally {
+      setIsUploading(false);
     }
-
-    navigate("/manage-notices");
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setUploadedFile(file);
-      // In a real app, you'd upload this to storage and get a URL
-      const url = URL.createObjectURL(file);
-      setFormData((prev) => ({ ...prev, imageUrl: url }));
     }
   };
 
@@ -332,9 +355,21 @@ const AddEditNoticePage: React.FC = () => {
                   <X className="h-4 w-4" />
                   Cancel
                 </Button>
-                <Button type="submit" className="gap-2">
-                  <Save className="h-4 w-4" />
-                  {editId ? "Update Notice" : "Create Notice"}
+                <Button
+                  type="submit"
+                  className="h-11 px-8 text-base font-semibold gap-2"
+                  disabled={isUploading}
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : editId ? (
+                    "Update Notice"
+                  ) : (
+                    "Create Notice"
+                  )}
                 </Button>
               </div>
             </form>

@@ -23,6 +23,7 @@ import {
   GraduationCap,
   FileText,
   Trophy,
+  Megaphone,
   Users,
   Zap
 } from 'lucide-react';
@@ -32,15 +33,11 @@ import rbuLogo from '@/assets/rbu-logo.png';
 
 // Enhanced category configuration with better icons
 const categoryConfig: Record<string, { icon: React.ElementType; label: string; gradient: string }> = {
-  placement: { icon: Briefcase, label: 'Placement', gradient: 'from-orange-500 to-amber-600' },
   academic: { icon: GraduationCap, label: 'Academic', gradient: 'from-blue-500 to-cyan-600' },
-  project: { icon: FolderKanban, label: 'Project', gradient: 'from-emerald-500 to-teal-600' },
-  spiritual: { icon: Sparkles, label: 'Spiritual', gradient: 'from-violet-500 to-purple-600' },
-  exams: { icon: FileText, label: 'Exams', gradient: 'from-red-500 to-rose-600' },
-  timetable: { icon: Clock, label: 'Timetable', gradient: 'from-sky-500 to-blue-600' },
-  research: { icon: BookOpen, label: 'Research', gradient: 'from-indigo-500 to-violet-600' },
-  alumni: { icon: Users, label: 'Alumni', gradient: 'from-amber-500 to-orange-600' },
-  achievements: { icon: Trophy, label: 'Achievements', gradient: 'from-yellow-500 to-amber-600' },
+  examinations: { icon: FileText, label: 'Examinations', gradient: 'from-red-500 to-rose-600' },
+  placements: { icon: Briefcase, label: 'Placements', gradient: 'from-orange-500 to-amber-600' },
+  events: { icon: Sparkles, label: 'Events', gradient: 'from-violet-500 to-purple-600' },
+  announcements: { icon: Megaphone, label: 'Announcements', gradient: 'from-emerald-500 to-teal-600' },
   other: { icon: MoreHorizontal, label: 'Other', gradient: 'from-slate-500 to-gray-600' },
 };
 
