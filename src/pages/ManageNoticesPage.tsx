@@ -61,10 +61,11 @@ const ManageNoticesPage: React.FC = () => {
 
   const getCategoryBadge = (category: Category) => {
     const styles: Record<Category, string> = {
-      placement: "bg-primary/10 text-primary border-primary/20",
-      academic: "bg-secondary/80 text-secondary-foreground",
-      project: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-      spiritual: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+      academic: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+      examinations: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+      placements: "bg-primary/10 text-primary border-primary/20",
+      events: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+      announcements: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
       other: "bg-muted text-muted-foreground",
     };
     return (

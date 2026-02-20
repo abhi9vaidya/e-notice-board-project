@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Notice } from '@/integrations/firebase/types';
+import { Notice, Category } from '@/integrations/firebase/types';
 import { useNotices } from '@/hooks/useFirebaseNotices';
 import AdminLayout from '@/components/layout/AdminLayout';
 import CategoryFilter from '@/components/notice/CategoryFilter';
@@ -16,7 +16,7 @@ const Dashboard: React.FC = () => {
     removeNotice,
   } = useNotices();
 
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<Category | 'all'>('all');
 
   const handleEditClick = (notice: Notice) => {
     navigate(`/add-notice?edit=${notice.id}`);

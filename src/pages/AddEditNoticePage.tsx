@@ -30,10 +30,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 
 const categories: { value: Category; label: string }[] = [
-  { value: "placement", label: "Placement" },
   { value: "academic", label: "Academic" },
-  { value: "project", label: "Project" },
-  { value: "spiritual", label: "Spiritual" },
+  { value: "examinations", label: "Examinations" },
+  { value: "placements", label: "Placements" },
+  { value: "events", label: "Events" },
+  { value: "announcements", label: "Announcements" },
   { value: "other", label: "Other" },
 ];
 
@@ -52,11 +53,23 @@ const AddEditNoticePage: React.FC = () => {
     category: "academic",
     priority: "medium",
     template: "standard",
-    facultyName: faculty?.name || "Admin",
+    facultyName: faculty?.name || "Faculty",
     facultyId: faculty?.id || "unknown",
     startTime: new Date(),
     endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    isArchived: false,
   });
+
+  // Update faculty name/id when context changes
+  useEffect(() => {
+    if (faculty && !editId) {
+      setFormData(prev => ({
+        ...prev,
+        facultyName: faculty.name,
+        facultyId: faculty.id
+      }));
+    }
+  }, [faculty, editId]);
 
   const [isHighPriority, setIsHighPriority] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -77,6 +90,7 @@ const AddEditNoticePage: React.FC = () => {
           endTime: new Date(notice.endTime),
           imageUrl: notice.imageUrl,
           customCategory: notice.customCategory,
+          isArchived: notice.isArchived,
         });
         setIsHighPriority(notice.priority === "high");
       }

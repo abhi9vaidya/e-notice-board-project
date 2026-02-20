@@ -10,7 +10,7 @@ import { auth, db } from '@/integrations/firebase/config';
 import { AuthState, Faculty, FirestoreProfile } from '@/integrations/firebase/types';
 
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (password: string, name: string) => Promise<boolean>;
   logout: () => Promise<void>;
   updateFaculty: (updates: Partial<Faculty>) => Promise<void>;
 }
@@ -41,16 +41,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (user) {
         // Fetch faculty profile from Firestore
         try {
+          // Restore name from sessionStorage if it's a shared account
+          const storedName = sessionStorage.getItem('faculty_name');
           const profileRef = doc(db, 'profiles', user.uid);
           const profileSnap = await getDoc(profileRef);
 
           if (profileSnap.exists()) {
-            const faculty = profileToFaculty(user.uid, profileSnap.data() as FirestoreProfile);
+            const facultyData = profileSnap.data() as FirestoreProfile;
+            const faculty = profileToFaculty(user.uid, {
+              ...facultyData,
+              name: storedName || facultyData.name
+            });
             setAuthState({ isAuthenticated: true, faculty, loading: false });
           } else {
             // Profile doesn't exist yet — create a minimal one
             const newProfile: FirestoreProfile = {
-              name: user.displayName || user.email?.split('@')[0] || 'Faculty',
+              name: storedName || user.displayName || user.email?.split('@')[0] || 'Faculty',
               department: 'Computer Science & Engineering',
               email: user.email || '',
               role: 'faculty',
@@ -64,7 +70,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             });
           }
         } catch (err) {
-          console.error('Error fetching profile:', err);
+          console.error('Error fetching profile:', err instanceof Error ? err.message : err);
           setAuthState({ isAuthenticated: false, faculty: null, loading: false });
         }
       } else {
@@ -75,9 +81,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (password: string, name: string): Promise<boolean> => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const sharedEmail = import.meta.env.VITE_SHARED_FACULTY_EMAIL;
+      const sharedPass = import.meta.env.VITE_SHARED_FACULTY_PASS;
+
+      // Validate common password
+      if (password !== sharedPass) {
+        return false;
+      }
+
+      // Log in with shared Firebase account
+      await signInWithEmailAndPassword(auth, sharedEmail, password);
+
+      // Store the name for this session
+      sessionStorage.setItem('faculty_name', name);
+
       return true;
     } catch (err) {
       console.error('Login error:', err);
@@ -86,6 +105,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = async (): Promise<void> => {
+    sessionStorage.removeItem('faculty_name');
     await signOut(auth);
   };
 

@@ -80,7 +80,6 @@ const TVDisplay: React.FC = () => {
     if (!activeNotices) return [];
 
     return activeNotices
-      .filter(notice => notice.category !== 'spiritual')
       .sort((a, b) => {
         const aApproaching = isDeadlineApproaching(a);
         const bApproaching = isDeadlineApproaching(b);

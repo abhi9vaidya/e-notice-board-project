@@ -19,8 +19,9 @@ import {
 import {
   Briefcase,
   BookOpen,
-  FolderKanban,
-  Sparkles,
+  Megaphone,
+  Calendar,
+  ClipboardCheck,
   MoreHorizontal,
   Edit,
   Trash2,
@@ -39,25 +40,30 @@ interface NoticeTableProps {
 }
 
 const categoryConfig: Record<Category, { icon: React.ReactNode; label: string; className: string }> = {
-  placement: {
-    icon: <Briefcase className="h-4 w-4" />,
-    label: 'Placement',
-    className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-  },
   academic: {
     icon: <BookOpen className="h-4 w-4" />,
     label: 'Academic',
     className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
   },
-  project: {
-    icon: <FolderKanban className="h-4 w-4" />,
-    label: 'Project',
-    className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+  examinations: {
+    icon: <ClipboardCheck className="h-4 w-4" />,
+    label: 'Examinations',
+    className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
   },
-  spiritual: {
-    icon: <Sparkles className="h-4 w-4" />,
-    label: 'Spiritual',
-    className: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
+  placements: {
+    icon: <Briefcase className="h-4 w-4" />,
+    label: 'Placements',
+    className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+  },
+  events: {
+    icon: <Calendar className="h-4 w-4" />,
+    label: 'Events',
+    className: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+  },
+  announcements: {
+    icon: <Megaphone className="h-4 w-4" />,
+    label: 'Announcements',
+    className: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
   },
   other: {
     icon: <MoreHorizontal className="h-4 w-4" />,

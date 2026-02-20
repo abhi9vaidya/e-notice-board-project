@@ -1,7 +1,7 @@
 import { Timestamp } from 'firebase/firestore';
 
 // ── Enums ──────────────────────────────────────────────────────────────────────
-export type Category = 'placement' | 'academic' | 'project' | 'spiritual' | 'other';
+export type Category = 'academic' | 'examinations' | 'placements' | 'events' | 'announcements' | 'other';
 export type Priority = 'high' | 'medium' | 'low';
 export type Template = 'standard' | 'urgent' | 'minimal' | 'featured';
 

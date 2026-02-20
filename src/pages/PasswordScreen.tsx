@@ -31,7 +31,7 @@ const PasswordScreen: React.FC = () => {
 
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    const success = login(password, facultyName.trim());
+    const success = await login(password, facultyName.trim());
     if (!success) {
       setError(true);
       setIsLoading(false);
@@ -57,13 +57,13 @@ const PasswordScreen: React.FC = () => {
         <CardHeader className="text-center pb-2 pt-8">
           {/* RBU Logo */}
           <div className="mx-auto mb-4">
-            <img 
-              src={rbuLogo} 
-              alt="Ramdeobaba University Logo" 
+            <img
+              src={rbuLogo}
+              alt="Ramdeobaba University Logo"
               className="h-24 w-24 object-contain mx-auto"
             />
           </div>
-          
+
           <CardTitle className="text-2xl font-bold text-foreground">
             Faculty E-Notice Board
           </CardTitle>
@@ -71,8 +71,8 @@ const PasswordScreen: React.FC = () => {
             Ramdeobaba University, Nagpur
           </CardDescription>
           <p className="text-sm text-muted-foreground mt-2">
-            {step === 'name' 
-              ? 'Enter your name to get started' 
+            {step === 'name'
+              ? 'Enter your name to get started'
               : `Welcome, ${facultyName}!`}
           </p>
         </CardHeader>
@@ -99,8 +99,8 @@ const PasswordScreen: React.FC = () => {
                 </div>
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full h-12 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
                 disabled={!facultyName.trim()}
               >
@@ -161,8 +161,8 @@ const PasswordScreen: React.FC = () => {
                 )}
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full h-12 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
                 disabled={isLoading}
               >

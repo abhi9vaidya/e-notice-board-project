@@ -1,7 +1,14 @@
-import React from 'react';
-import { Category } from '@/types/notice';
+import { Category } from '@/integrations/firebase/types';
 import { Button } from '@/components/ui/button';
-import { Briefcase, BookOpen, FolderKanban, Sparkles, LayoutGrid, MoreHorizontal } from 'lucide-react';
+import {
+  Briefcase,
+  BookOpen,
+  Megaphone,
+  Calendar,
+  ClipboardCheck,
+  LayoutGrid,
+  MoreHorizontal
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CategoryFilterProps {
@@ -11,10 +18,11 @@ interface CategoryFilterProps {
 
 const categories: { value: Category | 'all'; label: string; icon: React.ReactNode; colorClass: string }[] = [
   { value: 'all', label: 'All Notices', icon: <LayoutGrid className="h-4 w-4" />, colorClass: 'bg-secondary text-secondary-foreground' },
-  { value: 'placement', label: 'Placement', icon: <Briefcase className="h-4 w-4" />, colorClass: 'bg-placement-bg text-placement' },
-  { value: 'academic', label: 'Academic', icon: <BookOpen className="h-4 w-4" />, colorClass: 'bg-academic-bg text-academic' },
-  { value: 'project', label: 'Project', icon: <FolderKanban className="h-4 w-4" />, colorClass: 'bg-project-bg text-project' },
-  { value: 'spiritual', label: 'Spiritual', icon: <Sparkles className="h-4 w-4" />, colorClass: 'bg-spiritual-bg text-spiritual' },
+  { value: 'academic', label: 'Academic', icon: <BookOpen className="h-4 w-4" />, colorClass: 'bg-blue-100 text-blue-700' },
+  { value: 'examinations', label: 'Examinations', icon: <ClipboardCheck className="h-4 w-4" />, colorClass: 'bg-red-100 text-red-700' },
+  { value: 'placements', label: 'Placements', icon: <Briefcase className="h-4 w-4" />, colorClass: 'bg-primary/10 text-primary' },
+  { value: 'events', label: 'Events', icon: <Calendar className="h-4 w-4" />, colorClass: 'bg-purple-100 text-purple-700' },
+  { value: 'announcements', label: 'Announcements', icon: <Megaphone className="h-4 w-4" />, colorClass: 'bg-orange-100 text-orange-700' },
   { value: 'other', label: 'Other', icon: <MoreHorizontal className="h-4 w-4" />, colorClass: 'bg-muted text-muted-foreground' },
 ];
 
