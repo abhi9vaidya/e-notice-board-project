@@ -1,96 +1,103 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { AuthState, Faculty } from '@/types/notice';
-import { DEPARTMENT_PASSWORD } from '@/data/mockNotices';
-
-const FACULTY_STORAGE_KEY = 'facultyProfiles';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import {
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  User,
+} from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '@/integrations/firebase/config';
+import { AuthState, Faculty, FirestoreProfile } from '@/integrations/firebase/types';
 
 interface AuthContextType extends AuthState {
-  login: (password: string, name: string) => boolean;
-  logout: () => void;
-  updateFaculty: (updates: Partial<Faculty>) => void;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  updateFaculty: (updates: Partial<Faculty>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Get stored faculty profiles from localStorage
-const getStoredProfiles = (): Record<string, Faculty> => {
-  try {
-    const stored = localStorage.getItem(FACULTY_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : {};
-  } catch {
-    return {};
-  }
-};
-
-// Save faculty profiles to localStorage
-const saveStoredProfiles = (profiles: Record<string, Faculty>) => {
-  localStorage.setItem(FACULTY_STORAGE_KEY, JSON.stringify(profiles));
-};
+// Convert Firestore profile doc to Faculty app type
+const profileToFaculty = (uid: string, data: FirestoreProfile): Faculty => ({
+  id: uid,
+  name: data.name,
+  department: data.department,
+  email: data.email,
+  phone: data.phone,
+  profilePhotoUrl: data.profilePhotoUrl,
+  role: data.role,
+});
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [authState, setAuthState] = useState<AuthState>({
     isAuthenticated: false,
     faculty: null,
+    loading: true,
   });
 
-  const login = useCallback((password: string, name: string): boolean => {
-    if (password === DEPARTMENT_PASSWORD) {
-      const profiles = getStoredProfiles();
-      const normalizedName = name.trim().toLowerCase();
-      
-      // Check if faculty profile exists
-      let faculty: Faculty;
-      if (profiles[normalizedName]) {
-        // Use existing profile (preserves photo, email, phone, etc.)
-        faculty = profiles[normalizedName];
+  // Listen to Firebase Auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
+      if (user) {
+        // Fetch faculty profile from Firestore
+        try {
+          const profileRef = doc(db, 'profiles', user.uid);
+          const profileSnap = await getDoc(profileRef);
+
+          if (profileSnap.exists()) {
+            const faculty = profileToFaculty(user.uid, profileSnap.data() as FirestoreProfile);
+            setAuthState({ isAuthenticated: true, faculty, loading: false });
+          } else {
+            // Profile doesn't exist yet — create a minimal one
+            const newProfile: FirestoreProfile = {
+              name: user.displayName || user.email?.split('@')[0] || 'Faculty',
+              department: 'Computer Science & Engineering',
+              email: user.email || '',
+              role: 'faculty',
+              createdAt: serverTimestamp() as ReturnType<typeof serverTimestamp>,
+            };
+            await setDoc(profileRef, newProfile);
+            setAuthState({
+              isAuthenticated: true,
+              faculty: profileToFaculty(user.uid, newProfile),
+              loading: false,
+            });
+          }
+        } catch (err) {
+          console.error('Error fetching profile:', err);
+          setAuthState({ isAuthenticated: false, faculty: null, loading: false });
+        }
       } else {
-        // Create new profile
-        faculty = {
-          id: `faculty-${Date.now()}`,
-          name: name.trim(),
-          department: 'Computer Science & Engineering',
-          email: '',
-          phone: '',
-          profilePhoto: '',
-        };
-        profiles[normalizedName] = faculty;
-        saveStoredProfiles(profiles);
+        setAuthState({ isAuthenticated: false, faculty: null, loading: false });
       }
-      
-      setAuthState({
-        isAuthenticated: true,
-        faculty,
-      });
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
       return true;
+    } catch (err) {
+      console.error('Login error:', err);
+      return false;
     }
-    return false;
-  }, []);
+  };
 
-  const logout = useCallback(() => {
-    setAuthState({
-      isAuthenticated: false,
-      faculty: null,
-    });
-  }, []);
+  const logout = async (): Promise<void> => {
+    await signOut(auth);
+  };
 
-  const updateFaculty = useCallback((updates: Partial<Faculty>) => {
-    setAuthState(prev => {
-      if (!prev.faculty) return prev;
-      
-      const updatedFaculty = { ...prev.faculty, ...updates };
-      
-      // Persist to localStorage
-      const profiles = getStoredProfiles();
-      const normalizedName = prev.faculty.name.trim().toLowerCase();
-      profiles[normalizedName] = updatedFaculty;
-      saveStoredProfiles(profiles);
-      
-      return {
-        ...prev,
-        faculty: updatedFaculty,
-      };
-    });
-  }, []);
+  const updateFaculty = async (updates: Partial<Faculty>): Promise<void> => {
+    if (!authState.faculty) return;
+    const profileRef = doc(db, 'profiles', authState.faculty.id);
+    await updateDoc(profileRef, { ...updates, updatedAt: serverTimestamp() });
+    setAuthState(prev => ({
+      ...prev,
+      faculty: prev.faculty ? { ...prev.faculty, ...updates } : null,
+    }));
+  };
 
   return (
     <AuthContext.Provider value={{ ...authState, login, logout, updateFaculty }}>
@@ -101,8 +108,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
