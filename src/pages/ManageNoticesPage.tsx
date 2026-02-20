@@ -124,10 +124,11 @@ const ManageNoticesPage: React.FC = () => {
               </SelectTrigger>
               <SelectContent className="bg-popover">
                 <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="placement">Placement</SelectItem>
                 <SelectItem value="academic">Academic</SelectItem>
-                <SelectItem value="project">Project</SelectItem>
-                <SelectItem value="spiritual">Spiritual</SelectItem>
+                <SelectItem value="examinations">Examinations</SelectItem>
+                <SelectItem value="placements">Placements</SelectItem>
+                <SelectItem value="events">Events</SelectItem>
+                <SelectItem value="announcements">Announcements</SelectItem>
                 <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>

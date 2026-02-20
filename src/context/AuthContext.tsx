@@ -52,7 +52,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               ...facultyData,
               name: storedName || facultyData.name
             });
-            setAuthState({ isAuthenticated: true, faculty, loading: false });
+            // If it's a shared account, we ONLY consider authenticated if we have a session name
+            setAuthState({
+              isAuthenticated: !!storedName,
+              faculty: storedName ? faculty : null,
+              loading: false
+            });
           } else {
             // Profile doesn't exist yet — create a minimal one
             const newProfile: FirestoreProfile = {
@@ -64,8 +69,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             };
             await setDoc(profileRef, newProfile);
             setAuthState({
-              isAuthenticated: true,
-              faculty: profileToFaculty(user.uid, newProfile),
+              isAuthenticated: !!storedName,
+              faculty: storedName ? profileToFaculty(user.uid, newProfile) : null,
               loading: false,
             });
           }
@@ -91,11 +96,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return false;
       }
 
-      // Log in with shared Firebase account
-      await signInWithEmailAndPassword(auth, sharedEmail, password);
-
-      // Store the name for this session
+      // Store the name for this session BEFORE sign-in to ensure 
+      // the onAuthStateChanged listener picks it up
       sessionStorage.setItem('faculty_name', name);
+
+      // Log in with shared Firebase account
+      const userCredential = await signInWithEmailAndPassword(auth, sharedEmail, password);
+
+      // Manually trigger a profile fetch or update state if listener is slow
+      if (userCredential.user) {
+        const profileRef = doc(db, 'profiles', userCredential.user.uid);
+        const profileSnap = await getDoc(profileRef);
+        if (profileSnap.exists()) {
+          const facultyData = profileSnap.data() as FirestoreProfile;
+          setAuthState({
+            isAuthenticated: true,
+            faculty: profileToFaculty(userCredential.user.uid, {
+              ...facultyData,
+              name: name // Use the fresh name directly
+            }),
+            loading: false
+          });
+        }
+      }
 
       return true;
     } catch (err) {

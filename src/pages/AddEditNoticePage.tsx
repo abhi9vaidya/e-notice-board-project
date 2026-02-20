@@ -117,25 +117,20 @@ const AddEditNoticePage: React.FC = () => {
 
       const dataToSubmit: CreateNoticeInput = {
         ...formData,
-        imageUrl: finalImageUrl,
+        imageUrl: finalImageUrl || "",
         priority: isHighPriority ? "high" : formData.priority,
       };
 
+      let success = false;
       if (editId) {
-        await editNotice(editId, dataToSubmit);
-        toast({
-          title: "Notice Updated",
-          description: "The notice has been successfully updated.",
-        });
+        success = await editNotice(editId, dataToSubmit);
       } else {
-        await addNotice(dataToSubmit);
-        toast({
-          title: "Notice Created",
-          description: "The notice has been successfully created.",
-        });
+        success = await addNotice(dataToSubmit);
       }
 
-      navigate("/manage-notices");
+      if (success) {
+        navigate("/manage-notices");
+      }
     } catch (error) {
       console.error("Submission error:", error);
       toast({
