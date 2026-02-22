@@ -26,7 +26,11 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useNotices } from "@/hooks/useFirebaseNotices";
 import { CreateNoticeInput } from "@/integrations/firebase/noticesService";
-import { Category, Priority } from "@/integrations/firebase/types";
+import { Category, Priority, Template, TemplatePlacement } from "@/integrations/firebase/types";
+import { TVNoticePreview } from "@/components/TVNoticePreview";
+import {
+  ArrowLeftRight
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 
@@ -64,6 +68,7 @@ const AddEditNoticePage: React.FC = () => {
     category: "academic",
     priority: "medium",
     template: "standard",
+    templatePlacement: "left",
     facultyName: faculty?.name || "Faculty",
     facultyId: faculty?.id || "unknown",
     startTime: new Date(),
@@ -96,6 +101,7 @@ const AddEditNoticePage: React.FC = () => {
           category: notice.category,
           priority: notice.priority,
           template: notice.template,
+          templatePlacement: notice.templatePlacement || "left",
           facultyName: notice.facultyName,
           facultyId: notice.facultyId,
           startTime: new Date(notice.startTime),
@@ -281,8 +287,34 @@ const AddEditNoticePage: React.FC = () => {
               </div>
 
               {/* template selection */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">Display Template</Label>
+              <div className="space-y-4 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <Label className="font-bold text-lg">Display Customization</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Placement</span>
+                    <div className="flex bg-muted rounded-lg p-1">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={formData.templatePlacement === "left" ? "default" : "ghost"}
+                        onClick={() => setFormData(prev => ({ ...prev, templatePlacement: "left" }))}
+                        className="h-8 px-3 text-xs"
+                      >
+                        Left
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={formData.templatePlacement === "right" ? "default" : "ghost"}
+                        onClick={() => setFormData(prev => ({ ...prev, templatePlacement: "right" }))}
+                        className="h-8 px-3 text-xs"
+                      >
+                        Right
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {templates.map((tpl) => (
                     <div
@@ -308,6 +340,43 @@ const AddEditNoticePage: React.FC = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* TV Preview Section */}
+              <div className="space-y-4 pt-4">
+                <div className="flex items-center gap-2">
+                  <Tv className="h-5 w-5 text-primary" />
+                  <Label className="font-bold text-lg">TV Preview</Label>
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">1080p View</span>
+                </div>
+
+                <div className="relative aspect-video w-full bg-[#05060a] rounded-2xl overflow-hidden border-4 border-slate-800 shadow-2xl group">
+                  {/* Scaling the internal preview to fit the container 
+                       1792x800 is our internal reference in TVDisplay */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div
+                      className="w-[1792px] h-[800px] shrink-0 origin-center scale-[0.25] sm:scale-[0.35] md:scale-[0.45] xl:scale-[0.5]"
+                    >
+                      <TVNoticePreview
+                        notice={{
+                          ...formData,
+                          priority: isHighPriority ? "high" : formData.priority,
+                          imageUrl: uploadedFile ? URL.createObjectURL(uploadedFile) : formData.imageUrl
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Overlay if image is missing but required */}
+                  {(formData.template === 'split' || formData.template === 'full-image') && !formData.imageUrl && !uploadedFile && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
+                      <p className="text-slate-400 text-sm font-medium">Please upload an image to preview this template</p>
+                    </div>
+                  )}
+                </div>
+                <p className="text-[10px] text-muted-foreground text-center italic uppercase tracking-widest">
+                  * This is how the notice will look on the campus TV displays
+                </p>
               </div>
 
 

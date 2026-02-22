@@ -4,6 +4,7 @@ import { Timestamp } from 'firebase/firestore';
 export type Category = 'academic' | 'examinations' | 'placements' | 'events' | 'announcements' | 'achievements' | 'other';
 export type Priority = 'high' | 'medium' | 'low';
 export type Template = 'standard' | 'split' | 'full-image' | 'text-only' | 'featured';
+export type TemplatePlacement = 'left' | 'right';
 
 // ── Firestore document shapes ──────────────────────────────────────────────────
 
@@ -15,6 +16,7 @@ export interface FirestoreNotice {
     customCategory?: string;
     priority: Priority;
     template: Template;
+    templatePlacement?: TemplatePlacement;
     facultyName: string;
     facultyId: string;
     imageUrl?: string;
@@ -47,6 +49,7 @@ export interface Notice {
     customCategory?: string;
     priority: Priority;
     template: Template;
+    templatePlacement?: TemplatePlacement;
     facultyName: string;
     facultyId: string;
     imageUrl?: string;
