@@ -56,6 +56,18 @@ export const getActiveNotices = async (): Promise<Notice[]> => {
     return snapshot.docs.map(d => toAppNotice(d.id, d.data() as FirestoreNotice));
 };
 
+// get achievements for tv display fallback
+export const getActiveAchievements = async (): Promise<Notice[]> => {
+    const q = query(
+        collection(db, NOTICES_COLLECTION),
+        where('category', '==', 'achievements'),
+        where('isArchived', '==', false),
+        orderBy('createdAt', 'desc'),
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(d => toAppNotice(d.id, d.data() as FirestoreNotice));
+};
+
 // get all notices for dashboard
 export const getAllNotices = async (): Promise<Notice[]> => {
     const q = query(

@@ -3,14 +3,14 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  Briefcase, 
-  GraduationCap, 
-  FileCheck, 
-  Calendar, 
-  FlaskConical, 
-  Users, 
-  Sparkles, 
+import {
+  Briefcase,
+  GraduationCap,
+  FileCheck,
+  Calendar,
+  FlaskConical,
+  Users,
+  Sparkles,
   Trophy,
   ArrowLeft,
   FileText,
@@ -37,8 +37,9 @@ const categoryConfigs: CategoryConfig[] = [
   { id: "research", label: "Research", icon: FlaskConical, color: "text-purple-600", bgColor: "bg-purple-100 dark:bg-purple-900/20", mappedCategory: "project" },
   { id: "alumni", label: "Alumni", icon: Users, color: "text-amber-600", bgColor: "bg-amber-100 dark:bg-amber-900/20", mappedCategory: "other" },
   { id: "spiritual", label: "Spiritual", icon: Sparkles, color: "text-violet-600", bgColor: "bg-violet-100 dark:bg-violet-900/20", mappedCategory: "spiritual" },
-  { id: "achievements", label: "Achievements", icon: Trophy, color: "text-yellow-600", bgColor: "bg-yellow-100 dark:bg-yellow-900/20", mappedCategory: "other" },
+  { id: "achievements", label: "Achievements", icon: Trophy, color: "text-yellow-600", bgColor: "bg-yellow-100 dark:bg-yellow-900/20", mappedCategory: "achievements" },
 ];
+
 
 const CategoriesPage: React.FC = () => {
   const { notices } = useNotices();

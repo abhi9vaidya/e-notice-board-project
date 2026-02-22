@@ -99,3 +99,29 @@ export const useActiveNotices = () => {
 
     return { notices, loading };
 };
+
+// achievements hook for fallback
+import { getActiveAchievements } from '@/integrations/firebase/noticesService';
+
+export const useActiveAchievements = () => {
+    const [achievements, setAchievements] = useState<Notice[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchAchievements = useCallback(async () => {
+        setLoading(true);
+        try {
+            const data = await getActiveAchievements();
+            setAchievements(data);
+        } catch (err) {
+            console.error('Error fetching achievements:', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchAchievements();
+    }, [fetchAchievements]);
+
+    return { achievements, loading };
+};

@@ -1,9 +1,9 @@
 import { Timestamp } from 'firebase/firestore';
 
 // ── Enums ──────────────────────────────────────────────────────────────────────
-export type Category = 'academic' | 'examinations' | 'placements' | 'events' | 'announcements' | 'other';
+export type Category = 'academic' | 'examinations' | 'placements' | 'events' | 'announcements' | 'achievements' | 'other';
 export type Priority = 'high' | 'medium' | 'low';
-export type Template = 'standard' | 'urgent' | 'minimal' | 'featured';
+export type Template = 'standard' | 'split' | 'full-image' | 'text-only' | 'featured';
 
 // ── Firestore document shapes ──────────────────────────────────────────────────
 

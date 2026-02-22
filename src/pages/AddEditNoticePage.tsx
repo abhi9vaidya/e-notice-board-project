@@ -21,7 +21,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarIcon, Upload, Save, X, FileText, Loader2 } from "lucide-react";
+import { CalendarIcon, Upload, Save, X, FileText, Loader2, Zap, Tv, Clock, Sparkles } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useNotices } from "@/hooks/useFirebaseNotices";
@@ -36,8 +36,18 @@ const categories: { value: Category; label: string }[] = [
   { value: "placements", label: "Placements" },
   { value: "events", label: "Events" },
   { value: "announcements", label: "Announcements" },
+  { value: "achievements", label: "Achievements" },
   { value: "other", label: "Other" },
 ];
+
+const templates: { value: Template; label: string; description: string; icon: React.ElementType }[] = [
+  { value: "standard", label: "Standard", description: "Balanced layout with image and text", icon: FileText },
+  { value: "split", label: "Split Screen", description: "Large image on one side, text on other", icon: Zap },
+  { value: "full-image", label: "Full Image", description: "Image-focused with text overlay", icon: Tv },
+  { value: "text-only", label: "Text Only", description: "Large, readable text without images", icon: Clock },
+  { value: "featured", label: "Featured", description: "Special styling for major highlights", icon: Sparkles },
+];
+
 
 const AddEditNoticePage: React.FC = () => {
   const navigate = useNavigate();
@@ -254,7 +264,7 @@ const AddEditNoticePage: React.FC = () => {
 
                 {/* high priority switch */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">High Priority</Label>
+                  <Label className="text-sm font-medium">high Priority</Label>
                   <div className="flex items-center gap-3 h-11 px-3 rounded-md border bg-background">
                     <Switch
                       checked={isHighPriority}
@@ -269,6 +279,37 @@ const AddEditNoticePage: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {/* template selection */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Display Template</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {templates.map((tpl) => (
+                    <div
+                      key={tpl.value}
+                      onClick={() => setFormData(prev => ({ ...prev, template: tpl.value }))}
+                      className={cn(
+                        "cursor-pointer rounded-xl border-2 p-4 transition-all hover:border-primary/50",
+                        formData.template === tpl.value
+                          ? "border-primary bg-primary/5 shadow-sm"
+                          : "border-border bg-card"
+                      )}
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <tpl.icon className={cn(
+                          "h-5 w-5",
+                          formData.template === tpl.value ? "text-primary" : "text-muted-foreground"
+                        )} />
+                        <span className="font-semibold text-sm">{tpl.label}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {tpl.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
 
               {/* date pickers */}
               <div className="grid gap-6 md:grid-cols-2">
