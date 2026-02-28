@@ -45,38 +45,55 @@ const toAppNotice = (id: string, data: FirestoreNotice): Notice => ({
 
 // get active notices
 export const getActiveNotices = async (): Promise<Notice[]> => {
-    const now = Timestamp.now();
     const q = query(
         collection(db, NOTICES_COLLECTION),
-        where('isArchived', '==', false),
-        where('startTime', '<=', now),
-        where('endTime', '>=', now),
-        orderBy('startTime', 'desc'),
+        where('isArchived', '==', false)
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => toAppNotice(d.id, d.data() as FirestoreNotice));
+    const rawNotices = snapshot.docs.map(d => toAppNotice(d.id, d.data() as FirestoreNotice));
+
+    const nowMs = Date.now();
+    return rawNotices
+        .filter(n => n.endTime.getTime() >= nowMs && n.startTime.getTime() <= nowMs)
+        .sort((a, b) => a.endTime.getTime() - b.endTime.getTime());
 };
 
 // get achievements for tv display fallback
 export const getActiveAchievements = async (): Promise<Notice[]> => {
     const q = query(
         collection(db, NOTICES_COLLECTION),
-        where('category', '==', 'achievements'),
-        where('isArchived', '==', false),
-        orderBy('createdAt', 'desc'),
+        where('isArchived', '==', false)
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => toAppNotice(d.id, d.data() as FirestoreNotice));
+    const rawNotices = snapshot.docs.map(d => toAppNotice(d.id, d.data() as FirestoreNotice));
+
+    return rawNotices
+        .filter(n => n.category === 'achievements')
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 };
 
 // get all notices for dashboard
 export const getAllNotices = async (): Promise<Notice[]> => {
     const q = query(
         collection(db, NOTICES_COLLECTION),
-        orderBy('createdAt', 'desc'),
+        where('isArchived', '==', false) // only non-archived for dashboard
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => toAppNotice(d.id, d.data() as FirestoreNotice));
+    const rawNotices = snapshot.docs.map(d => toAppNotice(d.id, d.data() as FirestoreNotice));
+
+    return rawNotices.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+};
+
+// get all archived notices
+export const getArchivedNotices = async (): Promise<Notice[]> => {
+    const q = query(
+        collection(db, NOTICES_COLLECTION),
+        where('isArchived', '==', true)
+    );
+    const snapshot = await getDocs(q);
+    const rawNotices = snapshot.docs.map(d => toAppNotice(d.id, d.data() as FirestoreNotice));
+
+    return rawNotices.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
 };
 
 // get notice by id
@@ -90,19 +107,28 @@ export const getNoticeById = async (id: string): Promise<Notice | null> => {
 // live listener for tv display
 export const subscribeToActiveNotices = (
     callback: (notices: Notice[]) => void,
+    onError?: (error: Error) => void
 ): Unsubscribe => {
-    const now = Timestamp.now();
     const q = query(
         collection(db, NOTICES_COLLECTION),
-        where('isArchived', '==', false),
-        where('startTime', '<=', now),
-        where('endTime', '>=', now),
-        orderBy('startTime', 'desc'),
+        where('isArchived', '==', false)
     );
-    return onSnapshot(q, snapshot => {
-        const notices = snapshot.docs.map(d => toAppNotice(d.id, d.data() as FirestoreNotice));
-        callback(notices);
-    });
+    return onSnapshot(q,
+        snapshot => {
+            const rawNotices = snapshot.docs.map(d => toAppNotice(d.id, d.data() as FirestoreNotice));
+            const nowMs = Date.now();
+
+            const activeNotices = rawNotices
+                .filter(n => n.endTime.getTime() >= nowMs && n.startTime.getTime() <= nowMs)
+                .sort((a, b) => a.endTime.getTime() - b.endTime.getTime());
+
+            callback(activeNotices);
+        },
+        error => {
+            console.error("Error subscribing to active notices:", error);
+            if (onError) onError(error);
+        }
+    );
 };
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
@@ -126,10 +152,16 @@ export const createNotice = async (input: CreateNoticeInput): Promise<string> =>
 // update notice
 export const updateNotice = async (id: string, updates: Partial<CreateNoticeInput>): Promise<void> => {
     const ref = doc(db, NOTICES_COLLECTION, id);
+
+    // Explicitly remove any `undefined` values, as Firestore will throw an error
+    const cleanUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([_, v]) => v !== undefined)
+    );
+
     const data: Partial<FirestoreNotice> = {
-        ...updates,
-        ...(updates.startTime && { startTime: Timestamp.fromDate(updates.startTime) }),
-        ...(updates.endTime && { endTime: Timestamp.fromDate(updates.endTime) }),
+        ...cleanUpdates,
+        ...(cleanUpdates.startTime instanceof Date && { startTime: Timestamp.fromDate(cleanUpdates.startTime) }),
+        ...(cleanUpdates.endTime instanceof Date && { endTime: Timestamp.fromDate(cleanUpdates.endTime) }),
         updatedAt: Timestamp.now(),
     };
     await updateDoc(ref, data);

@@ -62,6 +62,21 @@ const AddEditNoticePage: React.FC = () => {
 
   const { faculty } = useAuth();
 
+  const previewContainerRef = React.useRef<HTMLDivElement>(null);
+  const [previewScale, setPreviewScale] = React.useState(0.25);
+
+  React.useEffect(() => {
+    if (!previewContainerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      const scaleW = width / 1792;
+      const scaleH = height / 800;
+      setPreviewScale(Math.min(scaleW, scaleH));
+    });
+    observer.observe(previewContainerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   const [formData, setFormData] = useState<CreateNoticeInput>({
     title: "",
     description: "",
@@ -350,12 +365,16 @@ const AddEditNoticePage: React.FC = () => {
                   <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">1080p View</span>
                 </div>
 
-                <div className="relative aspect-video w-full bg-[#05060a] rounded-2xl overflow-hidden border-4 border-slate-800 shadow-2xl group">
+                <div
+                  ref={previewContainerRef}
+                  className="relative aspect-video w-full bg-[#05060a] rounded-2xl overflow-hidden border-4 border-slate-800 shadow-2xl group"
+                >
                   {/* Scaling the internal preview to fit the container 
                        1792x800 is our internal reference in TVDisplay */}
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div
-                      className="w-[1792px] h-[800px] shrink-0 origin-center scale-[0.25] sm:scale-[0.35] md:scale-[0.45] xl:scale-[0.5]"
+                      className="w-[1792px] h-[800px] shrink-0 origin-center transition-transform duration-200"
+                      style={{ transform: `scale(${previewScale * 0.95})` }} // 0.95 for tiny padding margin
                     >
                       <TVNoticePreview
                         notice={{
@@ -406,9 +425,13 @@ const AddEditNoticePage: React.FC = () => {
                       <Calendar
                         mode="single"
                         selected={formData.startTime}
-                        onSelect={(date) =>
-                          date && setFormData((prev) => ({ ...prev, startTime: date }))
-                        }
+                        onSelect={(date) => {
+                          if (date) {
+                            const startOfDay = new Date(date);
+                            startOfDay.setHours(0, 0, 0, 0);
+                            setFormData((prev) => ({ ...prev, startTime: startOfDay }));
+                          }
+                        }}
                         initialFocus
                       />
                     </PopoverContent>
@@ -439,9 +462,13 @@ const AddEditNoticePage: React.FC = () => {
                       <Calendar
                         mode="single"
                         selected={formData.endTime}
-                        onSelect={(date) =>
-                          date && setFormData((prev) => ({ ...prev, endTime: date }))
-                        }
+                        onSelect={(date) => {
+                          if (date) {
+                            const endOfDay = new Date(date);
+                            endOfDay.setHours(23, 59, 59, 999);
+                            setFormData((prev) => ({ ...prev, endTime: endOfDay }));
+                          }
+                        }}
                         initialFocus
                       />
                     </PopoverContent>

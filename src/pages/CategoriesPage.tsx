@@ -17,7 +17,7 @@ import {
   Clock
 } from "lucide-react";
 import { format } from "date-fns";
-import { useNotices } from "@/hooks/useNotices";
+import { useNotices } from "@/hooks/useFirebaseNotices";
 import { cn } from "@/lib/utils";
 
 interface CategoryConfig {

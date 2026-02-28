@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Notice, Category, Priority, Template } from '@/types/notice';
-import { NoticeFormData } from '@/hooks/useNotices';
+import { Notice, Category, Priority, Template } from '@/integrations/firebase/types';
+import { NoticeFormData } from '@/hooks/useFirebaseNotices';
 import { useAuth } from '@/context/AuthContext';
 import {
   Dialog,
@@ -81,13 +81,13 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate custom category if "other" is selected
     if (formData.category === 'other' && !formData.customCategory?.trim()) {
       toast.error('Please enter a custom category name');
       return;
     }
-    
+
     onSubmit({
       ...formData,
       facultyName: faculty?.name || 'Unknown Faculty',
@@ -121,7 +121,7 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({
       try {
         const fileType = file.type === 'application/pdf' ? 'pdf' : 'image';
         const extractedText = await extractTextFromFile(base64, fileType);
-        
+
         setFormData(prev => ({ ...prev, description: extractedText }));
         toast.success('Text extracted successfully! Key points have been summarized.');
       } catch (error) {
@@ -183,7 +183,7 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({
                   Extract from Image/PDF
                 </TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="text" className="mt-0">
                 <Textarea
                   id="description"
@@ -194,9 +194,9 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({
                   required
                 />
               </TabsContent>
-              
+
               <TabsContent value="image" className="mt-0 space-y-3">
-                <div 
+                <div
                   className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
                   onClick={() => fileInputRef.current?.click()}
                 >
@@ -208,9 +208,9 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({
                     </div>
                   ) : uploadedImage ? (
                     <div className="space-y-3">
-                      <img 
-                        src={uploadedImage} 
-                        alt="Uploaded" 
+                      <img
+                        src={uploadedImage}
+                        alt="Uploaded"
                         className="max-h-32 mx-auto rounded-lg"
                       />
                       <p className="text-sm text-muted-foreground">Click to upload a different image</p>
@@ -234,7 +234,7 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({
                     onChange={handleImageUploadForOCR}
                   />
                 </div>
-                
+
                 {formData.description && (
                   <div className="space-y-2">
                     <Label className="text-sm text-muted-foreground">Extracted Key Points (editable)</Label>
@@ -269,7 +269,7 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({
                   <SelectItem value="other">Other (Custom)</SelectItem>
                 </SelectContent>
               </Select>
-              
+
               {/* Custom Category Input - shown when "other" is selected */}
               {formData.category === 'other' && (
                 <div className="mt-2">
@@ -384,9 +384,9 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({
             {/* Image Preview */}
             {imagePreview ? (
               <div className="relative mt-2 rounded-lg overflow-hidden border">
-                <img 
-                  src={imagePreview} 
-                  alt="Preview" 
+                <img
+                  src={imagePreview}
+                  alt="Preview"
                   className="w-full h-40 object-cover"
                   onError={() => setImagePreview('')}
                 />

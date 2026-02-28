@@ -11,7 +11,23 @@ import {
     subscribeToActiveNotices,
     type CreateNoticeInput,
 } from '@/integrations/firebase/noticesService';
-import type { Notice } from '@/integrations/firebase/types';
+import type { Notice, Category, Priority, Template, TemplatePlacement } from '@/integrations/firebase/types';
+
+export interface NoticeFormData {
+    title: string;
+    description: string;
+    category: Category;
+    customCategory?: string;
+    priority: Priority;
+    template: Template;
+    templatePlacement?: TemplatePlacement;
+    facultyName: string;
+    facultyId?: string;
+    imageUrl?: string;
+    documentUrl?: string;
+    startTime: Date;
+    endTime: Date;
+}
 
 // faculty notices hook
 
@@ -90,10 +106,17 @@ export const useActiveNotices = () => {
 
     useEffect(() => {
         setLoading(true);
-        const unsubscribe = subscribeToActiveNotices((data) => {
-            setNotices(data);
-            setLoading(false);
-        });
+        const unsubscribe = subscribeToActiveNotices(
+            (data) => {
+                setNotices(data);
+                setLoading(false);
+            },
+            (error) => {
+                console.error("Error in useActiveNotices:", error);
+                setNotices([]);
+                setLoading(false);
+            }
+        );
         return () => unsubscribe();
     }, []);
 

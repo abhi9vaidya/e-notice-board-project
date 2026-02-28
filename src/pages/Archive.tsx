@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useArchive, ArchivedNotice } from '@/hooks/useArchive';
+import { useArchive } from '@/hooks/useArchive';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -24,11 +24,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { 
-  Archive as ArchiveIcon, 
-  Search, 
-  RotateCcw, 
-  Trash2, 
+import {
+  Archive as ArchiveIcon,
+  Search,
+  RotateCcw,
+  Trash2,
   Calendar,
   Filter,
   BarChart3,
@@ -42,14 +42,16 @@ import {
   MoreHorizontal
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { Category, Priority } from '@/types/notice';
+import { Category, Priority, Notice } from '@/integrations/firebase/types';
 import { cn } from '@/lib/utils';
 
-const categoryIcons: Record<Category, React.ReactNode> = {
-  placement: <Briefcase className="h-3 w-3" />,
+const categoryIcons: Record<string, React.ReactNode> = {
   academic: <BookOpen className="h-3 w-3" />,
-  project: <FolderKanban className="h-3 w-3" />,
-  spiritual: <Sparkles className="h-3 w-3" />,
+  examinations: <FolderKanban className="h-3 w-3" />,
+  placements: <Briefcase className="h-3 w-3" />,
+  events: <Sparkles className="h-3 w-3" />,
+  announcements: <BarChart3 className="h-3 w-3" />,
+  achievements: <Sparkles className="h-3 w-3" />,
   other: <MoreHorizontal className="h-3 w-3" />,
 };
 
@@ -60,11 +62,10 @@ const priorityColors: Record<Priority, string> = {
 };
 
 const ArchivePage: React.FC = () => {
-  const navigate = useNavigate();
   const { archivedNotices, restoreNotice, deleteFromArchive, clearArchive, getArchiveStats } = useArchive();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<Category | 'all'>('all');
-  const [sortBy, setSortBy] = useState<'archivedAt' | 'createdAt'>('archivedAt');
+  const [sortBy, setSortBy] = useState<'updatedAt' | 'createdAt'>('updatedAt');
 
   const stats = getArchiveStats();
 
@@ -81,7 +82,7 @@ const ArchivePage: React.FC = () => {
       return dateB - dateA;
     });
 
-  const handleRestore = (notice: ArchivedNotice) => {
+  const handleRestore = (notice: Notice) => {
     restoreNotice(notice.id);
   };
 
@@ -110,8 +111,8 @@ const ArchivePage: React.FC = () => {
                   <Briefcase className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{stats.byCategory.placement || 0}</p>
-                  <p className="text-sm text-muted-foreground">Placement</p>
+                  <p className="text-2xl font-bold">{stats.byCategory.placements || 0}</p>
+                  <p className="text-sm text-muted-foreground">Placements</p>
                 </div>
               </div>
             </CardContent>
@@ -136,8 +137,8 @@ const ArchivePage: React.FC = () => {
                   <FolderKanban className="h-5 w-5 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{stats.byCategory.project || 0}</p>
-                  <p className="text-sm text-muted-foreground">Projects</p>
+                  <p className="text-2xl font-bold">{stats.byCategory.examinations || 0}</p>
+                  <p className="text-sm text-muted-foreground">Examinations</p>
                 </div>
               </div>
             </CardContent>
@@ -165,20 +166,22 @@ const ArchivePage: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
                     <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="placement">Placement</SelectItem>
                     <SelectItem value="academic">Academic</SelectItem>
-                    <SelectItem value="project">Project</SelectItem>
-                    <SelectItem value="spiritual">Spiritual</SelectItem>
+                    <SelectItem value="examinations">Examinations</SelectItem>
+                    <SelectItem value="placements">Placements</SelectItem>
+                    <SelectItem value="events">Events</SelectItem>
+                    <SelectItem value="announcements">Announcements</SelectItem>
+                    <SelectItem value="achievements">Achievements</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={sortBy} onValueChange={(v) => setSortBy(v as 'archivedAt' | 'createdAt')}>
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as 'updatedAt' | 'createdAt')}>
                   <SelectTrigger className="w-40">
                     <Calendar className="h-4 w-4 mr-2" />
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
-                    <SelectItem value="archivedAt">Archived Date</SelectItem>
+                    <SelectItem value="updatedAt">Archived Date</SelectItem>
                     <SelectItem value="createdAt">Created Date</SelectItem>
                   </SelectContent>
                 </Select>
@@ -218,7 +221,7 @@ const ArchivePage: React.FC = () => {
               <ArchiveIcon className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
               <h3 className="text-lg font-medium mb-2">No Archived Notices</h3>
               <p className="text-muted-foreground">
-                {searchQuery || categoryFilter !== 'all' 
+                {searchQuery || categoryFilter !== 'all'
                   ? 'No notices match your search criteria.'
                   : 'Deleted notices will appear here for recovery.'}
               </p>
@@ -233,25 +236,25 @@ const ArchivePage: React.FC = () => {
                     {/* Image */}
                     {notice.imageUrl && (
                       <div className="w-full md:w-32 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                        <img 
-                          src={notice.imageUrl} 
+                        <img
+                          src={notice.imageUrl}
                           alt={notice.title}
                           className="w-full h-full object-cover"
                         />
                       </div>
                     )}
-                    
+
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-2">
                         <Badge variant="outline" className={cn(
                           'gap-1',
-                          notice.category === 'placement' && 'bg-primary/10 text-primary border-primary/20',
+                          notice.category === 'placements' && 'bg-primary/10 text-primary border-primary/20',
                           notice.category === 'academic' && 'bg-secondary/80 text-secondary-foreground',
-                          notice.category === 'project' && 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-                          notice.category === 'spiritual' && 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
+                          (notice.category === 'examinations' || notice.category === 'events' || notice.category === 'achievements') && 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+                          notice.category === 'announcements' && 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
                         )}>
-                          {categoryIcons[notice.category]}
+                          {categoryIcons[notice.category] || categoryIcons.other}
                           <span className="capitalize">{notice.category}</span>
                         </Badge>
                         <Badge variant="outline" className={priorityColors[notice.priority]}>
@@ -259,10 +262,10 @@ const ArchivePage: React.FC = () => {
                           {notice.priority.charAt(0).toUpperCase() + notice.priority.slice(1)}
                         </Badge>
                       </div>
-                      
+
                       <h3 className="font-semibold text-lg mb-1 line-clamp-1">{notice.title}</h3>
                       <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{notice.description}</p>
-                      
+
                       <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <User className="h-3 w-3" />
@@ -274,15 +277,15 @@ const ArchivePage: React.FC = () => {
                         </span>
                         <span className="flex items-center gap-1">
                           <ArchiveIcon className="h-3 w-3" />
-                          Archived: {format(new Date(notice.archivedAt), 'MMM d, yyyy')}
+                          Archived: {format(new Date(notice.updatedAt), 'MMM d, yyyy')}
                         </span>
                       </div>
                     </div>
-                    
+
                     {/* Actions */}
                     <div className="flex md:flex-col gap-2 flex-shrink-0">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => handleRestore(notice)}
                         className="flex-1 md:flex-none"
@@ -292,8 +295,8 @@ const ArchivePage: React.FC = () => {
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             className="flex-1 md:flex-none text-destructive hover:bg-destructive hover:text-destructive-foreground"
                           >
@@ -310,7 +313,7 @@ const ArchivePage: React.FC = () => {
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction 
+                            <AlertDialogAction
                               onClick={() => deleteFromArchive(notice.id)}
                               className="bg-destructive text-destructive-foreground"
                             >

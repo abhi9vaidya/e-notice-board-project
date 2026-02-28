@@ -36,8 +36,9 @@ const TVDisplay: React.FC = () => {
   }, []);
 
   const displayItems = useMemo(() => {
+    let items = [];
     if (activeNotices && activeNotices.length > 0) {
-      return activeNotices.sort((a, b) => {
+      items = [...activeNotices].sort((a, b) => {
         const priorityOrder = { high: 0, medium: 1, low: 2 };
         if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
           return priorityOrder[a.priority] - priorityOrder[b.priority];
@@ -45,16 +46,28 @@ const TVDisplay: React.FC = () => {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
     }
-    return achievements || [];
+
+    if (achievements && achievements.length > 0) {
+      items = [...items, ...achievements];
+    }
+
+    return items;
   }, [activeNotices, achievements]);
 
   useEffect(() => {
     if (displayItems.length <= 1) return;
-    const interval = setInterval(() => {
+
+    const currentItem = displayItems[currentIndex];
+    // Base time: 10s. Add 1s per 30 characters of description + title. Max limit 45s.
+    const textLength = (currentItem?.title?.length || 0) + (currentItem?.description?.length || 0);
+    const calculatedDuration = Math.min(Math.max(10, 10 + Math.floor(textLength / 30)), 45) * 1000;
+
+    const timer = setTimeout(() => {
       setCurrentIndex((p) => (p + 1) % displayItems.length);
-    }, 12000);
-    return () => clearInterval(interval);
-  }, [displayItems.length]);
+    }, calculatedDuration);
+
+    return () => clearTimeout(timer);
+  }, [displayItems, currentIndex]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);

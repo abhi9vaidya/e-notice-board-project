@@ -51,12 +51,14 @@ const ManageNoticesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<Category | "all">("all");
 
+  const nowMs = Date.now();
   const filteredNotices = notices.filter((notice) => {
     const matchesSearch = notice.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       notice.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === "all" || notice.category === categoryFilter;
     const isNotArchived = !notice.isArchived;
-    return matchesSearch && matchesCategory && isNotArchived;
+    const isActive = notice.endTime.getTime() >= nowMs;
+    return matchesSearch && matchesCategory && isNotArchived && isActive;
   });
 
   const getCategoryBadge = (category: string) => {

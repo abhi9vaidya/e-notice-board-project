@@ -22,7 +22,12 @@ const Dashboard: React.FC = () => {
     navigate(`/add-notice?edit=${notice.id}`);
   };
 
-  const filteredNotices = notices.filter(n => selectedCategory === 'all' || n.category === selectedCategory && !n.isArchived);
+  const nowMs = Date.now();
+  const filteredNotices = notices.filter(n =>
+    (selectedCategory === 'all' || n.category === selectedCategory)
+    && !n.isArchived
+    && n.endTime.getTime() >= nowMs
+  );
 
   // stats for cards
   const activeNotices = filteredNotices.length;
