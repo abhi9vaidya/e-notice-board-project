@@ -21,7 +21,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarIcon, Upload, Save, X, FileText, Loader2, Zap, Tv, Clock, Sparkles } from "lucide-react";
+import { CalendarIcon, Upload, Save, X, FileText, Loader2, Zap, Tv, Clock, Sparkles, Trophy, Info } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useNotices } from "@/hooks/useFirebaseNotices";
@@ -61,6 +61,7 @@ const AddEditNoticePage: React.FC = () => {
   const { toast } = useToast();
 
   const { faculty } = useAuth();
+  const isAchievement = formData.category === 'achievements';
 
   const previewContainerRef = React.useRef<HTMLDivElement>(null);
   const [previewScale, setPreviewScale] = React.useState(0.25);
@@ -190,16 +191,29 @@ const AddEditNoticePage: React.FC = () => {
         <Card className="shadow-lg">
           <CardHeader className="border-b bg-muted/30">
             <CardTitle className="flex items-center gap-2 text-xl">
-              <FileText className="h-5 w-5 text-primary" />
-              Notice Details
+              {isAchievement
+                ? <Trophy className="h-5 w-5 text-yellow-500" />
+                : <FileText className="h-5 w-5 text-primary" />}
+              {isAchievement ? 'Achievement Details' : 'Notice Details'}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
+
+              {/* Achievement info banner */}
+              {isAchievement && (
+                <div className="flex items-start gap-3 rounded-xl border border-yellow-500/30 bg-yellow-500/5 px-4 py-3">
+                  <Trophy className="h-4 w-4 text-yellow-500 mt-0.5 shrink-0" />
+                  <p className="text-sm text-yellow-200/80 leading-relaxed">
+                    Achievements are shown in the <span className="font-bold text-yellow-400">Student Spotlight</span> panel on TV displays — not in the main notice rotation. Fill in the title and a short description of the achievement.
+                  </p>
+                </div>
+              )}
+
               {/* title field */}
               <div className="space-y-2">
                 <Label htmlFor="title" className="text-sm font-medium">
-                  Notice Title <span className="text-destructive">*</span>
+                  {isAchievement ? 'Achievement Title' : 'Notice Title'} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="title"
@@ -207,7 +221,7 @@ const AddEditNoticePage: React.FC = () => {
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, title: e.target.value }))
                   }
-                  placeholder="Enter notice title"
+                  placeholder={isAchievement ? 'e.g. 1st Place at TechFest 2026' : 'Enter notice title'}
                   required
                   className="h-11"
                 />
@@ -216,7 +230,7 @@ const AddEditNoticePage: React.FC = () => {
               {/* details field */}
               <div className="space-y-2">
                 <Label htmlFor="description" className="text-sm font-medium">
-                  Description <span className="text-destructive">*</span>
+                  {isAchievement ? 'Achievement Description' : 'Description'} <span className="text-destructive">*</span>
                 </Label>
                 <Textarea
                   id="description"
@@ -224,7 +238,7 @@ const AddEditNoticePage: React.FC = () => {
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, description: e.target.value }))
                   }
-                  placeholder="Enter detailed description..."
+                  placeholder={isAchievement ? 'Brief description, e.g. Won 1st place competing against 200+ teams...' : 'Enter detailed description...'}
                   required
                   rows={5}
                   className="resize-none"
@@ -301,7 +315,8 @@ const AddEditNoticePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* template selection */}
+              {/* template selection — hidden for achievements since they always use the gold card */}
+              {!isAchievement && (
               <div className="space-y-4 pt-4 border-t">
                 <div className="flex items-center justify-between">
                   <Label className="font-bold text-lg">Display Customization</Label>
@@ -356,13 +371,24 @@ const AddEditNoticePage: React.FC = () => {
                   ))}
                 </div>
               </div>
+              )}
 
               {/* TV Preview Section */}
               <div className="space-y-4 pt-4">
                 <div className="flex items-center gap-2">
-                  <Tv className="h-5 w-5 text-primary" />
-                  <Label className="font-bold text-lg">TV Preview</Label>
-                  <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">1080p View</span>
+                  {isAchievement ? (
+                    <>
+                      <Trophy className="h-5 w-5 text-yellow-500" />
+                      <Label className="font-bold text-lg">Achievement Preview</Label>
+                      <span className="text-xs bg-yellow-500/10 text-yellow-400 px-2 py-0.5 rounded-full font-bold">Student Spotlight</span>
+                    </>
+                  ) : (
+                    <>
+                      <Tv className="h-5 w-5 text-primary" />
+                      <Label className="font-bold text-lg">TV Preview</Label>
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">1080p View</span>
+                    </>
+                  )}
                 </div>
 
                 <div
@@ -394,7 +420,9 @@ const AddEditNoticePage: React.FC = () => {
                   )}
                 </div>
                 <p className="text-[10px] text-muted-foreground text-center italic uppercase tracking-widest">
-                  * This is how the notice will look on the campus TV displays
+                  {isAchievement
+                    ? '* Shown in the Student Spotlight sidebar on campus TV displays'
+                    : '* This is how the notice will look on the campus TV displays'}
                 </p>
               </div>
 
@@ -498,9 +526,9 @@ const AddEditNoticePage: React.FC = () => {
                       Uploading...
                     </>
                   ) : editId ? (
-                    "Update Notice"
+                    isAchievement ? 'Update Achievement' : 'Update Notice'
                   ) : (
-                    "Create Notice"
+                    isAchievement ? 'Add Achievement' : 'Create Notice'
                   )}
                 </Button>
               </div>
