@@ -224,21 +224,34 @@ const TVDisplay: React.FC = () => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.4 }}
-                  className="flex-1 flex flex-col justify-center min-h-0"
+                  className="flex-1 flex flex-col min-h-0 gap-3"
                 >
-                  <p className="text-base font-black text-white leading-snug mb-1 line-clamp-2">
-                    {spotlight.title}
-                  </p>
-                  {spotlight.description && (
-                    <p className="text-[0.75rem] text-yellow-100/60 leading-relaxed line-clamp-3 mt-1">
-                      {spotlight.description}
-                    </p>
+                  {/* Image — shown when available */}
+                  {spotlight.imageUrl && (
+                    <div className="w-full rounded-xl overflow-hidden shrink-0 border border-yellow-400/10"
+                      style={{ aspectRatio: '16/9' }}>
+                      <img
+                        src={spotlight.imageUrl}
+                        alt={spotlight.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                   )}
-                  {spotlight.facultyName && (
-                    <p className="text-[0.65rem] text-slate-600 font-bold uppercase tracking-widest mt-3">
-                      {spotlight.facultyName}
+                  <div className="flex-1 flex flex-col justify-center min-h-0">
+                    <p className="text-base font-black text-white leading-snug mb-1 line-clamp-2">
+                      {spotlight.title}
                     </p>
-                  )}
+                    {spotlight.description && (
+                      <p className="text-[0.75rem] text-yellow-100/60 leading-relaxed line-clamp-3 mt-1">
+                        {spotlight.description}
+                      </p>
+                    )}
+                    {spotlight.facultyName && (
+                      <p className="text-[0.65rem] text-slate-600 font-bold uppercase tracking-widest mt-3">
+                        {spotlight.facultyName}
+                      </p>
+                    )}
+                  </div>
                 </motion.div>
               ) : (
                 <motion.div
