@@ -22,15 +22,14 @@ const TVDisplay: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [progressKey, setProgressKey] = useState(0);
 
-  // All display items: priority-sorted notices then achievements
+  // Main slide items: notices only (achievements live exclusively in the sidebar spotlight)
   const displayItems = useMemo(() => {
-    const notices = [...(activeNotices ?? [])].sort((a, b) => {
+    return [...(activeNotices ?? [])].sort((a, b) => {
       const p: Record<string, number> = { high: 0, medium: 1, low: 2 };
       if (p[a.priority] !== p[b.priority]) return p[a.priority] - p[b.priority];
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
-    return [...notices, ...(achievements ?? [])];
-  }, [activeNotices, achievements]);
+  }, [activeNotices]);
 
   // Upcoming events (category === 'events', end in future), up to 4
   const upcomingEvents = useMemo(() => {
