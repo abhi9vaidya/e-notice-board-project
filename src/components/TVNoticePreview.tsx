@@ -67,7 +67,64 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
         !isHero && "p-4"
     );
 
+    // Achievement notices get their own gold treatment regardless of template
+    if (category === 'achievements') {
+        return (
+            <div className={containerClass}>
+                <div className="h-full rounded-[2.5rem] relative overflow-hidden border border-yellow-400/20"
+                    style={{ background: 'linear-gradient(135deg, #1a1200 0%, #0f0a00 50%, #12100a 100%)' }}>
+                    {/* Subtle radial glow */}
+                    <div className="absolute inset-0 pointer-events-none"
+                        style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 20%, rgba(250,204,21,0.08) 0%, transparent 70%)' }} />
+                    {/* Background trophy watermark */}
+                    <Trophy className="absolute right-16 top-1/2 -translate-y-1/2 h-80 w-80 text-yellow-400/5 pointer-events-none" />
+                    <div className="relative z-10 h-full flex flex-col p-14 justify-between">
+                        {/* Top badge */}
+                        <div className="flex items-center gap-4 shrink-0">
+                            <div className="flex items-center gap-2.5 px-5 py-2 rounded-full border border-yellow-400/30 bg-yellow-400/10">
+                                <Trophy className="h-5 w-5 text-yellow-400" />
+                                <span className="text-yellow-400 font-black uppercase tracking-widest text-sm">Achievement</span>
+                            </div>
+                        </div>
+                        {/* Main content */}
+                        <div className="flex-1 flex flex-col justify-center min-h-0">
+                            <h1 className="text-[5.5rem] font-black text-white leading-[1.0] tracking-tight mb-6"
+                                style={{ textShadow: '0 0 60px rgba(250,204,21,0.15)' }}>
+                                {notice.title || 'Achievement'}
+                            </h1>
+                            <div className="w-24 h-1 rounded-full bg-yellow-400/50 mb-8" />
+                            <div className="overflow-hidden max-h-48 relative">
+                                <AutoScrollText
+                                    className="text-2xl text-yellow-100/60 leading-relaxed"
+                                    content={notice.description || ''}
+                                />
+                            </div>
+                        </div>
+                        {/* Footer */}
+                        <div className="flex items-center justify-between shrink-0 pt-8 border-t border-yellow-400/10">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-yellow-400/10 flex items-center justify-center">
+                                    <User className="h-5 w-5 text-yellow-400/60" />
+                                </div>
+                                <div>
+                                    <p className="text-xs uppercase tracking-widest font-bold text-yellow-400/40">Issued By</p>
+                                    <p className="text-lg font-bold text-white/80">{notice.facultyName || 'Faculty'}</p>
+                                </div>
+                            </div>
+                            {notice.endTime && (
+                                <p className="text-sm font-bold text-yellow-400/40 uppercase tracking-widest">
+                                    {format(new Date(notice.endTime), 'dd MMM yyyy')}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     switch (template) {
+        // Urgent high-priority notices get a red pulse ring treatment added to the outer wrapper below
         case 'split': {
             const isRight = placement === 'right';
             return (
