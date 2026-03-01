@@ -26,6 +26,8 @@ export interface FirestoreNotice {
     createdAt: Timestamp;
     updatedAt: Timestamp;
     isArchived: boolean;
+    showIssuedBy?: boolean;
+    showValidTill?: boolean;
 }
 
 /** Shape stored in Firestore `profiles` collection */
@@ -61,6 +63,8 @@ export interface Notice {
     createdAt: Date;
     updatedAt: Date;
     isArchived: boolean;
+    showIssuedBy?: boolean;
+    showValidTill?: boolean;
 }
 
 export interface Faculty {

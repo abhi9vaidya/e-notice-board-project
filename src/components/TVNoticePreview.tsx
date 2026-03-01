@@ -50,25 +50,33 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
         </div>
     );
 
-    const footer = (
+    const showIssuedBy = notice.showIssuedBy !== false;
+    const showValidTill = notice.showValidTill !== false;
+    const hasFooter = showIssuedBy || showValidTill;
+
+    const footer = hasFooter ? (
         <div className="mt-auto pt-10 border-t border-white/5 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
-                    <User className="h-6 w-6 text-slate-400" />
+            {showIssuedBy ? (
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
+                        <User className="h-6 w-6 text-slate-400" />
+                    </div>
+                    <div>
+                        <p className="text-xs uppercase tracking-[0.2em] font-bold text-slate-500">Issued By</p>
+                        <p className="text-xl font-bold text-white">{notice.facultyName || 'Faculty Name'}</p>
+                    </div>
                 </div>
-                <div>
-                    <p className="text-xs uppercase tracking-[0.2em] font-bold text-slate-500">Issued By</p>
-                    <p className="text-xl font-bold text-white">{notice.facultyName || 'Faculty Name'}</p>
+            ) : <div />}
+            {showValidTill ? (
+                <div className="text-right">
+                    <p className="text-xs uppercase tracking-[0.2em] font-bold text-slate-500">Valid Till</p>
+                    <p className="text-xl font-bold text-white">
+                        {notice.endTime ? format(new Date(notice.endTime), 'dd MMM yyyy') : 'DD MMM YYYY'}
+                    </p>
                 </div>
-            </div>
-            <div className="text-right">
-                <p className="text-xs uppercase tracking-[0.2em] font-bold text-slate-500">Valid Till</p>
-                <p className="text-xl font-bold text-white">
-                    {notice.endTime ? format(new Date(notice.endTime), 'dd MMM yyyy') : 'DD MMM YYYY'}
-                </p>
-            </div>
+            ) : <div />}
         </div>
-    );
+    ) : null;
 
     const containerClass = cn(
         "h-full w-full text-white font-sans",

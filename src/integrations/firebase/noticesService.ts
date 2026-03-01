@@ -39,6 +39,8 @@ const toAppNotice = (id: string, data: FirestoreNotice): Notice => ({
     createdAt: data.createdAt.toDate(),
     updatedAt: data.updatedAt.toDate(),
     isArchived: data.isArchived ?? false,
+    showIssuedBy: data.showIssuedBy !== false,
+    showValidTill: data.showValidTill !== false,
 });
 
 // ── Queries ────────────────────────────────────────────────────────────────────

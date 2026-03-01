@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { uploadNoticeFile } from "@/integrations/firebase/storageService";
+import { uploadToCloudinary } from "@/integrations/cloudinary/cloudinaryService";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -89,6 +89,8 @@ const AddEditNoticePage: React.FC = () => {
     startTime: new Date(),
     endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     isArchived: false,
+    showIssuedBy: true,
+    showValidTill: true,
   });
 
   // update name if context changes
@@ -126,6 +128,8 @@ const AddEditNoticePage: React.FC = () => {
           imageUrl: notice.imageUrl,
           customCategory: notice.customCategory,
           isArchived: notice.isArchived,
+          showIssuedBy: notice.showIssuedBy !== false,
+          showValidTill: notice.showValidTill !== false,
         });
         setIsHighPriority(notice.priority === "high");
       }
@@ -146,7 +150,7 @@ const AddEditNoticePage: React.FC = () => {
           description: 'Please wait while we save your file...',
         });
         setUploadProgress(0);
-        finalImageUrl = await uploadNoticeFile(uploadedFile, setUploadProgress);
+        finalImageUrl = await uploadToCloudinary(uploadedFile, setUploadProgress);
       }
 
       const dataToSubmit: CreateNoticeInput = {
@@ -327,6 +331,32 @@ const AddEditNoticePage: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Show/hide footer fields */}
+              {!isAchievement && (
+                <div className="flex items-center gap-4 pt-2">
+                  <div className="flex items-center gap-2.5 h-9 px-3 rounded-md border bg-background">
+                    <Switch
+                      id="show-issued-by"
+                      checked={formData.showIssuedBy !== false}
+                      onCheckedChange={(v) => setFormData(prev => ({ ...prev, showIssuedBy: v }))}
+                    />
+                    <Label htmlFor="show-issued-by" className="text-sm cursor-pointer select-none">
+                      Show &ldquo;Issued By&rdquo;
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2.5 h-9 px-3 rounded-md border bg-background">
+                    <Switch
+                      id="show-valid-till"
+                      checked={formData.showValidTill !== false}
+                      onCheckedChange={(v) => setFormData(prev => ({ ...prev, showValidTill: v }))}
+                    />
+                    <Label htmlFor="show-valid-till" className="text-sm cursor-pointer select-none">
+                      Show &ldquo;Valid Till&rdquo;
+                    </Label>
+                  </div>
+                </div>
+              )}
 
               {/* template selection — hidden for achievements since they always use the gold card */}
               {!isAchievement && (
