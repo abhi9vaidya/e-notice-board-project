@@ -24,8 +24,16 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
     const template = notice.template as Template || 'standard';
     const placement = notice.templatePlacement || 'left';
 
+    // Adaptive title font size — shrinks for longer titles so description stays visible
+    const titleLen = (notice.title || '').length;
+    const titleSize =
+        titleLen > 100 ? 'text-[2.6rem]' :
+        titleLen > 70  ? 'text-[3.2rem]' :
+        titleLen > 45  ? 'text-[4rem]'   :
+                         'text-[5.5rem]';
+
     const header = (
-        <div className="flex items-center gap-6 mb-12 shrink-0">
+        <div className="flex items-center gap-6 mb-8 shrink-0">
             <div
                 className="flex items-center gap-3 px-6 py-2 rounded-full text-white font-bold text-lg"
                 style={{ backgroundColor: config.accent }}
@@ -134,7 +142,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                     <div className="h-full grid grid-cols-5 gap-16">
                         <div className={cn("col-span-3 flex flex-col h-full py-6 min-h-0", isRight && "order-2")}>
                             {header}
-                            <h1 className="text-[5.5rem] font-bold text-white leading-[1.05] tracking-tight mb-8 shrink-0">
+                        <h1 className={cn("font-bold text-white leading-[1] tracking-tight mb-10 shrink-0 line-clamp-3", titleSize)}>
                                 {notice.title || 'Notice Title'}
                             </h1>
                             <div className="flex-1 overflow-hidden min-h-0 relative">
@@ -177,7 +185,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                             <div className="px-6 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white font-bold mb-8">
                                 {notice.customCategory || config.label}
                             </div>
-                            <h1 className="text-8xl font-bold text-white leading-tight mb-6 drop-shadow-xl">
+                            <h1 className={cn("font-bold text-white leading-tight mb-6 drop-shadow-xl line-clamp-3", titleSize)}>
                                 {notice.title || 'Notice Title'}
                             </h1>
                             <div className="max-h-48 overflow-hidden w-full relative">
@@ -206,7 +214,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                 <div className={containerClass}>
                     <div className="h-full flex flex-col items-center justify-center text-center max-w-6xl mx-auto py-10">
                         {header}
-                        <h1 className="text-[6.5rem] font-bold text-white leading-[1] tracking-tight mb-12 shrink-0">
+                        <h1 className={cn("font-bold text-white leading-[1] tracking-tight mb-10 shrink-0 line-clamp-3", titleSize)}>
                             {notice.title || 'Notice Title'}
                         </h1>
                         <div className="w-32 h-1 mb-12 shrink-0" style={{ backgroundColor: config.accent }} />
@@ -234,7 +242,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                         </div>
                         <div className="relative z-10 h-full flex flex-col">
                             <div className="text-primary font-black uppercase tracking-[0.4em] mb-4 shrink-0">Featured Update</div>
-                            <h1 className="text-8xl font-bold text-white mb-10 leading-tight shrink-0">
+                            <h1 className={cn("font-bold text-white mb-10 leading-tight shrink-0 line-clamp-3", titleSize)}>
                                 {notice.title || 'Notice Title'}
                             </h1>
                             <div className="flex-1 overflow-hidden pr-10 min-h-0 relative">
@@ -267,7 +275,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                         {header}
                         <div className={cn("flex-1 min-h-0 flex items-center gap-20", isStandardRight && "flex-row-reverse")}>
                             <div className="flex-1 flex flex-col min-h-0 h-full justify-center">
-                                <h1 className="text-[6rem] font-bold text-white leading-[1] tracking-tight mb-10 shrink-0">
+                                <h1 className={cn("font-bold text-white leading-[1] tracking-tight mb-10 shrink-0 line-clamp-3", titleSize)}>
                                     {notice.title || 'Notice Title'}
                                 </h1>
                                 <div className="flex-1 min-h-0 overflow-hidden relative max-h-[400px]">
