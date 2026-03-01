@@ -72,36 +72,38 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
         return (
             <div className={containerClass}>
                 <div className="h-full rounded-[2.5rem] relative overflow-hidden border border-yellow-400/20"
-                    style={{ background: 'linear-gradient(135deg, #1a1200 0%, #0f0a00 50%, #12100a 100%)' }}>
-                    {/* Subtle radial glow */}
+                    style={{ background: 'linear-gradient(135deg, #1a1200 0%, #0f0a00 60%, #12100a 100%)' }}>
+                    {/* Radial glow top-center */}
                     <div className="absolute inset-0 pointer-events-none"
-                        style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 20%, rgba(250,204,21,0.08) 0%, transparent 70%)' }} />
-                    {/* Background trophy watermark */}
-                    <Trophy className="absolute right-16 top-1/2 -translate-y-1/2 h-80 w-80 text-yellow-400/5 pointer-events-none" />
-                    <div className="relative z-10 h-full flex flex-col p-14 justify-between">
+                        style={{ background: 'radial-gradient(ellipse 70% 55% at 40% 40%, rgba(250,204,21,0.1) 0%, transparent 70%)' }} />
+                    {/* Trophy watermark — centered right half */}
+                    <Trophy className="absolute right-20 top-1/2 -translate-y-1/2 h-[26rem] w-[26rem] text-yellow-400/[0.07] pointer-events-none select-none" />
+                    <div className="relative z-10 h-full flex flex-col p-14">
                         {/* Top badge */}
-                        <div className="flex items-center gap-4 shrink-0">
+                        <div className="flex items-center gap-4 shrink-0 mb-10">
                             <div className="flex items-center gap-2.5 px-5 py-2 rounded-full border border-yellow-400/30 bg-yellow-400/10">
                                 <Trophy className="h-5 w-5 text-yellow-400" />
                                 <span className="text-yellow-400 font-black uppercase tracking-widest text-sm">Achievement</span>
                             </div>
                         </div>
-                        {/* Main content */}
+                        {/* Main content — takes remaining space */}
                         <div className="flex-1 flex flex-col justify-center min-h-0">
-                            <h1 className="text-[5.5rem] font-black text-white leading-[1.0] tracking-tight mb-6"
-                                style={{ textShadow: '0 0 60px rgba(250,204,21,0.15)' }}>
+                            <h1 className="text-[5.5rem] font-black text-white leading-[1.0] tracking-tight mb-5"
+                                style={{ textShadow: '0 0 80px rgba(250,204,21,0.2)' }}>
                                 {notice.title || 'Achievement'}
                             </h1>
-                            <div className="w-24 h-1 rounded-full bg-yellow-400/50 mb-8" />
-                            <div className="overflow-hidden max-h-48 relative">
-                                <AutoScrollText
-                                    className="text-2xl text-yellow-100/60 leading-relaxed"
-                                    content={notice.description || ''}
-                                />
-                            </div>
+                            <div className="w-20 h-[3px] rounded-full bg-yellow-400/60 mb-6" />
+                            {notice.description && (
+                                <div className="overflow-hidden max-h-40 relative">
+                                    <AutoScrollText
+                                        className="text-[1.6rem] text-yellow-100/80 leading-relaxed font-medium"
+                                        content={notice.description}
+                                    />
+                                </div>
+                            )}
                         </div>
                         {/* Footer */}
-                        <div className="flex items-center justify-between shrink-0 pt-8 border-t border-yellow-400/10">
+                        <div className="flex items-center justify-between shrink-0 pt-6 border-t border-yellow-400/10">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full bg-yellow-400/10 flex items-center justify-center">
                                     <User className="h-5 w-5 text-yellow-400/60" />

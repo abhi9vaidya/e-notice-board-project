@@ -139,7 +139,7 @@ const TVDisplay: React.FC = () => {
       </header>
 
       {/* Slide progress bar */}
-      <div className="h-px bg-white/5 shrink-0 relative overflow-hidden">
+      <div className="h-[3px] bg-white/5 shrink-0 relative overflow-hidden">
         <motion.div
           key={`${progressKey}-${currentIndex}`}
           className="absolute inset-y-0 left-0 bg-primary"
@@ -252,8 +252,8 @@ const TVDisplay: React.FC = () => {
             </div>
           )}
 
-          {/* Quote of the Day */}
-          <div className="mt-auto p-4 border-t border-white/5 shrink-0">
+          {/* Quote of the Day — fills remaining space, no hard mt-auto gap */}
+          <div className="flex-1 flex flex-col justify-end p-4 border-t border-white/5">
             <p className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-600 mb-2.5">
               Quote of the Day
             </p>
