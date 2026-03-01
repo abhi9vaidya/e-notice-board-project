@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { uploadToGoogleDrive } from "@/integrations/google/googleDriveService";
+import { uploadNoticeFile } from "@/integrations/firebase/storageService";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -106,6 +106,7 @@ const AddEditNoticePage: React.FC = () => {
   const isAchievement = formData.category === 'achievements';
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
     if (editId) {
@@ -141,10 +142,11 @@ const AddEditNoticePage: React.FC = () => {
       // check for new file upload
       if (uploadedFile) {
         toast({
-          title: "Uploading file",
-          description: "Please wait while we save your file to Google Drive...",
+          title: 'Uploading file',
+          description: 'Please wait while we save your file...',
         });
-        finalImageUrl = await uploadToGoogleDrive(uploadedFile);
+        setUploadProgress(0);
+        finalImageUrl = await uploadNoticeFile(uploadedFile, setUploadProgress);
       }
 
       const dataToSubmit: CreateNoticeInput = {
@@ -262,12 +264,23 @@ const AddEditNoticePage: React.FC = () => {
                   >
                     <Upload className="h-10 w-10 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">
-                      {uploadedFile ? uploadedFile.name : "Click to upload or drag and drop"}
+                      {uploadedFile ? uploadedFile.name : 'Click to upload or drag and drop'}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       PDF, JPG, PNG up to 10MB
                     </span>
                   </label>
+                  {isUploading && uploadedFile && (
+                    <div className="mt-3 w-full">
+                      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary transition-all duration-200 rounded-full"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground text-center mt-1">{uploadProgress}%</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
