@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useActiveNotices, useActiveAchievements } from '@/hooks/useFirebaseNotices';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Trophy, CalendarDays } from 'lucide-react';
 import { format, isToday, isTomorrow } from 'date-fns';
 import rbuLogo from '@/assets/rbu-logo.png';
 import { TVNoticePreview } from '@/components/TVNoticePreview';
@@ -66,11 +66,14 @@ const TVDisplay: React.FC = () => {
     return dash !== -1 ? [q.slice(0, dash), q.slice(dash + 3)] : [q, ''];
   }, []);
 
-  // Next 2 items after current
-  const nextItems = useMemo(
-    () => displayItems.filter((_, i) => i !== currentIndex).slice(0, 2),
-    [displayItems, currentIndex]
-  );
+  // Student spotlight cycles through achievements every 20s (independent of main slide)
+  const [spotlightIdx, setSpotlightIdx] = useState(0);
+  useEffect(() => {
+    if (!achievements || achievements.length <= 1) return;
+    const t = setInterval(() => setSpotlightIdx(i => (i + 1) % achievements.length), 20000);
+    return () => clearInterval(t);
+  }, [achievements]);
+  const spotlight = achievements && achievements.length > 0 ? achievements[spotlightIdx % achievements.length] : null;
 
   if (noticesLoading || achievementsLoading) {
     return (
@@ -86,9 +89,8 @@ const TVDisplay: React.FC = () => {
   return (
     <div className="h-screen w-screen bg-[#060810] text-white flex flex-col overflow-hidden select-none">
 
-      {/* Header */}
+      {/* ── Header ──────────────────────────────────────────────────────── */}
       <header className="shrink-0 h-[4.5rem] px-10 flex items-center justify-between border-b border-white/5 z-20 relative">
-        {/* Left: branding */}
         <div className="flex items-center gap-4">
           <div className="h-10 w-10 bg-white/95 p-1 rounded-lg shrink-0">
             <img src={rbuLogo} className="h-full w-full object-contain" alt="RBU" />
@@ -101,7 +103,7 @@ const TVDisplay: React.FC = () => {
           </div>
         </div>
 
-        {/* Center: slide progress dots */}
+        {/* Slide dots */}
         {displayItems.length > 1 && (
           <div className="flex items-center gap-1.5 absolute left-1/2 -translate-x-1/2">
             {displayItems.map((_, i) => (
@@ -112,16 +114,14 @@ const TVDisplay: React.FC = () => {
                   width: i === currentIndex ? 20 : 6,
                   height: 6,
                   backgroundColor:
-                    i === currentIndex
-                      ? 'hsl(var(--primary))'
-                      : 'rgba(255,255,255,0.12)',
+                    i === currentIndex ? 'hsl(var(--primary))' : 'rgba(255,255,255,0.12)',
                 }}
               />
             ))}
           </div>
         )}
 
-        {/* Right: clock + live indicator */}
+        {/* Clock */}
         <div className="flex items-center gap-5 text-right">
           <div>
             <div className="text-2xl font-bold tabular-nums tracking-tight leading-none">
@@ -138,21 +138,10 @@ const TVDisplay: React.FC = () => {
         </div>
       </header>
 
-      {/* Slide progress bar */}
-      <div className="h-[3px] bg-white/5 shrink-0 relative overflow-hidden">
-        <motion.div
-          key={`${progressKey}-${currentIndex}`}
-          className="absolute inset-y-0 left-0 bg-primary"
-          initial={{ width: '100%' }}
-          animate={{ width: '0%' }}
-          transition={{ duration: slideDuration / 1000, ease: 'linear' }}
-        />
-      </div>
-
-      {/* Main content row */}
+      {/* ── Main content row ─────────────────────────────────────────────── */}
       <div className="flex-1 flex overflow-hidden min-h-0">
 
-        {/* Main slide */}
+        {/* Main slide area */}
         <div className="flex-1 relative overflow-hidden p-6 pr-4 min-w-0">
           {displayItems.length === 0 ? (
             <div className="h-full flex items-center justify-center">
@@ -177,102 +166,114 @@ const TVDisplay: React.FC = () => {
           )}
         </div>
 
-        {/* Sidebar */}
+        {/* ── Sidebar ─────────────────────────────────────────────────────── */}
         <aside className="w-72 shrink-0 border-l border-white/5 flex flex-col overflow-hidden">
 
-          {/* Up Next */}
-          {nextItems.length > 0 && (
-            <div className="p-4 border-b border-white/5 shrink-0">
-              <p className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-500 mb-3">
-                Up Next
-              </p>
-              <div className="space-y-3">
-                {nextItems.map((item, i) => {
-                  const cfg = categoryConfig[item.category] ?? categoryConfig.other;
-                  const Icon = cfg.icon;
-                  return (
-                    <div key={item.id ?? i} className="flex items-start gap-2.5">
-                      <div
-                        className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 mt-0.5"
-                        style={{ backgroundColor: cfg.accent + '28' }}
-                      >
-                        <Icon className="h-3 w-3" style={{ color: cfg.accent }} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[0.8rem] font-semibold text-white/80 leading-snug line-clamp-2">
-                          {item.title}
-                        </p>
-                        <p className="text-[0.65rem] font-bold mt-0.5" style={{ color: cfg.accent + 'cc' }}>
-                          {cfg.label}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+          {/* Upcoming Events — top half */}
+          <div className="flex-1 flex flex-col p-5 overflow-hidden min-h-0">
+            <div className="flex items-center gap-2 mb-4 shrink-0">
+              <CalendarDays className="h-3.5 w-3.5 text-purple-400" />
+              <p className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-500">Upcoming Events</p>
             </div>
-          )}
-
-          {/* Upcoming Events */}
-          {upcomingEvents.length > 0 && (
-            <div className="p-4 border-b border-white/5 flex-1 overflow-hidden">
-              <p className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-500 mb-3">
-                Upcoming Events
-              </p>
-              <div className="space-y-3">
+            {upcomingEvents.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center">
+                <p className="text-[0.7rem] text-slate-600 italic text-center">No upcoming events scheduled</p>
+              </div>
+            ) : (
+              <div className="space-y-4 overflow-hidden">
                 {upcomingEvents.map((event, i) => {
                   const d = new Date(event.startTime);
-                  const label = isToday(d) ? 'Today' : isTomorrow(d) ? 'Tomorrow' : null;
+                  const tag = isToday(d) ? 'Today' : isTomorrow(d) ? 'Tomorrow' : null;
                   return (
                     <div key={event.id ?? i} className="flex items-center gap-3">
-                      <div className="shrink-0 text-center w-9">
-                        {label ? (
-                          <div className="text-[0.6rem] font-black text-purple-400 uppercase leading-tight">
-                            {label}
-                          </div>
+                      {/* Date chip */}
+                      <div className="shrink-0 w-10 text-center">
+                        {tag ? (
+                          <div className="text-[0.6rem] font-black text-purple-400 uppercase leading-tight">{tag}</div>
                         ) : (
                           <>
-                            <div className="text-[0.55rem] font-black uppercase text-purple-400 leading-none">
-                              {format(d, 'MMM')}
-                            </div>
-                            <div className="text-lg font-black text-white leading-none mt-0.5">
-                              {format(d, 'd')}
-                            </div>
+                            <div className="text-[0.55rem] font-black uppercase text-purple-400 leading-none">{format(d, 'MMM')}</div>
+                            <div className="text-lg font-black text-white leading-none">{format(d, 'd')}</div>
                           </>
                         )}
                       </div>
-                      <div className="w-px h-7 bg-white/10 shrink-0" />
-                      <p className="text-[0.78rem] text-white/65 leading-snug line-clamp-2 min-w-0">
-                        {event.title}
-                      </p>
+                      <div className="w-px h-8 bg-white/8 shrink-0" />
+                      <p className="text-[0.78rem] text-white/65 leading-snug line-clamp-2 min-w-0">{event.title}</p>
                     </div>
                   );
                 })}
               </div>
-            </div>
-          )}
-
-          {/* Quote of the Day — fills remaining space, no hard mt-auto gap */}
-          <div className="flex-1 flex flex-col justify-end p-4 border-t border-white/5">
-            <p className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-600 mb-2.5">
-              Quote of the Day
-            </p>
-            <p className="text-[0.78rem] text-slate-400 leading-relaxed italic">
-              &ldquo;{quoteText}&rdquo;
-            </p>
-            {quoteAuthor && (
-              <p className="text-[0.65rem] text-slate-600 font-bold mt-1.5">
-                &mdash; {quoteAuthor}
-              </p>
             )}
+          </div>
+
+          {/* Divider */}
+          <div className="h-px bg-white/5 shrink-0" />
+
+          {/* Student Spotlight — bottom half */}
+          <div className="flex-1 flex flex-col p-5 overflow-hidden min-h-0">
+            <div className="flex items-center gap-2 mb-4 shrink-0">
+              <Trophy className="h-3.5 w-3.5 text-yellow-400" />
+              <p className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-500">Student Spotlight</p>
+            </div>
+            <AnimatePresence mode="wait">
+              {spotlight ? (
+                <motion.div
+                  key={spotlight.id ?? spotlightIdx}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.4 }}
+                  className="flex-1 flex flex-col justify-center min-h-0"
+                >
+                  <p className="text-base font-black text-white leading-snug mb-1 line-clamp-2">
+                    {spotlight.title}
+                  </p>
+                  {spotlight.description && (
+                    <p className="text-[0.75rem] text-yellow-100/60 leading-relaxed line-clamp-3 mt-1">
+                      {spotlight.description}
+                    </p>
+                  )}
+                  {spotlight.facultyName && (
+                    <p className="text-[0.65rem] text-slate-600 font-bold uppercase tracking-widest mt-3">
+                      {spotlight.facultyName}
+                    </p>
+                  )}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="quote"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex-1 flex flex-col justify-center min-h-0"
+                >
+                  <p className="text-[0.78rem] text-slate-400 leading-relaxed italic">
+                    &ldquo;{quoteText}&rdquo;
+                  </p>
+                  {quoteAuthor && (
+                    <p className="text-[0.65rem] text-slate-600 font-bold mt-2">&mdash; {quoteAuthor}</p>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
         </aside>
       </div>
 
-      {/* Ticker */}
+      {/* ── Progress bar (above ticker) ──────────────────────────────────── */}
+      <div className="h-[3px] bg-white/5 shrink-0 relative overflow-hidden">
+        <motion.div
+          key={`${progressKey}-${currentIndex}`}
+          className="absolute inset-y-0 left-0 bg-primary"
+          initial={{ width: '100%' }}
+          animate={{ width: '0%' }}
+          transition={{ duration: slideDuration / 1000, ease: 'linear' }}
+        />
+      </div>
+
+      {/* ── Ticker ──────────────────────────────────────────────────────── */}
       {displayItems.length > 0 && (
-        <footer className="shrink-0 h-9 border-t border-white/5 flex items-center overflow-hidden bg-black/20">
+        <footer className="shrink-0 h-9 flex items-center overflow-hidden bg-black/20">
           <div className="shrink-0 h-full px-5 flex items-center bg-primary text-black font-black uppercase tracking-widest text-[0.6rem]">
             Notice Board
           </div>
