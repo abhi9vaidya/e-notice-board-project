@@ -8,10 +8,12 @@ import {
   Tv,
   Archive,
   Menu,
-  User
+  User,
+  ShieldCheck,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 import {
   Sidebar,
   SidebarContent,
@@ -46,9 +48,14 @@ const systemItems = [
   { title: "About / Help", url: "/about", icon: HelpCircle },
 ];
 
+const adminItems = [
+  { title: "Admin Panel", url: "/admin", icon: ShieldCheck },
+];
+
 export function AppSidebar() {
   const location = useLocation();
   const { state, toggleSidebar } = useSidebar();
+  const { faculty } = useAuth();
   const collapsed = state === "collapsed";
 
   const isActive = (path: string) => {
@@ -61,8 +68,12 @@ export function AppSidebar() {
       <SidebarMenuButton asChild>
         <NavLink
           to={item.url}
+          title={collapsed ? item.title : undefined}
           className={cn(
-            "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+            "flex items-center rounded-lg transition-all duration-200",
+            collapsed
+              ? "justify-center px-0 py-2.5 w-full"
+              : "gap-3 px-3 py-2.5",
             isActive(item.url)
               ? "bg-primary text-primary-foreground font-medium shadow-md"
               : "hover:bg-sidebar-accent text-sidebar-foreground"
@@ -84,12 +95,12 @@ export function AppSidebar() {
       collapsible="icon"
     >
       <SidebarHeader className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 shrink-0 overflow-hidden">
+        <div className={cn("flex items-center", collapsed ? "justify-center" : "gap-3")}>
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 shrink-0 overflow-hidden">
             <img 
               src={rbuLogo} 
               alt="RBU Logo" 
-              className="h-10 w-10 object-contain"
+              className="h-9 w-9 object-contain"
             />
           </div>
           {!collapsed && (
@@ -101,7 +112,7 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-4">
+      <SidebarContent className={cn("py-4", collapsed ? "px-1" : "px-2")}>
         <SidebarGroup>
           {!collapsed && (
             <SidebarGroupLabel className="text-sidebar-foreground/60 text-xs uppercase tracking-wider mb-2 px-3">
@@ -146,6 +157,24 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Admin-only section */}
+        {faculty?.role === 'admin' && (
+          <SidebarGroup className="mt-6">
+            {!collapsed && (
+              <SidebarGroupLabel className="text-sidebar-foreground/60 text-xs uppercase tracking-wider mb-2 px-3">
+                Admin
+              </SidebarGroupLabel>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                {adminItems.map((item) => (
+                  <NavItem key={item.title} item={item} />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t border-sidebar-border">

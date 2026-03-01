@@ -36,6 +36,8 @@ export interface FirestoreProfile {
     phone?: string;
     profilePhotoUrl?: string;
     role: 'faculty' | 'admin';
+    /** pending = awaiting admin approval, approved = can log in, rejected = denied */
+    status?: 'pending' | 'approved' | 'rejected';
     createdAt: Timestamp;
 }
 
@@ -69,6 +71,7 @@ export interface Faculty {
     phone?: string;
     profilePhotoUrl?: string;
     role: 'faculty' | 'admin';
+    status?: 'pending' | 'approved' | 'rejected';
 }
 
 export interface AuthState {

@@ -2,32 +2,63 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Profiles Collection
-    match /profiles/{userId} {
-      // Anyone authenticated can read profiles (to show names)
-      allow read: if isAuthenticated();
-      // Users can only create/update their own profile
-      allow write: if isOwner(userId);
+    // Checks Firestore for admin role (used sparingly to avoid extra reads)
+    function isAdmin() {
+      return isAuthenticated()
+        && get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Notices Collection
+    // ── Profiles ─────────────────────────────────────────────────────────────
+
+    match /profiles/{userId} {
+      // Any authenticated faculty/admin can read profiles (for notice attribution etc.)
+      allow read: if isAuthenticated();
+
+      // Self-create: role MUST be 'faculty' and status MUST be 'pending'
+      // This enforces the self-registration flow — admin approval required before access
+      allow create: if isOwner(userId)
+        && request.resource.data.role == 'faculty'
+        && request.resource.data.status == 'pending';
+
+      // Self-update: allowed, BUT a user cannot change their own role OR status
+      // Admin-update: admins can change any field including role and status
+      allow update: if
+        (isOwner(userId)
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.status == resource.data.status)
+        || isAdmin();
+
+      // Only admins can delete profiles
+      allow delete: if isAdmin();
+    }
+
+    // ── Notices ──────────────────────────────────────────────────────────────
+
     match /notices/{noticeId} {
-      // Anyone can read active, non-archived notices (for the public TV display)
+      // Public read (TV display etc.)
       allow read: if true;
-      
-      // Only authenticated users (faculty/admin) can create, update, or delete notices
-      allow create: if isAuthenticated() && request.resource.data.facultyId == request.auth.uid;
-      // Allow updates/deletes if the user created the notice OR if they are an admin
-      allow update, delete: if isAuthenticated() && (resource.data.facultyId == request.auth.uid || get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.role == 'admin');
+
+      // Create: authenticated user whose facultyId matches their own uid
+      allow create: if isAuthenticated()
+        && request.resource.data.facultyId == request.auth.uid;
+
+      // Update / delete: own notice  OR  admin
+      allow update, delete: if isAuthenticated()
+        && (
+          resource.data.facultyId == request.auth.uid
+          || get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.role == 'admin'
+        );
     }
   }
 }
