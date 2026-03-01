@@ -246,11 +246,6 @@ const TVDisplay: React.FC = () => {
                         {spotlight.description}
                       </p>
                     )}
-                    {spotlight.facultyName && (
-                      <p className="text-[0.65rem] text-slate-600 font-bold uppercase tracking-widest mt-3">
-                        {spotlight.facultyName}
-                      </p>
-                    )}
                   </div>
                 </motion.div>
               ) : (
