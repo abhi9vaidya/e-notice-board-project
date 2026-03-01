@@ -61,7 +61,6 @@ const AddEditNoticePage: React.FC = () => {
   const { toast } = useToast();
 
   const { faculty } = useAuth();
-  const isAchievement = formData.category === 'achievements';
 
   const previewContainerRef = React.useRef<HTMLDivElement>(null);
   const [previewScale, setPreviewScale] = React.useState(0.25);
@@ -104,6 +103,7 @@ const AddEditNoticePage: React.FC = () => {
   }, [faculty, editId]);
 
   const [isHighPriority, setIsHighPriority] = useState(false);
+  const isAchievement = formData.category === 'achievements';
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
