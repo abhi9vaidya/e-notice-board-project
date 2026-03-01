@@ -29,7 +29,7 @@ function doPost(e) {
     const result = {
       status: 'success',
       fileId: file.getId(),
-      url: file.getDownloadUrl().replace('&gd=true', '') // Direct link
+      url: 'https://drive.google.com/uc?export=view&id=' + file.getId()  // embeddable in <img> tags
     };
     
     return ContentService.createTextOutput(JSON.stringify(result))

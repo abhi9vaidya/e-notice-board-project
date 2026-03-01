@@ -25,9 +25,11 @@ export const uploadToGoogleDrive = async (file: File): Promise<string> => {
     };
 
     try {
-        // send as simple request
+        // send as simple request — redirect:follow is required because GAS does a 302 on every POST
         const resultResponse = await fetch(proxyUrl, {
             method: 'POST',
+            redirect: 'follow',
+            headers: { 'Content-Type': 'text/plain' }, // text/plain avoids CORS preflight on GAS
             body: JSON.stringify(payload),
         });
 
