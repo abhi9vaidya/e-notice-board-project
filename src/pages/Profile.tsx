@@ -33,15 +33,15 @@ import {
 import { format } from 'date-fns';
 
 const Profile: React.FC = () => {
-  const { faculty, logout, updateFaculty, changePassword } = useAuth();
+  const { faculty, logout, updateFaculty, changePassword, hasPasswordProvider, setPassword } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isEditing, setIsEditing] = useState(false);
 
-  // change-password form state
+  // change-password / set-password form state
   const [cpForm, setCpForm] = useState({ current: '', newPwd: '', confirm: '' });
-  const [cpShow, setCpShow] = useState({ current: false, newPwd: false });
+  const [cpShow, setCpShow] = useState({ current: false, newPwd: false, confirm: false });
   const [cpStatus, setCpStatus] = useState<{ loading: boolean; error: string; success: boolean }>({
     loading: false, error: '', success: false,
   });
@@ -94,7 +94,9 @@ const Profile: React.FC = () => {
       return;
     }
     setCpStatus({ loading: true, error: '', success: false });
-    const result = await changePassword(cpForm.current, cpForm.newPwd);
+    const result = hasPasswordProvider
+      ? await changePassword(cpForm.current, cpForm.newPwd)
+      : await setPassword(cpForm.newPwd);
     if (result.success) {
       setCpForm({ current: '', newPwd: '', confirm: '' });
       setCpStatus({ loading: false, error: '', success: true });
@@ -387,18 +389,24 @@ const Profile: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* change password */}
+        {/* change / set password — admins only */}
+        {faculty.role === 'admin' && (
         <Card className="mb-6 border-0 shadow-lg">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Lock className="h-5 w-5 text-primary" />
-              Change Password
+              {hasPasswordProvider ? 'Change Password' : 'Set a Password'}
             </CardTitle>
-            <CardDescription>Update your login password</CardDescription>
+            <CardDescription>
+              {hasPasswordProvider
+                ? 'Update your login password'
+                : 'You sign in with Google. Set a password to also sign in with email.'}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
-              {/* current password */}
+              {/* current password — only needed when changing an existing one */}
+              {hasPasswordProvider && (
               <div className="space-y-1.5">
                 <Label htmlFor="cp-current" className="text-muted-foreground text-sm">Current Password</Label>
                 <div className="relative">
@@ -418,10 +426,11 @@ const Profile: React.FC = () => {
                   </button>
                 </div>
               </div>
+              )}
 
               {/* new password */}
               <div className="space-y-1.5">
-                <Label htmlFor="cp-new" className="text-muted-foreground text-sm">New Password</Label>
+                <Label htmlFor="cp-new" className="text-muted-foreground text-sm">{hasPasswordProvider ? 'New Password' : 'Password'}</Label>
                 <div className="relative">
                   <Input
                     id="cp-new"
@@ -442,15 +451,23 @@ const Profile: React.FC = () => {
 
               {/* confirm new password */}
               <div className="space-y-1.5">
-                <Label htmlFor="cp-confirm" className="text-muted-foreground text-sm">Confirm New Password</Label>
-                <Input
-                  id="cp-confirm"
-                  type="password"
-                  placeholder="Repeat new password"
-                  value={cpForm.confirm}
-                  onChange={(e) => { setCpForm(f => ({ ...f, confirm: e.target.value })); setCpStatus(s => ({ ...s, error: '' })); }}
-                  required
-                />
+                <Label htmlFor="cp-confirm" className="text-muted-foreground text-sm">Confirm Password</Label>
+                <div className="relative">
+                  <Input
+                    id="cp-confirm"
+                    type={cpShow.confirm ? 'text' : 'password'}
+                    placeholder="Repeat new password"
+                    value={cpForm.confirm}
+                    onChange={(e) => { setCpForm(f => ({ ...f, confirm: e.target.value })); setCpStatus(s => ({ ...s, error: '' })); }}
+                    className="pr-10"
+                    required
+                  />
+                  <button type="button" tabIndex={-1}
+                    onClick={() => setCpShow(s => ({ ...s, confirm: !s.confirm }))}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                    {cpShow.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
 
               {/* feedback */}
@@ -466,18 +483,19 @@ const Profile: React.FC = () => {
 
               <Button
                 type="submit"
-                disabled={cpStatus.loading || !cpForm.current || !cpForm.newPwd || !cpForm.confirm}
+                disabled={cpStatus.loading || (hasPasswordProvider && !cpForm.current) || !cpForm.newPwd || !cpForm.confirm}
                 className="gap-2"
               >
                 {cpStatus.loading ? (
-                  <><span className="h-3.5 w-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />Updating…</>
+                  <><span className="h-3.5 w-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />Saving…</>
                 ) : (
-                  <><Lock className="h-4 w-4" />Update Password</>
+                  <><Lock className="h-4 w-4" />{hasPasswordProvider ? 'Update Password' : 'Set Password'}</>
                 )}
               </Button>
             </form>
           </CardContent>
         </Card>
+        )}
 
         {/* logout block */}
         <Card className="border-destructive/50 shadow-lg">

@@ -30,7 +30,7 @@ import { useAuth } from "@/context/AuthContext";
 
 const SettingsPage: React.FC = () => {
   const { toast } = useToast();
-  const { changePassword, setPassword, hasPasswordProvider } = useAuth();
+  const { changePassword, setPassword, hasPasswordProvider, faculty } = useAuth();
   const [settings, setSettings] = useState({
     slideDuration: "10",
     defaultCategory: "all",
@@ -241,7 +241,8 @@ const SettingsPage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Password & Security */}
+          {/* Password & Security — admins only */}
+          {faculty?.role === 'admin' && (
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -307,6 +308,7 @@ const SettingsPage: React.FC = () => {
               </form>
             </CardContent>
           </Card>
+          )}
 
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-3">
