@@ -8,6 +8,8 @@ import {
   updatePassword,
   reauthenticateWithCredential,
   EmailAuthProvider,
+  sendPasswordResetEmail,
+  linkWithCredential,
   User,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
@@ -39,6 +41,12 @@ interface AuthContextType extends AuthState {
   updateFaculty: (updates: Partial<Faculty>) => Promise<void>;
   /** Re-authenticates then updates Firebase Auth password */
   changePassword: (currentPassword: string, newPassword: string) => Promise<LoginResult>;
+  /** Links an email+password credential to a Google-only account (sets a password) */
+  setPassword: (newPassword: string) => Promise<LoginResult>;
+  /** Sends a Firebase password-reset email */
+  sendPasswordReset: (email: string) => Promise<LoginResult>;
+  /** True when the signed-in user has a password credential (not Google-only) */
+  hasPasswordProvider: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -74,6 +82,7 @@ const profileToFaculty = (uid: string, data: FirestoreProfile): Faculty => ({
 });
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [hasPasswordProvider, setHasPasswordProvider] = useState(false);
   const [authState, setAuthState] = useState<AuthState>({
     isAuthenticated: false,
     faculty: null,
@@ -86,6 +95,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
       if (user) {
+        setHasPasswordProvider(user.providerData.some(p => p.providerId === 'password'));
         try {
           const profileRef = doc(db, 'profiles', user.uid);
           const profileSnap = await getDoc(profileRef);
@@ -122,6 +132,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setAuthState({ isAuthenticated: false, faculty: null, loading: false });
         }
       } else {
+        setHasPasswordProvider(false);
         setAuthState({ isAuthenticated: false, faculty: null, loading: false });
       }
     });
@@ -200,29 +211,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const user = credential.user;
       const email = (user.email ?? '').toLowerCase();
 
-      // 1. Allowlist gate — only admin-pre-approved emails can proceed
+      // 1. Check for existing profile first — existing users (incl. admins) bypass allowlist
+      const profileRef = doc(db, 'profiles', user.uid);
+      const profileSnap = await getDoc(profileRef);
+
+      if (profileSnap.exists()) {
+        const data = profileSnap.data() as FirestoreProfile;
+        if (data.status && data.status !== 'approved') {
+          await signOut(auth);
+          return { success: false, error: 'Your account is not approved. Contact the administrator.' };
+        }
+        // Existing approved user — onAuthStateChanged handles the rest
+        return { success: true };
+      }
+
+      // 2. No profile yet — check allowlist for new sign-ups
       const { allowed, department: allowlistDept } = await checkAllowlist(email);
       if (!allowed) {
         await signOut(auth);
         return {
           success: false,
-          error:
-            'Your email is not on the faculty allowlist. Contact the administrator to be added.',
+          error: 'Your email is not on the faculty allowlist. Contact the administrator to be added.',
         };
       }
 
-      // 2. Check existing profile
-      const profileRef = doc(db, 'profiles', user.uid);
-      const profileSnap = await getDoc(profileRef);
-
-      if (!profileSnap.exists()) {
-        // First sign-in for this allowlisted person — stay signed-in, collect department
-        pendingGoogleUserRef.current = user;
-        return { success: false, needsDepartment: true, allowlistDepartment: allowlistDept };
-      }
-
-      // Profile exists — onAuthStateChanged handles the rest
-      return { success: true };
+      // First sign-in for this allowlisted person — stay signed-in, collect department
+      pendingGoogleUserRef.current = user;
+      return { success: false, needsDepartment: true, allowlistDepartment: allowlistDept };
     } catch (err: unknown) {
       const code = (err as { code?: string }).code;
       if (
@@ -302,6 +317,45 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }));
   };
 
+  const sendPasswordReset = async (email: string): Promise<LoginResult> => {
+    try {
+      await sendPasswordResetEmail(auth, email.trim().toLowerCase());
+      return { success: true };
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code;
+      if (code === 'auth/user-not-found' || code === 'auth/invalid-email') {
+        return { success: false, error: 'No account found with that email address.' };
+      }
+      return { success: false, error: 'Failed to send reset email. Please try again.' };
+    }
+  };
+
+  const setPassword = async (newPassword: string): Promise<LoginResult> => {
+    const user = auth.currentUser;
+    if (!user || !user.email) return { success: false, error: 'No user is signed in.' };
+    try {
+      const credential = EmailAuthProvider.credential(user.email, newPassword);
+      await linkWithCredential(user, credential);
+      setHasPasswordProvider(true);
+      return { success: true };
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code;
+      if (code === 'auth/provider-already-linked') {
+        // Already has password — just update it directly
+        try {
+          await updatePassword(user, newPassword);
+          return { success: true };
+        } catch {
+          return { success: false, error: 'Failed to update password. Please try again.' };
+        }
+      }
+      if (code === 'auth/weak-password') {
+        return { success: false, error: 'Password must be at least 6 characters.' };
+      }
+      return { success: false, error: 'Failed to set password. Please try again.' };
+    }
+  };
+
   const changePassword = async (
     currentPassword: string,
     newPassword: string
@@ -326,7 +380,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ ...authState, login, loginWithGoogle, completeGoogleRegistration, logout, updateFaculty, changePassword }}>
+    <AuthContext.Provider value={{ ...authState, login, loginWithGoogle, completeGoogleRegistration, logout, updateFaculty, changePassword, setPassword, sendPasswordReset, hasPasswordProvider }}>
       {children}
     </AuthContext.Provider>
   );

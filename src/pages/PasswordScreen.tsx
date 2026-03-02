@@ -31,8 +31,29 @@ const DEPARTMENTS = [
 
 type Screen = 'main' | 'department' | 'email';
 
+// Defined outside the component so it's stable across renders (prevents focus loss)
+const PageWrap = ({ children }: { children: React.ReactNode }) => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-secondary via-secondary/95 to-secondary/90 p-4">
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
+      <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-3xl" />
+    </div>
+    <Card className="w-full max-w-md relative shadow-2xl border-0 bg-card/95 backdrop-blur-sm">
+      <CardHeader className="text-center pb-2 pt-8">
+        <div className="mx-auto mb-4">
+          <img src={rbuLogo} alt="Ramdeobaba University Logo" className="h-24 w-24 object-contain mx-auto" />
+        </div>
+        <CardTitle className="text-2xl font-bold text-foreground">Faculty E-Notice Board</CardTitle>
+        <CardDescription className="text-muted-foreground mt-1">Ramdeobaba University, Nagpur</CardDescription>
+      </CardHeader>
+      <CardContent className="pt-2 pb-8">{children}</CardContent>
+    </Card>
+  </div>
+);
+
 const PasswordScreen: React.FC = () => {
-  const { login, loginWithGoogle, completeGoogleRegistration } = useAuth();
+  const { login, loginWithGoogle, completeGoogleRegistration, sendPasswordReset } = useAuth();
 
   const [screen, setScreen] = useState<Screen>('main');
 
@@ -52,6 +73,13 @@ const PasswordScreen: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [emailLoading, setEmailLoading] = useState(false);
+
+  // Forgot password
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotError, setForgotError] = useState('');
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
@@ -88,26 +116,18 @@ const PasswordScreen: React.FC = () => {
     if (!result.success) setEmailError(result.error ?? 'Login failed.');
   };
 
-  // Shared page wrapper
-  const PageWrap = ({ children }: { children: React.ReactNode }) => (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-secondary via-secondary/95 to-secondary/90 p-4">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-3xl" />
-      </div>
-      <Card className="w-full max-w-md relative shadow-2xl border-0 bg-card/95 backdrop-blur-sm">
-        <CardHeader className="text-center pb-2 pt-8">
-          <div className="mx-auto mb-4">
-            <img src={rbuLogo} alt="Ramdeobaba University Logo" className="h-24 w-24 object-contain mx-auto" />
-          </div>
-          <CardTitle className="text-2xl font-bold text-foreground">Faculty E-Notice Board</CardTitle>
-          <CardDescription className="text-muted-foreground mt-1">Ramdeobaba University, Nagpur</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-2 pb-8">{children}</CardContent>
-      </Card>
-    </div>
-  );
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotError('');
+    setForgotLoading(true);
+    const result = await sendPasswordReset(forgotEmail.trim() || email.trim());
+    setForgotLoading(false);
+    if (result.success) {
+      setForgotSent(true);
+    } else {
+      setForgotError(result.error ?? 'Failed to send reset email.');
+    }
+  };
 
   // ── Screen: Department (first sign-in for an allowlisted user) ────────────────
   if (screen === 'department') {
@@ -157,6 +177,67 @@ const PasswordScreen: React.FC = () => {
 
   // ── Screen: Legacy email/password (admin fallback) ────────────────────────────
   if (screen === 'email') {
+    // ── Forgot password sub-screen ────────────────────────────────────────────
+    if (forgotMode) {
+      return (
+        <PageWrap>
+          <div className="space-y-5 mt-2">
+            {forgotSent ? (
+              <div className="text-center space-y-3 py-4">
+                <div className="h-14 w-14 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center mx-auto">
+                  <Mail className="h-6 w-6 text-green-500" />
+                </div>
+                <p className="font-semibold text-foreground">Reset email sent!</p>
+                <p className="text-sm text-muted-foreground">
+                  Check your inbox for a password reset link.
+                </p>
+                <button type="button"
+                  onClick={() => { setForgotMode(false); setForgotSent(false); setForgotEmail(''); }}
+                  className="text-xs text-primary hover:underline">
+                  ← Back to sign in
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="text-center space-y-1">
+                  <p className="font-semibold text-foreground">Reset your password</p>
+                  <p className="text-sm text-muted-foreground">
+                    Enter your email and we'll send a reset link.
+                  </p>
+                </div>
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="forgot-email" className="text-foreground font-medium">Email Address</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input id="forgot-email" type="email" placeholder="your@email.com"
+                        value={forgotEmail || email}
+                        onChange={e => { setForgotEmail(e.target.value); setForgotError(''); }}
+                        className="pl-10 h-12" required autoFocus autoComplete="username" />
+                    </div>
+                    {forgotError && <p className="text-sm text-destructive">{forgotError}</p>}
+                  </div>
+                  <Button type="submit" className="w-full h-12 text-base font-semibold" disabled={forgotLoading}>
+                    {forgotLoading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                        Sending...
+                      </span>
+                    ) : 'Send Reset Link'}
+                  </Button>
+                  <button type="button"
+                    onClick={() => { setForgotMode(false); setForgotError(''); }}
+                    className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center">
+                    ← Back to sign in
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        </PageWrap>
+      );
+    }
+
     return (
       <PageWrap>
         <div className="space-y-5 mt-2">
@@ -174,11 +255,18 @@ const PasswordScreen: React.FC = () => {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input id="email-inp" type="email" placeholder="admin@rknec.edu"
                   value={email} onChange={e => { setEmail(e.target.value); setEmailError(''); }}
-                  className="pl-10 h-12" required autoFocus autoComplete="username" />
+                  className="pl-10 h-12" required autoComplete="username" />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="password-inp" className="text-foreground font-medium">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password-inp" className="text-foreground font-medium">Password</Label>
+                <button type="button"
+                  onClick={() => { setForgotMode(true); setForgotEmail(email); setForgotError(''); }}
+                  className="text-xs text-primary hover:underline">
+                  Forgot password?
+                </button>
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input id="password-inp" type={showPassword ? 'text' : 'password'} placeholder="Enter your password"

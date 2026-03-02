@@ -19,17 +19,50 @@ import {
   Palette, 
   Save,
   RotateCcw,
-  Monitor
+  Monitor,
+  Lock,
+  KeyRound,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 const SettingsPage: React.FC = () => {
   const { toast } = useToast();
+  const { changePassword, setPassword, hasPasswordProvider } = useAuth();
   const [settings, setSettings] = useState({
     slideDuration: "10",
     defaultCategory: "all",
     autoRefresh: "30",
   });
+
+  // Password form state
+  const [currentPwd, setCurrentPwd] = useState('');
+  const [newPwd, setNewPwd] = useState('');
+  const [confirmPwd, setConfirmPwd] = useState('');
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [pwdLoading, setPwdLoading] = useState(false);
+  const [pwdError, setPwdError] = useState('');
+
+  const handlePasswordSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwdError('');
+    if (newPwd.length < 6) { setPwdError('Password must be at least 6 characters.'); return; }
+    if (newPwd !== confirmPwd) { setPwdError('Passwords do not match.'); return; }
+    setPwdLoading(true);
+    const result = hasPasswordProvider
+      ? await changePassword(currentPwd, newPwd)
+      : await setPassword(newPwd);
+    setPwdLoading(false);
+    if (result.success) {
+      toast({ title: hasPasswordProvider ? 'Password changed' : 'Password set', description: 'Your password has been updated successfully.' });
+      setCurrentPwd(''); setNewPwd(''); setConfirmPwd('');
+    } else {
+      setPwdError(result.error ?? 'Failed to update password.');
+    }
+  };
 
   const handleSave = () => {
     // In a real app, this would save to database/localStorage
@@ -205,6 +238,73 @@ const SettingsPage: React.FC = () => {
                   <Badge variant="outline">Development</Badge>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Password & Security */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <KeyRound className="h-5 w-5 text-primary" />
+                <CardTitle>Password &amp; Security</CardTitle>
+              </div>
+              <CardDescription>
+                {hasPasswordProvider
+                  ? 'Change your account password. You will need your current password.'
+                  : 'You signed in with Google. Set a password to also sign in with email.'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handlePasswordSave} className="space-y-4 max-w-sm">
+                {hasPasswordProvider && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="current-pwd">Current Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input id="current-pwd" type={showCurrent ? 'text' : 'password'}
+                        placeholder="Enter current password"
+                        value={currentPwd} onChange={e => { setCurrentPwd(e.target.value); setPwdError(''); }}
+                        className="pl-10 pr-10 h-11" required />
+                      <button type="button" tabIndex={-1} onClick={() => setShowCurrent(v => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                        {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  <Label htmlFor="new-pwd">{hasPasswordProvider ? 'New Password' : 'Password'}</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input id="new-pwd" type={showNew ? 'text' : 'password'}
+                      placeholder="At least 6 characters"
+                      value={newPwd} onChange={e => { setNewPwd(e.target.value); setPwdError(''); }}
+                      className="pl-10 pr-10 h-11" required />
+                    <button type="button" tabIndex={-1} onClick={() => setShowNew(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="confirm-pwd">Confirm Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input id="confirm-pwd" type="password" placeholder="Repeat password"
+                      value={confirmPwd} onChange={e => { setConfirmPwd(e.target.value); setPwdError(''); }}
+                      className="pl-10 h-11" required />
+                  </div>
+                </div>
+                {pwdError && <p className="text-sm text-destructive">{pwdError}</p>}
+                <Button type="submit" disabled={pwdLoading || !newPwd || !confirmPwd || (hasPasswordProvider && !currentPwd)} className="gap-2">
+                  {pwdLoading ? (
+                    <span className="flex items-center gap-2">
+                      <span className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                      Saving...
+                    </span>
+                  ) : (<><KeyRound className="h-4 w-4" />{hasPasswordProvider ? 'Change Password' : 'Set Password'}</>)}
+                </Button>
+              </form>
             </CardContent>
           </Card>
 
