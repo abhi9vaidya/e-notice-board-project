@@ -25,11 +25,13 @@ service cloud.firestore {
       // Any authenticated faculty/admin can read profiles (for notice attribution etc.)
       allow read: if isAuthenticated();
 
-      // Self-create: role MUST be 'faculty' and status MUST be 'pending'
-      // This enforces the self-registration flow — admin approval required before access
+      // Self-create: allowed only if the email is in the admin-managed allowlist.
+      // Since the admin pre-approved the email, the profile is created as 'approved'.
+      // Role is locked to 'faculty' on self-create.
       allow create: if isOwner(userId)
         && request.resource.data.role == 'faculty'
-        && request.resource.data.status == 'pending';
+        && request.resource.data.status == 'approved'
+        && exists(/databases/$(database)/documents/allowlist/$(request.resource.data.email));
 
       // Self-update: allowed, BUT a user cannot change their own role OR status
       // Admin-update: admins can change any field including role and status
@@ -41,6 +43,17 @@ service cloud.firestore {
 
       // Only admins can delete profiles
       allow delete: if isAdmin();
+    }
+
+    // ── Allowlist ─────────────────────────────────────────────────────────────
+    // Document ID = lowercase faculty email. Fields: { department?: string, addedAt: timestamp }
+
+    match /allowlist/{email} {
+      // Any authenticated user can read (needed for the allowlist check during login)
+      allow read: if isAuthenticated();
+
+      // Only admins can add or remove emails from the allowlist
+      allow create, update, delete: if isAdmin();
     }
 
     // ── Notices ──────────────────────────────────────────────────────────────

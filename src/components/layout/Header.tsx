@@ -7,14 +7,10 @@ import { Bell, GraduationCap, Archive, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { usePendingRequests } from '@/hooks/usePendingRequests';
-
 const Header: React.FC = () => {
   const navigate = useNavigate();
   const { faculty } = useAuth();
   const [showInfoModal, setShowInfoModal] = useState(false);
-  const pendingRequests = usePendingRequests();
-  const pendingCount = pendingRequests.length;
 
   const getInitials = (name: string) => {
     return name
@@ -58,15 +54,10 @@ const Header: React.FC = () => {
             {faculty?.role === 'admin' && (
               <button
                 className="relative p-1 rounded-md hover:bg-muted transition-colors"
-                title="Pending requests"
+                title="Admin panel"
                 onClick={() => navigate('/admin')}
               >
                 <Bell className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors" />
-                {pendingCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-bold text-white flex items-center justify-center animate-pulse">
-                    {pendingCount}
-                  </span>
-                )}
               </button>
             )}
             

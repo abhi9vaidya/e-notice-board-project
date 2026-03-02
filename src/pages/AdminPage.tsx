@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useState, useCallback } from 'react';
-import { collection, getDocs, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/integrations/firebase/config';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -25,6 +25,9 @@ import {
   XCircle,
   Building,
   Mail,
+  ListChecks,
+  PlusCircle,
+  UserCheck,
 } from 'lucide-react';
 import { FirestoreProfile } from '@/integrations/firebase/types';
 import { toTitleCase } from '@/lib/utils';
@@ -33,21 +36,28 @@ interface FacultyRecord extends FirestoreProfile {
   uid: string;
 }
 
+interface AllowlistEntry {
+  email: string;
+  department?: string;
+  addedAt?: { toDate(): Date };
+  hasProfile?: boolean; // true if this person has already signed up
+}
+
 const STEPS = [
   {
     num: 1,
-    title: 'Faculty submits a request',
-    body: 'Faculty clicks "Request Access" on the login page, fills in their name, department, email, and sets their own password. Their account is created but marked pending - they cannot log in yet.',
+    title: 'Admin adds faculty email to the allowlist',
+    body: 'Use the "Faculty Allowlist" card below to add a faculty email address. Optionally set their department. Only these emails can sign in.',
   },
   {
     num: 2,
-    title: 'You review the request here',
-    body: "Pending requests appear at the top of this page with the faculty's name, email, and department. Click Approve to grant access or Reject to deny it.",
+    title: 'Faculty signs in with Google',
+    body: 'The faculty member opens the app and clicks "Sign in with Google" using their institutional account. If their email is on the allowlist, they proceed.',
   },
   {
     num: 3,
-    title: 'Faculty gets access immediately',
-    body: 'Once approved, the faculty member can sign in with the email and password they already set. No Firebase console work needed.',
+    title: 'First sign-in: confirm department',
+    body: 'On their first sign-in they select their department (pre-filled if you set it in the allowlist). Their profile is created and approved instantly.',
   },
   {
     num: 4,
@@ -64,7 +74,14 @@ const AdminPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showGuide, setShowGuide] = useState(false);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // Allowlist state
+  const [allowlist, setAllowlist] = useState<AllowlistEntry[]>([]);
+  const [allowlistLoading, setAllowlistLoading] = useState(true);
+  const [newEmail, setNewEmail] = useState('');
+  const [newDept, setNewDept] = useState('');
+  const [addingEmail, setAddingEmail] = useState(false);
+  const [addEmailError, setAddEmailError] = useState('');
 
   useEffect(() => {
     if (!authLoading && faculty && faculty.role !== 'admin') navigate('/');
@@ -86,14 +103,63 @@ const AdminPage: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => { fetchProfiles(); }, [fetchProfiles]);
+  const fetchAllowlist = useCallback(async () => {
+    setAllowlistLoading(true);
+    try {
+      const [snap, profileSnap] = await Promise.all([
+        getDocs(collection(db, 'allowlist')),
+        getDocs(collection(db, 'profiles')),
+      ]);
+      const profileEmails = new Set(
+        profileSnap.docs.map(d => (d.data() as FirestoreProfile).email?.toLowerCase())
+      );
+      const data: AllowlistEntry[] = snap.docs.map(d => ({
+        email: d.id,
+        ...(d.data() as Omit<AllowlistEntry, 'email'>),
+        hasProfile: profileEmails.has(d.id),
+      }));
+      data.sort((a, b) => a.email.localeCompare(b.email));
+      setAllowlist(data);
+    } catch (err) {
+      console.error('Failed to load allowlist:', err);
+    } finally {
+      setAllowlistLoading(false);
+    }
+  }, []);
 
-  const setStatus = async (uid: string, status: 'approved' | 'rejected') => {
-    setActionLoading(uid + status);
-    await updateDoc(doc(db, 'profiles', uid), { status, updatedAt: serverTimestamp() });
-    setRecords(prev => prev.map(r => r.uid === uid ? { ...r, status } : r));
-    setActionLoading(null);
+  const addToAllowlist = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddEmailError('');
+    const emailNorm = newEmail.trim().toLowerCase();
+    if (!emailNorm.endsWith('@rknec.edu') && !emailNorm.endsWith('@rbunagpur.in')) {
+      setAddEmailError('Email must end with @rknec.edu or @rbunagpur.in.');
+      return;
+    }
+    setAddingEmail(true);
+    try {
+      await setDoc(doc(db, 'allowlist', emailNorm), {
+        department: newDept.trim() || null,
+        addedAt: serverTimestamp(),
+      });
+      setNewEmail('');
+      setNewDept('');
+      await fetchAllowlist();
+    } catch (err) {
+      console.error('Failed to add to allowlist:', err);
+      setAddEmailError('Failed to add email. Please try again.');
+    } finally {
+      setAddingEmail(false);
+    }
   };
+
+  const removeFromAllowlist = async (email: string) => {
+    if (!window.confirm(`Remove ${email} from the allowlist? They will not be able to sign in again until re-added.`)) return;
+    await deleteDoc(doc(db, 'allowlist', email));
+    setAllowlist(prev => prev.filter(e => e.email !== email));
+  };
+
+  useEffect(() => { fetchProfiles(); }, [fetchProfiles]);
+  useEffect(() => { fetchAllowlist(); }, [fetchAllowlist]);
 
   const toggleRole = async (uid: string, current: 'faculty' | 'admin') => {
     const newRole = current === 'admin' ? 'faculty' : 'admin';
@@ -110,8 +176,6 @@ const AdminPage: React.FC = () => {
   const getInitials = (name: string) =>
     name.split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
-  const pending  = records.filter(r => r.status === 'pending');
-  const rejected = records.filter(r => r.status === 'rejected');
   const approved = records.filter(r => !r.status || r.status === 'approved');
 
   const filteredApproved = approved.filter(r => {
@@ -155,83 +219,102 @@ const AdminPage: React.FC = () => {
     <AdminLayout title="Admin" subtitle="Manage faculty accounts and access requests">
       <div className="container max-w-5xl px-4 py-8 space-y-6">
 
-        {/* Pending Requests */}
-        <Card className={`border-0 shadow-lg ${pending.length > 0 ? 'ring-2 ring-amber-400/60' : ''}`}>
+        {/* ── Faculty Allowlist ───────────────────────────────────────────── */}
+        <Card className="border-0 shadow-lg ring-2 ring-primary/30">
           <CardHeader>
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-amber-500" />
-                  Pending Requests
-                  {pending.length > 0 && (
-                    <Badge className="ml-1 bg-amber-500 text-white">{pending.length}</Badge>
+                  <ListChecks className="h-5 w-5 text-primary" />
+                  Faculty Allowlist
+                  {!allowlistLoading && (
+                    <Badge variant="secondary" className="ml-1">{allowlist.length}</Badge>
                   )}
                 </CardTitle>
-                <CardDescription>Faculty waiting for your approval</CardDescription>
+                <CardDescription>
+                  Only emails on this list can sign in. Add faculty emails here before they
+                  attempt to log in — students are blocked automatically.
+                </CardDescription>
               </div>
-              <Button variant="outline" size="sm" onClick={fetchProfiles} className="gap-2">
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <Button variant="outline" size="sm" onClick={fetchAllowlist} className="gap-2">
+                <RefreshCw className={`h-4 w-4 ${allowlistLoading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {loading ? (
-              <div className="flex items-center justify-center py-8 text-muted-foreground">
-                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                Loading...
+          <CardContent className="space-y-4">
+            {/* Add email form */}
+            <form onSubmit={addToAllowlist} className="flex flex-col sm:flex-row gap-2">
+              <div className="flex-1">
+                <Input
+                  type="email"
+                  placeholder="faculty@rknec.edu or faculty@rbunagpur.in"
+                  value={newEmail}
+                  onChange={e => { setNewEmail(e.target.value); setAddEmailError(''); }}
+                  className="h-9"
+                  required
+                />
               </div>
-            ) : pending.length === 0 ? (
-              <p className="text-center py-6 text-muted-foreground text-sm">
-                No pending requests - you are all caught up!
+              <div className="w-full sm:w-52">
+                <Input
+                  type="text"
+                  placeholder="Department (optional)"
+                  value={newDept}
+                  onChange={e => setNewDept(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+              <Button type="submit" size="sm" className="h-9 gap-1.5 shrink-0" disabled={addingEmail || !newEmail.trim()}>
+                {addingEmail
+                  ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  : <PlusCircle className="h-3.5 w-3.5" />}
+                Add
+              </Button>
+            </form>
+            {addEmailError && <p className="text-sm text-destructive">{addEmailError}</p>}
+
+            {/* List */}
+            {allowlistLoading ? (
+              <div className="flex items-center justify-center py-6 text-muted-foreground">
+                <RefreshCw className="h-4 w-4 animate-spin mr-2" />Loading...
+              </div>
+            ) : allowlist.length === 0 ? (
+              <p className="text-center text-sm text-muted-foreground py-6">
+                No emails added yet. Add faculty emails above to grant sign-in access.
               </p>
             ) : (
-              pending.map(r => (
-                <div key={r.uid}
-                  className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10">
-                  <Avatar className="h-11 w-11 shrink-0">
-                    <AvatarImage src={r.profilePhotoUrl} alt={r.name} />
-                    <AvatarFallback className="bg-amber-100 text-amber-700 font-semibold text-sm dark:bg-amber-900/40 dark:text-amber-300">
-                      {getInitials(r.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0 space-y-0.5">
-                    <p className="font-semibold text-foreground">{toTitleCase(r.name)}</p>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                      <Mail className="h-3.5 w-3.5 shrink-0" />{r.email}
-                    </p>
-                    {r.department && (
-                      <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                        <Building className="h-3.5 w-3.5 shrink-0" />{r.department}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex gap-2 shrink-0">
-                    <Button size="sm"
-                      className="bg-green-600 hover:bg-green-700 text-white gap-1.5"
-                      disabled={actionLoading === r.uid + 'approved'}
-                      onClick={() => setStatus(r.uid, 'approved')}>
-                      {actionLoading === r.uid + 'approved'
-                        ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                        : <CheckCircle2 className="h-3.5 w-3.5" />}
-                      Approve
-                    </Button>
-                    <Button size="sm" variant="outline"
-                      className="border-destructive text-destructive hover:bg-destructive/10 gap-1.5"
-                      disabled={actionLoading === r.uid + 'rejected'}
-                      onClick={() => setStatus(r.uid, 'rejected')}>
-                      {actionLoading === r.uid + 'rejected'
-                        ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                        : <XCircle className="h-3.5 w-3.5" />}
-                      Reject
+              <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+                {allowlist.map(entry => (
+                  <div key={entry.email}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg border border-border bg-muted/20 hover:bg-muted/40 transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium text-foreground truncate">{entry.email}</span>
+                        {entry.hasProfile && (
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-1 shrink-0">
+                            <UserCheck className="h-2.5 w-2.5" />Signed up
+                          </Badge>
+                        )}
+                      </div>
+                      {entry.department && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <Building className="h-3 w-3" />{entry.department}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      size="icon" variant="ghost"
+                      className="h-7 w-7 text-destructive hover:bg-destructive/10 shrink-0"
+                      onClick={() => removeFromAllowlist(entry.email)}
+                      title="Remove from allowlist">
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
-
         {/* How it works (collapsible) */}
         <Card className="border-0 shadow-lg">
           <CardHeader className="cursor-pointer select-none" onClick={() => setShowGuide(v => !v)}>
@@ -390,46 +473,6 @@ const AdminPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Rejected (dimmed, only shown if any exist) */}
-        {rejected.length > 0 && (
-          <Card className="border-0 shadow-lg opacity-60 hover:opacity-100 transition-opacity">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <XCircle className="h-4 w-4 text-destructive" />
-                Rejected Requests
-                <Badge variant="secondary" className="ml-1">{rejected.length}</Badge>
-              </CardTitle>
-              <CardDescription>These accounts were denied access</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {rejected.map(r => (
-                <div key={r.uid}
-                  className="flex items-center gap-4 p-3 rounded-lg border border-border bg-muted/20">
-                  <Avatar className="h-9 w-9 shrink-0">
-                    <AvatarFallback className="bg-muted text-muted-foreground text-xs">
-                      {getInitials(r.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground truncate text-sm">{toTitleCase(r.name)}</p>
-                    <p className="text-xs text-muted-foreground truncate">{r.email}</p>
-                  </div>
-                  <div className="flex gap-2 shrink-0">
-                    <Button size="sm" variant="outline" className="text-xs h-7 gap-1"
-                      onClick={() => setStatus(r.uid, 'approved')}>
-                      <CheckCircle2 className="h-3 w-3" />Re-approve
-                    </Button>
-                    <Button size="icon" variant="ghost"
-                      className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                      onClick={() => removeProfile(r.uid)} title="Remove profile">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
 
       </div>
     </AdminLayout>
@@ -437,3 +480,4 @@ const AdminPage: React.FC = () => {
 };
 
 export default AdminPage;
+

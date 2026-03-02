@@ -14,7 +14,6 @@ import {
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
-import { usePendingRequests } from "@/hooks/usePendingRequests";
 import {
   Sidebar,
   SidebarContent,
@@ -57,7 +56,6 @@ export function AppSidebar() {
   const location = useLocation();
   const { state, toggleSidebar } = useSidebar();
   const { faculty } = useAuth();
-  const pendingCount = usePendingRequests().length;
   const collapsed = state === "collapsed";
 
   const isActive = (path: string) => {
@@ -186,22 +184,8 @@ export function AppSidebar() {
                             : "hover:bg-sidebar-accent text-sidebar-foreground"
                         )}
                       >
-                        <span className="relative shrink-0">
-                          <item.icon className="h-5 w-5" />
-                          {pendingCount > 0 && (
-                            <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-destructive border border-sidebar animate-pulse" />
-                          )}
-                        </span>
-                        {!collapsed && (
-                          <span className="flex items-center gap-2 flex-1">
-                            {item.title}
-                            {pendingCount > 0 && (
-                              <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white">
-                                {pendingCount}
-                              </span>
-                            )}
-                          </span>
-                        )}
+                        <item.icon className="h-5 w-5 shrink-0" />
+                        {!collapsed && <span>{item.title}</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

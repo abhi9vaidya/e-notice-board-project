@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import {
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
   signOut,
   onAuthStateChanged,
   updatePassword,
@@ -17,13 +18,23 @@ import { toTitleCase } from '@/lib/utils';
 export interface LoginResult {
   success: boolean;
   error?: string;
+  /** New Google user — UI should collect department before creating profile */
+  needsDepartment?: boolean;
+  /** Allowlist entry already has a department hint stored by admin */
+  allowlistDepartment?: string;
 }
 
 interface AuthContextType extends AuthState {
-  /** Sign in with individual email + password */
+  /** Sign in with email + password (legacy / admin fallback) */
   login: (email: string, password: string) => Promise<LoginResult>;
-  /** Self-register with pending status — admin must approve before site access */
-  register: (email: string, password: string, name: string, department: string) => Promise<LoginResult>;
+  /** Sign in via Google OAuth.
+   *  - Email must be in the admin-managed allowlist.
+   *  - Returning approved users are signed in immediately.
+   *  - New allowlisted users get needsDepartment:true so the UI can collect their department.
+   */
+  loginWithGoogle: () => Promise<LoginResult>;
+  /** Called after loginWithGoogle returns needsDepartment:true — creates auto-approved profile */
+  completeGoogleRegistration: (department: string) => Promise<LoginResult>;
   logout: () => Promise<void>;
   updateFaculty: (updates: Partial<Faculty>) => Promise<void>;
   /** Re-authenticates then updates Firebase Auth password */
@@ -31,6 +42,24 @@ interface AuthContextType extends AuthState {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Module-level Google provider — reusable, stateless
+const googleProvider = new GoogleAuthProvider();
+googleProvider.addScope('email');
+googleProvider.addScope('profile');
+
+/** Check if an email exists in the admin-managed allowlist collection */
+const checkAllowlist = async (email: string): Promise<{ allowed: boolean; department?: string }> => {
+  try {
+    const snap = await getDoc(doc(db, 'allowlist', email.toLowerCase()));
+    if (snap.exists()) {
+      return { allowed: true, department: (snap.data() as { department?: string }).department };
+    }
+    return { allowed: false };
+  } catch {
+    return { allowed: false };
+  }
+};
 
 // convert firestore profile to faculty type
 const profileToFaculty = (uid: string, data: FirestoreProfile): Faculty => ({
@@ -50,6 +79,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     faculty: null,
     loading: true,
   });
+  // Holds the Firebase User between loginWithGoogle() → completeGoogleRegistration()
+  const pendingGoogleUserRef = useRef<User | null>(null);
 
   // Restore session on app load
   useEffect(() => {
@@ -161,49 +192,99 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await signOut(auth);
   };
 
-  const register = async (
-    email: string,
-    password: string,
-    name: string,
-    department: string
-  ): Promise<LoginResult> => {
+  // ── Google OAuth ─────────────────────────────────────────────────────────────
+
+  const loginWithGoogle = async (): Promise<LoginResult> => {
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email.trim().toLowerCase(),
-        password
-      );
-      const user = userCredential.user;
+      const credential = await signInWithPopup(auth, googleProvider);
+      const user = credential.user;
+      const email = (user.email ?? '').toLowerCase();
 
-      // Create pending profile — admin must approve before login is allowed
-      const pendingProfile: FirestoreProfile = {
-        name: toTitleCase(name),
-        department: department.trim(),
-        email: user.email || '',
-        role: 'faculty',
-        status: 'pending',
-        createdAt: serverTimestamp() as unknown as Timestamp,
-      };
-      await setDoc(doc(db, 'profiles', user.uid), pendingProfile);
+      // 1. Allowlist gate — only admin-pre-approved emails can proceed
+      const { allowed, department: allowlistDept } = await checkAllowlist(email);
+      if (!allowed) {
+        await signOut(auth);
+        return {
+          success: false,
+          error:
+            'Your email is not on the faculty allowlist. Contact the administrator to be added.',
+        };
+      }
 
-      // Sign out immediately — they can only log in after approval
-      await signOut(auth);
+      // 2. Check existing profile
+      const profileRef = doc(db, 'profiles', user.uid);
+      const profileSnap = await getDoc(profileRef);
 
+      if (!profileSnap.exists()) {
+        // First sign-in for this allowlisted person — stay signed-in, collect department
+        pendingGoogleUserRef.current = user;
+        return { success: false, needsDepartment: true, allowlistDepartment: allowlistDept };
+      }
+
+      // Profile exists — onAuthStateChanged handles the rest
       return { success: true };
     } catch (err: unknown) {
-      console.error('Register error:', err);
       const code = (err as { code?: string }).code;
-      if (code === 'auth/email-already-in-use') {
-        return { success: false, error: 'An account with this email already exists. Try signing in.' };
+      if (
+        code === 'auth/popup-closed-by-user' ||
+        code === 'auth/cancelled-popup-request'
+      ) {
+        return { success: false, error: '' }; // user dismissed — no toast
       }
-      if (code === 'auth/invalid-email') {
-        return { success: false, error: 'Please enter a valid email address.' };
+      if (code === 'auth/popup-blocked') {
+        return {
+          success: false,
+          error: 'Popup was blocked. Please allow popups for this site and try again.',
+        };
       }
-      if (code === 'auth/weak-password') {
-        return { success: false, error: 'Password must be at least 6 characters.' };
+      if (code === 'auth/account-exists-with-different-credential') {
+        return {
+          success: false,
+          error:
+            'An account already exists with this email using a different sign-in method.',
+        };
       }
-      return { success: false, error: 'Registration failed. Please try again.' };
+      console.error('Google sign-in error:', err);
+      return { success: false, error: 'Google sign-in failed. Please try again.' };
     }
+  };
+
+  const completeGoogleRegistration = async (department: string): Promise<LoginResult> => {
+    const user = pendingGoogleUserRef.current;
+    if (!user) {
+      return { success: false, error: 'Session expired. Please try signing in again.' };
+    }
+    try {
+      // Auto-approved — admin already vetted this email by adding it to the allowlist
+      const approvedProfile: FirestoreProfile = {
+        name: toTitleCase(user.displayName ?? user.email?.split('@')[0] ?? 'Faculty'),
+        department: department.trim(),
+        email: (user.email ?? '').toLowerCase(),
+        role: 'faculty',
+        status: 'approved',
+        createdAt: serverTimestamp() as unknown as Timestamp,
+      };
+      await setDoc(doc(db, 'profiles', user.uid), approvedProfile);
+      pendingGoogleUserRef.current = null;
+      // Don't sign out — onAuthStateChanged will pick up the new approved profile
+      // and set isAuthenticated = true automatically
+      return { success: true };
+    } catch (err) {
+      console.error('completeGoogleRegistration error:', err);
+      await signOut(auth).catch(() => {});
+      pendingGoogleUserRef.current = null;
+      return { success: false, error: 'Failed to create your profile. Please try again.' };
+    }
+  };
+
+  const register = async (
+    _email: string,
+    _password: string,
+    _name: string,
+    _department: string
+  ): Promise<LoginResult> => {
+    // Self-registration removed — admin must add email to allowlist first
+    return { success: false, error: 'Self-registration is disabled. Contact the administrator.' };
   };
 
   const updateFaculty = async (updates: Partial<Faculty>): Promise<void> => {
@@ -245,7 +326,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ ...authState, login, register, logout, updateFaculty, changePassword }}>
+    <AuthContext.Provider value={{ ...authState, login, loginWithGoogle, completeGoogleRegistration, logout, updateFaculty, changePassword }}>
       {children}
     </AuthContext.Provider>
   );
