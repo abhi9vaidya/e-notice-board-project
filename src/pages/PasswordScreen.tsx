@@ -278,7 +278,19 @@ const PasswordScreen: React.FC = () => {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              {emailError && <p className="text-sm text-destructive">{emailError}</p>}
+              {emailError && (
+                emailError.includes('Google sign-in') ? (
+                  <div className="rounded-lg bg-primary/8 border border-primary/20 px-3.5 py-3 space-y-2">
+                    <p className="text-sm text-foreground">{emailError}</p>
+                    <Button type="button" size="sm" variant="outline" className="gap-2 w-full"
+                      onClick={() => { setScreen('main'); setEmailError(''); }}>
+                      <GoogleIcon />Use Google sign-in
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-destructive">{emailError}</p>
+                )
+              )}
             </div>
             <Button type="submit" className="w-full h-12 text-base font-semibold"
               disabled={emailLoading || !email.trim() || !password}>

@@ -12,7 +12,7 @@ import {
   linkWithCredential,
   User,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, Timestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '@/integrations/firebase/config';
 import { AuthState, Faculty, FirestoreProfile } from '@/integrations/firebase/types';
 import { toTitleCase } from '@/lib/utils';
@@ -181,10 +181,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       return { success: true };
     } catch (err: unknown) {
-      console.error('Login error:', err);
       const code = (err as { code?: string }).code;
       if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') {
-        return { success: false, error: 'No account found with this email.' };
+        // Check if a Firestore profile exists for this email — if so, it's a Google-only account
+        try {
+          const snap = await getDocs(query(collection(db, 'profiles'), where('email', '==', email.trim().toLowerCase())));
+          if (!snap.empty) {
+            return { success: false, error: 'This account uses Google sign-in. Please use the \u201cSign in with Google\u201d button instead.' };
+          }
+        } catch { /* ignore — fall through to generic message */ }
+        return { success: false, error: 'No admin account found with this email.' };
       }
       if (code === 'auth/wrong-password') {
         return { success: false, error: 'Incorrect password. Please try again.' };
