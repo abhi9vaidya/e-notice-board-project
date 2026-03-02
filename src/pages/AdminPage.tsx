@@ -124,6 +124,9 @@ const AdminPage: React.FC = () => {
     );
   });
 
+  const filteredAdmins  = filteredApproved.filter(r => r.role === 'admin');
+  const filteredFaculty = filteredApproved.filter(r => r.role !== 'admin');
+
   if (authLoading) {
     return (
       <AdminLayout title="Admin" subtitle="">
@@ -150,7 +153,7 @@ const AdminPage: React.FC = () => {
 
   return (
     <AdminLayout title="Admin" subtitle="Manage faculty accounts and access requests">
-      <div className="container max-w-4xl px-4 py-8 space-y-6">
+      <div className="container max-w-5xl px-4 py-8 space-y-6">
 
         {/* Pending Requests */}
         <Card className={`border-0 shadow-lg ${pending.length > 0 ? 'ring-2 ring-amber-400/60' : ''}`}>
@@ -285,7 +288,7 @@ const AdminPage: React.FC = () => {
                 value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent>
             {loading ? (
               <div className="flex items-center justify-center py-12 text-muted-foreground">
                 <RefreshCw className="h-5 w-5 animate-spin mr-2" />
@@ -294,44 +297,95 @@ const AdminPage: React.FC = () => {
             ) : filteredApproved.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground text-sm">No approved accounts found.</p>
             ) : (
-              filteredApproved.map(r => (
-                <div key={r.uid}
-                  className="flex items-center gap-4 p-3 rounded-lg border border-border bg-muted/30 hover:bg-muted/60 transition-colors">
-                  <Avatar className="h-10 w-10 shrink-0">
-                    <AvatarImage src={r.profilePhotoUrl} alt={r.name} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
-                      {getInitials(r.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground truncate">{toTitleCase(r.name)}</p>
-                    <p className="text-xs text-muted-foreground truncate">{r.email}</p>
-                    {r.department && (
-                      <p className="text-xs text-muted-foreground truncate">{r.department}</p>
-                    )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Admins column */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b">
+                    <ShieldCheck className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-semibold text-foreground">Admins</span>
+                    <Badge variant="default" className="ml-auto text-xs">{filteredAdmins.length}</Badge>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Badge variant={r.role === 'admin' ? 'default' : 'secondary'} className="gap-1 text-xs">
-                      {r.role === 'admin'
-                        ? <><ShieldCheck className="h-3 w-3" />Admin</>
-                        : <><UserCircle className="h-3 w-3" />Faculty</>}
-                    </Badge>
-                    {r.uid !== faculty.id && (
-                      <>
-                        <Button size="sm" variant="outline" className="text-xs h-7 px-2"
-                          onClick={() => toggleRole(r.uid, r.role)}>
-                          {r.role === 'admin' ? 'Revoke Admin' : 'Make Admin'}
-                        </Button>
-                        <Button size="icon" variant="ghost"
-                          className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                          onClick={() => removeProfile(r.uid)} title="Remove profile">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
+                  {filteredAdmins.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">No admins match your search.</p>
+                  ) : (
+                    filteredAdmins.map(r => (
+                      <div key={r.uid}
+                        className="flex items-center gap-3 p-3 rounded-lg border border-border bg-primary/5 hover:bg-primary/10 transition-colors">
+                        <Avatar className="h-9 w-9 shrink-0">
+                          <AvatarImage src={r.profilePhotoUrl} alt={r.name} />
+                          <AvatarFallback className="bg-primary/20 text-primary font-semibold text-xs">
+                            {getInitials(r.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-foreground text-sm truncate">{toTitleCase(r.name)}</p>
+                          <p className="text-xs text-muted-foreground truncate">{r.email}</p>
+                          {r.department && (
+                            <p className="text-xs text-muted-foreground truncate">{r.department}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {r.uid !== faculty.id && (
+                            <>
+                              <Button size="sm" variant="outline" className="text-xs h-7 px-2"
+                                onClick={() => toggleRole(r.uid, r.role)}>
+                                Revoke Admin
+                              </Button>
+                              <Button size="icon" variant="ghost"
+                                className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                                onClick={() => removeProfile(r.uid)} title="Remove profile">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
-              ))
+
+                {/* Faculty column */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b">
+                    <UserCircle className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-semibold text-foreground">Faculty</span>
+                    <Badge variant="secondary" className="ml-auto text-xs">{filteredFaculty.length}</Badge>
+                  </div>
+                  {filteredFaculty.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">No faculty match your search.</p>
+                  ) : (
+                    filteredFaculty.map(r => (
+                      <div key={r.uid}
+                        className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30 hover:bg-muted/60 transition-colors">
+                        <Avatar className="h-9 w-9 shrink-0">
+                          <AvatarImage src={r.profilePhotoUrl} alt={r.name} />
+                          <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+                            {getInitials(r.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-foreground text-sm truncate">{toTitleCase(r.name)}</p>
+                          <p className="text-xs text-muted-foreground truncate">{r.email}</p>
+                          {r.department && (
+                            <p className="text-xs text-muted-foreground truncate">{r.department}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <Button size="sm" variant="outline" className="text-xs h-7 px-2"
+                            onClick={() => toggleRole(r.uid, r.role)}>
+                            Make Admin
+                          </Button>
+                          <Button size="icon" variant="ghost"
+                            className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                            onClick={() => removeProfile(r.uid)} title="Remove profile">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>

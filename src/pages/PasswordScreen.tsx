@@ -62,8 +62,13 @@ const PasswordScreen: React.FC = () => {
       setRegError('Please enter your full name.');
       return;
     }
+    const emailLower = regEmail.trim().toLowerCase();
+    if (!emailLower.endsWith('@rknec.edu') && !emailLower.endsWith('@rbunagpur.in')) {
+      setRegError('Email must end with @rknec.edu or @rbunagpur.in.');
+      return;
+    }
     setRegLoading(true);
-    const result = await register(regEmail.trim(), regPassword, regName.trim(), regDept.trim());
+    const result = await register(emailLower, regPassword, regName.trim(), regDept.trim());
     setRegLoading(false);
     if (result.success) {
       setRegSuccess(true);
@@ -166,7 +171,7 @@ const PasswordScreen: React.FC = () => {
                 {isLoading ? (
                   <span className="flex items-center gap-2">
                     <span className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                    Signing inâ€¦
+                    Signing in...
                   </span>
                 ) : 'Sign In'}
               </Button>
@@ -274,7 +279,7 @@ const PasswordScreen: React.FC = () => {
                     {regLoading ? (
                       <span className="flex items-center gap-2">
                         <span className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                        Submittingâ€¦
+                        Submitting...
                       </span>
                     ) : 'Submit Access Request'}
                   </Button>

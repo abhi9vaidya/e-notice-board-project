@@ -7,11 +7,14 @@ import { Bell, GraduationCap, Archive, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { usePendingRequests } from '@/hooks/usePendingRequests';
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
   const { faculty } = useAuth();
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const pendingRequests = usePendingRequests();
+  const pendingCount = pendingRequests.length;
 
   const getInitials = (name: string) => {
     return name
@@ -51,11 +54,21 @@ const Header: React.FC = () => {
               </Button>
             </Link>
             
-            {/* Notifications */}
-            <div className="relative">
-              <Bell className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer" />
-              <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-destructive animate-pulse" />
-            </div>
+            {/* Notifications — admin only */}
+            {faculty?.role === 'admin' && (
+              <button
+                className="relative p-1 rounded-md hover:bg-muted transition-colors"
+                title="Pending requests"
+                onClick={() => navigate('/admin')}
+              >
+                <Bell className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors" />
+                {pendingCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-bold text-white flex items-center justify-center animate-pulse">
+                    {pendingCount}
+                  </span>
+                )}
+              </button>
+            )}
             
             <ThemeToggle />
             
@@ -66,7 +79,7 @@ const Header: React.FC = () => {
               onClick={() => navigate('/profile')}
             >
               <Avatar className="h-8 w-8 border-2 border-primary/20">
-                <AvatarImage src={faculty?.profilePhoto} alt={faculty?.name} />
+                <AvatarImage src={faculty?.profilePhotoUrl} alt={faculty?.name} />
                 <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
                   {faculty?.name ? getInitials(faculty.name) : <User className="h-4 w-4" />}
                 </AvatarFallback>

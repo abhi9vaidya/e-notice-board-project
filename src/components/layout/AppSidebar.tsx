@@ -14,6 +14,7 @@ import {
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { usePendingRequests } from "@/hooks/usePendingRequests";
 import {
   Sidebar,
   SidebarContent,
@@ -56,6 +57,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { state, toggleSidebar } = useSidebar();
   const { faculty } = useAuth();
+  const pendingCount = usePendingRequests().length;
   const collapsed = state === "collapsed";
 
   const isActive = (path: string) => {
@@ -169,7 +171,40 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1">
                 {adminItems.map((item) => (
-                  <NavItem key={item.title} item={item} />
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        title={collapsed ? item.title : undefined}
+                        className={cn(
+                          "flex items-center rounded-lg transition-all duration-200 relative",
+                          collapsed
+                            ? "justify-center px-0 py-2.5 w-full"
+                            : "gap-3 px-3 py-2.5",
+                          isActive(item.url)
+                            ? "bg-primary text-primary-foreground font-medium shadow-md"
+                            : "hover:bg-sidebar-accent text-sidebar-foreground"
+                        )}
+                      >
+                        <span className="relative shrink-0">
+                          <item.icon className="h-5 w-5" />
+                          {pendingCount > 0 && (
+                            <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-destructive border border-sidebar animate-pulse" />
+                          )}
+                        </span>
+                        {!collapsed && (
+                          <span className="flex items-center gap-2 flex-1">
+                            {item.title}
+                            {pendingCount > 0 && (
+                              <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white">
+                                {pendingCount}
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>

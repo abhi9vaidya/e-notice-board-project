@@ -80,8 +80,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               loading: false,
             });
           } else {
-            // Profile missing — sign out; should not happen after self-registration flow
-            await signOut(auth);
+            // Profile missing — this can happen during registration (race condition
+            // between createUserWithEmailAndPassword and setDoc). Do NOT sign out
+            // here; the register() function handles its own signOut after writing
+            // the profile. Just mark as unauthenticated so the login screen shows.
             setAuthState({ isAuthenticated: false, faculty: null, loading: false });
           }
         } catch (err) {

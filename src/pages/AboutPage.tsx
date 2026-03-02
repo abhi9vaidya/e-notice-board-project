@@ -201,7 +201,7 @@ const AboutPage: React.FC = () => {
                 </p>
                 <Separator className="my-4" />
                 <p className="text-xs text-muted-foreground">
-                  © 2024 Ramdeobaba University. All rights reserved.
+                  © 2026 Ramdeobaba University. All rights reserved.
                 </p>
               </div>
             </CardContent>
