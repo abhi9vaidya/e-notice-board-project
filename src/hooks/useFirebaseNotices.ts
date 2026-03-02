@@ -27,6 +27,8 @@ export interface NoticeFormData {
     documentUrl?: string;
     startTime: Date;
     endTime: Date;
+    showIssuedBy?: boolean;
+    showValidTill?: boolean;
 }
 
 // faculty notices hook
