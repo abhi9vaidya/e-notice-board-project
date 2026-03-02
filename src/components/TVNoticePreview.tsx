@@ -12,6 +12,98 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { AutoScrollText } from '@/components/AutoScrollText';
 
+// ── URL helpers ────────────────────────────────────────────────────────────────
+
+/** True when the URL points to a PDF document. */
+const isPdfUrl = (url: string) => {
+    const u = url.toLowerCase();
+    return u.includes('.pdf') || u.includes('export=download');
+};
+
+/**
+ * Convert a storage URL to a displayable image URL.
+ *
+ * Handles three cases:
+ *  1. Cloudinary image  → use as-is (already a direct image URL)
+ *  2. Cloudinary PDF    → insert `f_jpg,pg_1` transformation to get first-page JPEG
+ *  3. Google Drive URL  → use the thumbnail API (avoids virus-scan interstitial)
+ *  4. Anything else     → use as-is
+ */
+function toDisplayImageUrl(url: string): string {
+    // ── Cloudinary ──────────────────────────────────────────────────────────
+    if (url.includes('res.cloudinary.com')) {
+        if (isPdfUrl(url)) {
+            // Insert transformation before the version/folder segment.
+            // e.g. /image/upload/v123/... → /image/upload/f_jpg,pg_1/v123/...
+            // Also works for /raw/upload/ → replace with /image/upload/
+            return url
+                .replace('/raw/upload/', '/image/upload/')
+                .replace('/image/upload/', '/image/upload/f_jpg,pg_1/');
+        }
+        // Regular Cloudinary image — serve as-is
+        return url;
+    }
+
+    // ── Google Drive ────────────────────────────────────────────────────────
+    // Extract file ID from /uc?id=ID, /file/d/ID/view, /open?id=ID etc.
+    const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]{20,})/) ||
+                    url.match(/\/d\/([a-zA-Z0-9_-]{20,})/);
+    if (idMatch) {
+        // thumbnail endpoint works for both images and PDFs (first-page PNG)
+        // and does NOT redirect to a virus-scan warning page
+        return `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w1920`;
+    }
+
+    // ── base64 data URL or any other URL — use as-is ────────────────────────
+    return url;
+}
+
+// ── Shared media panel renderer ────────────────────────────────────────────────
+
+interface MediaPanelProps {
+    imageUrl?: string;
+    documentUrl?: string;
+    className?: string;
+    fit?: 'cover' | 'contain';
+}
+
+/**
+ * Renders a Drive image or PDF as a thumbnail image.
+ * Using the /thumbnail endpoint avoids Google's virus-scan interstitial page
+ * that breaks <img src="uc?export=view"> for larger files.
+ * The thumbnail API also works for PDFs — it returns a PNG of the first page.
+ */
+const MediaPanel: React.FC<MediaPanelProps> = ({ imageUrl, documentUrl, className = '', fit = 'cover' }) => {
+    // Prefer the explicit image; fall back to document (PDF first-page thumbnail)
+    const effectiveUrl = imageUrl || documentUrl || null;
+    if (!effectiveUrl) return null;
+
+    const isPdf = isPdfUrl(effectiveUrl) || (!imageUrl && !!documentUrl);
+    // toDisplayImageUrl handles Cloudinary images, Cloudinary PDFs, and Drive URLs
+    const src = toDisplayImageUrl(effectiveUrl);
+
+    return (
+        <div className={cn('relative overflow-hidden bg-slate-900', className)}>
+            <img
+                src={src}
+                className={cn('w-full h-full', fit === 'cover' ? 'object-cover' : 'object-contain')}
+                alt=""
+                onError={(e) => {
+                    // thumbnail failed → try the raw Drive URL as last resort
+                    const img = e.currentTarget;
+                    if (img.src !== effectiveUrl) img.src = effectiveUrl;
+                }}
+            />
+            {isPdf && (
+                <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-red-600/90 backdrop-blur-sm text-white font-black text-sm px-4 py-2 rounded-full shadow-xl pointer-events-none">
+                    <FileText className="h-4 w-4" />
+                    PDF
+                </div>
+            )}
+        </div>
+    );
+};
+
 interface TVNoticePreviewProps {
     notice: Partial<Notice>;
     isHero?: boolean;
@@ -145,29 +237,34 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
         // Urgent high-priority notices get a red pulse ring treatment added to the outer wrapper below
         case 'split': {
             const isRight = placement === 'right';
+            const hasMedia = !!(notice.imageUrl || notice.documentUrl);
             return (
                 <div className={containerClass}>
-                    <div className="h-full grid grid-cols-5 gap-16">
-                        <div className={cn("col-span-3 flex flex-col h-full py-6 min-h-0", isRight && "order-2")}>
+                    <div className="h-full flex gap-10">
+                        {/* Text side — takes remaining width */}
+                        <div className={cn("flex-1 flex flex-col h-full py-6 min-h-0", isRight && "order-2")}>
                             {header}
-                        <h1 className={cn("font-bold text-white leading-[1] tracking-tight mb-10 shrink-0 line-clamp-3", titleSize)}>
+                            <h1 className={cn("font-bold text-white leading-[1] tracking-tight mb-8 shrink-0 line-clamp-3", titleSize)}>
                                 {notice.title || 'Notice Title'}
                             </h1>
                             <div className="flex-1 overflow-hidden min-h-0 relative">
                                 <AutoScrollText
-                                    className="text-3xl text-slate-400 leading-relaxed max-w-3xl"
-                                    content={notice.description || 'Notice description goes here and can be quite long to test the readability.'}
+                                    className="text-3xl text-slate-400 leading-relaxed"
+                                    content={notice.description || 'Notice description goes here.'}
                                 />
                             </div>
                             {footer}
                         </div>
-                        <div className={cn("col-span-2 relative py-6", isRight && "order-1")}>
-                            {notice.imageUrl ? (
-                                <div className="h-full rounded-[2.5rem] overflow-hidden border border-white/10 shadow-3xl">
-                                    <img src={notice.imageUrl} className="w-full h-full object-cover" alt="" />
-                                </div>
+                        {/* Media side — fixed width, stretches full height */}
+                        <div className={cn("w-[42%] shrink-0 py-4", isRight && "order-1")}>
+                            {hasMedia ? (
+                                <MediaPanel
+                                    imageUrl={notice.imageUrl}
+                                    documentUrl={notice.documentUrl}
+                                    className="h-full w-full rounded-[2rem] border border-white/10 shadow-2xl"
+                                />
                             ) : (
-                                <div className="h-full rounded-[2.5rem] bg-white/5 border border-dashed border-white/10 flex items-center justify-center">
+                                <div className="h-full rounded-[2rem] bg-white/5 border border-dashed border-white/10 flex items-center justify-center">
                                     <FileText className="h-32 w-32 text-white/5" />
                                 </div>
                             )}
@@ -181,8 +278,12 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
             return (
                 <div className={containerClass}>
                     <div className="relative h-full w-full rounded-[3rem] overflow-hidden border border-white/5">
-                        {notice.imageUrl ? (
-                            <img src={notice.imageUrl} className="absolute inset-0 w-full h-full object-cover" alt="" />
+                        {(notice.imageUrl || notice.documentUrl) ? (
+                            <MediaPanel
+                                imageUrl={notice.imageUrl}
+                                documentUrl={notice.documentUrl}
+                                className="absolute inset-0 w-full h-full"
+                            />
                         ) : (
                             <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
                                 <Sparkles className="h-32 w-32 text-white/5" />
@@ -277,26 +378,29 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
 
         default: {
             const isStandardRight = placement === 'right';
+            const hasMedia = !!(notice.imageUrl || notice.documentUrl);
             return (
                 <div className={containerClass}>
                     <div className="h-full flex flex-col py-6 text-left">
                         {header}
-                        <div className={cn("flex-1 min-h-0 flex items-center gap-20", isStandardRight && "flex-row-reverse")}>
+                        <div className={cn("flex-1 min-h-0 flex items-start gap-14", isStandardRight && "flex-row-reverse")}>
                             <div className="flex-1 flex flex-col min-h-0 h-full justify-center">
-                                <h1 className={cn("font-bold text-white leading-[1] tracking-tight mb-10 shrink-0 line-clamp-3", titleSize)}>
+                                <h1 className={cn("font-bold text-white leading-[1] tracking-tight mb-8 shrink-0 line-clamp-3", titleSize)}>
                                     {notice.title || 'Notice Title'}
                                 </h1>
-                                <div className="flex-1 min-h-0 overflow-hidden relative max-h-[400px]">
+                                <div className="flex-1 min-h-0 overflow-hidden relative">
                                     <AutoScrollText
-                                        className="text-3xl text-slate-400 leading-relaxed max-w-4xl"
+                                        className="text-3xl text-slate-400 leading-relaxed"
                                         content={notice.description || 'Notice description goes here...'}
                                     />
                                 </div>
                             </div>
-                            {notice.imageUrl && (
-                                <div className="w-[30vw] aspect-[4/5] rounded-[2.5rem] overflow-hidden shadow-2xl shrink-0">
-                                    <img src={notice.imageUrl} className="w-full h-full object-cover" alt="" />
-                                </div>
+                            {hasMedia && (
+                                <MediaPanel
+                                    imageUrl={notice.imageUrl}
+                                    documentUrl={notice.documentUrl}
+                                    className="w-[38%] self-stretch rounded-[2rem] shadow-2xl shrink-0"
+                                />
                             )}
                         </div>
                         {footer}

@@ -55,6 +55,29 @@ const TVDisplay: React.FC = () => {
     return () => clearTimeout(t);
   }, [displayItems, currentIndex, slideDuration]);
 
+  // Auto-refresh: if the tab regains visibility after being hidden >10 min
+  // (e.g., TV screensaver or power-save mode), reload so Firestore listeners
+  // re-establish and fresh notices are fetched — fulfils "persistent display
+  // behavior even after TV power off" per the project synopsis.
+  useEffect(() => {
+    let hiddenAt: number | null = null;
+    const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        hiddenAt = Date.now();
+      } else {
+        if (hiddenAt !== null && Date.now() - hiddenAt > STALE_THRESHOLD_MS) {
+          window.location.reload();
+        }
+        hiddenAt = null;
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, []);
+
   // Clock tick
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);

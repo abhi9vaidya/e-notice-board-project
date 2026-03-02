@@ -5,6 +5,7 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { MarkdownEditor } from "@/components/notice/MarkdownEditor";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -238,16 +239,13 @@ const AddEditNoticePage: React.FC = () => {
                 <Label htmlFor="description" className="text-sm font-medium">
                   {isAchievement ? 'Achievement Description' : 'Description'} <span className="text-destructive">*</span>
                 </Label>
-                <Textarea
+                <MarkdownEditor
                   id="description"
                   value={formData.description}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, description: e.target.value }))
-                  }
-                  placeholder={isAchievement ? 'Brief description, e.g. Won 1st place competing against 200+ teams...' : 'Enter detailed description...'}
+                  onChange={(val) => setFormData((prev) => ({ ...prev, description: val }))}
+                  placeholder={isAchievement ? 'Brief description, e.g. Won 1st place competing against 200+ teams...' : 'Enter detailed description... Use **bold**, - bullet lists, ## headings and more.'}
                   required
-                  rows={5}
-                  className="resize-none"
+                  minRows={10}
                 />
               </div>
 
