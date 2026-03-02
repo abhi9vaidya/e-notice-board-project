@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { uploadToCloudinary } from "@/integrations/cloudinary/cloudinaryService";
+import { extractTextFromFile } from "@/lib/extractText";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { MarkdownEditor } from "@/components/notice/MarkdownEditor";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Calendar } from "@/components/ui/calendar";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Popover,
   PopoverContent,
@@ -119,6 +121,34 @@ const AddEditNoticePage: React.FC = () => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [descTab, setDescTab] = useState<'type' | 'extract'>('type');
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractPreview, setExtractPreview] = useState<string>('');
+  const extractInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExtract = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64 = reader.result as string;
+      setExtractPreview(base64);
+      setIsExtracting(true);
+      try {
+        const type = file.type === 'application/pdf' ? 'pdf' : 'image';
+        const text = await extractTextFromFile(base64, type);
+        setFormData(prev => ({ ...prev, description: text }));
+        setDescTab('type');
+        toast({ title: 'Text extracted!', description: 'Review and edit before saving.' });
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Failed to extract text.';
+        toast({ title: 'Extraction failed', description: msg, variant: 'destructive' });
+      } finally {
+        setIsExtracting(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     if (editId) {
@@ -259,17 +289,72 @@ const AddEditNoticePage: React.FC = () => {
 
               {/* details field */}
               <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm font-medium">
+                <Label className="text-sm font-medium">
                   {isAchievement ? 'Achievement Description' : 'Description'} <span className="text-destructive">*</span>
                 </Label>
-                <MarkdownEditor
-                  id="description"
-                  value={formData.description}
-                  onChange={(val) => setFormData((prev) => ({ ...prev, description: val }))}
-                  placeholder={isAchievement ? 'Brief description, e.g. Won 1st place competing against 200+ teams...' : 'Enter detailed description... Use **bold**, - bullet lists, ## headings and more.'}
-                  required
-                  minRows={10}
-                />
+                <Tabs value={descTab} onValueChange={v => setDescTab(v as 'type' | 'extract')}>
+                  <TabsList className="h-8 mb-2">
+                    <TabsTrigger value="type" className="gap-1.5 text-xs px-3">
+                      <AlignLeft className="h-3 w-3" /> Type text
+                    </TabsTrigger>
+                    <TabsTrigger value="extract" className="gap-1.5 text-xs px-3">
+                      <Sparkles className="h-3 w-3" /> Extract from file
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="type" className="mt-0">
+                    <MarkdownEditor
+                      id="description"
+                      value={formData.description}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, description: val }))}
+                      placeholder={isAchievement ? 'Brief description, e.g. Won 1st place competing against 200+ teams...' : 'Enter detailed description... Use **bold**, - bullet lists, ## headings and more.'}
+                      required
+                      minRows={10}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="extract" className="mt-0">
+                    <div
+                      className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors"
+                      onClick={() => extractInputRef.current?.click()}
+                    >
+                      {isExtracting ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                          <p className="text-sm font-medium">AI is extracting key points…</p>
+                          <p className="text-xs text-muted-foreground">This may take a few seconds</p>
+                        </div>
+                      ) : extractPreview ? (
+                        <div className="space-y-2">
+                          {extractPreview.startsWith('data:image') ? (
+                            <img src={extractPreview} alt="Uploaded" className="max-h-32 mx-auto rounded-lg object-contain" />
+                          ) : (
+                            <div className="flex flex-col items-center gap-1">
+                              <FileText className="h-10 w-10 text-rose-500" />
+                              <p className="text-sm text-muted-foreground">PDF uploaded</p>
+                            </div>
+                          )}
+                          <p className="text-xs text-muted-foreground">Click to replace</p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                            <Upload className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                          <p className="text-sm font-medium">Upload an image or PDF</p>
+                          <p className="text-xs text-muted-foreground">AI will extract and summarise the key points into the description</p>
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      ref={extractInputRef}
+                      type="file"
+                      accept="image/*,.pdf"
+                      className="hidden"
+                      onChange={handleExtract}
+                    />
+                  </TabsContent>
+                </Tabs>
               </div>
 
               {/* file upload block */}
