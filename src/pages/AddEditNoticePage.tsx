@@ -7,13 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MarkdownEditor } from "@/components/notice/MarkdownEditor";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -22,35 +15,50 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarIcon, Upload, Save, X, FileText, Loader2, Zap, Tv, Clock, Sparkles, Trophy, Info } from "lucide-react";
+import { CalendarIcon, Upload, X, FileText, Loader2, Zap, Tv, Clock, Sparkles, Trophy, GalleryHorizontal, Image, AlignLeft, AlertTriangle, Minus } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useNotices } from "@/hooks/useFirebaseNotices";
 import { CreateNoticeInput } from "@/integrations/firebase/noticesService";
 import { Category, Priority, Template, TemplatePlacement } from "@/integrations/firebase/types";
 import { TVNoticePreview } from "@/components/TVNoticePreview";
-import {
-  ArrowLeftRight
-} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
+import { categoryConfig } from "@/config/categoryConfig";
+import { addDays, addWeeks, addMonths } from "date-fns";
 
-const categories: { value: Category; label: string }[] = [
-  { value: "academic", label: "Academic" },
-  { value: "examinations", label: "Examinations" },
-  { value: "placements", label: "Placements" },
-  { value: "events", label: "Events" },
-  { value: "announcements", label: "Announcements" },
-  { value: "achievements", label: "Achievements" },
-  { value: "other", label: "Other" },
+const PRIORITIES: { value: Priority; label: string; sub: string; color: string; bg: string; icon: React.ReactNode }[] = [
+  { value: 'high',   label: 'Urgent',    sub: 'Alert style, shown on top',  color: 'text-rose-600 border-rose-500',  bg: 'bg-rose-500/10',  icon: <Zap className="h-4 w-4" /> },
+  { value: 'medium', label: 'Important', sub: 'Standard mid-priority',       color: 'text-amber-600 border-amber-500', bg: 'bg-amber-500/10', icon: <AlertTriangle className="h-4 w-4" /> },
+  { value: 'low',    label: 'General',   sub: 'Informational notice',        color: 'text-sky-600 border-sky-500',    bg: 'bg-sky-500/10',   icon: <Minus className="h-4 w-4" /> },
 ];
 
-const templates: { value: Template; label: string; description: string; icon: React.ElementType }[] = [
-  { value: "standard", label: "Standard", description: "Balanced layout with image and text", icon: FileText },
-  { value: "split", label: "Split Screen", description: "Large image on one side, text on other", icon: Zap },
-  { value: "full-image", label: "Full Image", description: "Image-focused with text overlay", icon: Tv },
-  { value: "text-only", label: "Text Only", description: "Large, readable text without images", icon: Clock },
-  { value: "featured", label: "Featured", description: "Special styling for major highlights", icon: Sparkles },
+const TEMPLATES: { value: Template; label: string; description: string; icon: React.ReactNode; hasPlacement: boolean; preview: React.ReactNode }[] = [
+  {
+    value: 'standard', label: 'Standard', description: 'Balanced layout with image and text',
+    icon: <FileText className="h-4 w-4" />, hasPlacement: false,
+    preview: (<div className="flex flex-col gap-1 p-2 h-full"><div className="h-2 bg-current rounded w-3/4 opacity-60" /><div className="h-1.5 bg-current rounded w-full opacity-30 mt-1" /><div className="h-1.5 bg-current rounded w-5/6 opacity-30" /><div className="h-1.5 bg-current rounded w-4/6 opacity-30" /></div>),
+  },
+  {
+    value: 'split', label: 'Split Screen', description: 'Image on one side, text on the other',
+    icon: <GalleryHorizontal className="h-4 w-4" />, hasPlacement: true,
+    preview: (<div className="flex gap-1 p-2 h-full"><div className="w-1/2 bg-current rounded opacity-20" /><div className="flex-1 flex flex-col gap-1 justify-center"><div className="h-2 bg-current rounded opacity-60" /><div className="h-1.5 bg-current rounded opacity-30" /><div className="h-1.5 bg-current rounded w-3/4 opacity-30" /></div></div>),
+  },
+  {
+    value: 'full-image', label: 'Full Image', description: 'Image background with text overlay',
+    icon: <Image className="h-4 w-4" />, hasPlacement: false,
+    preview: (<div className="relative p-2 h-full flex items-end"><div className="absolute inset-0 bg-current opacity-20 rounded" /><div className="relative flex flex-col gap-1 w-full"><div className="h-2 bg-current rounded w-3/4 opacity-80" /><div className="h-1.5 bg-current rounded opacity-50" /></div></div>),
+  },
+  {
+    value: 'text-only', label: 'Text Only', description: 'Large, readable text without images',
+    icon: <AlignLeft className="h-4 w-4" />, hasPlacement: false,
+    preview: (<div className="flex flex-col gap-1.5 p-2 h-full justify-center"><div className="h-2.5 bg-current rounded w-2/3 opacity-70 mx-auto" /><div className="h-1.5 bg-current rounded opacity-30 mx-auto w-5/6" /><div className="h-1.5 bg-current rounded opacity-30 mx-auto w-4/6" /></div>),
+  },
+  {
+    value: 'featured', label: 'Featured', description: 'Special styling for major highlights',
+    icon: <Sparkles className="h-4 w-4" />, hasPlacement: false,
+    preview: (<div className="flex flex-col gap-1 p-2 h-full"><div className="h-0.5 bg-current opacity-60 rounded mb-1" /><div className="h-3 bg-current rounded w-3/4 opacity-80" /><div className="h-1.5 bg-current rounded w-full opacity-30 mt-1" /><div className="h-1.5 bg-current rounded w-5/6 opacity-30" /><div className="h-0.5 bg-current opacity-60 rounded mt-1" /></div>),
+  },
 ];
 
 
@@ -105,6 +113,7 @@ const AddEditNoticePage: React.FC = () => {
     }
   }, [faculty, editId]);
 
+  // isHighPriority is kept for backward compat with submit logic but priority card drives it too
   const [isHighPriority, setIsHighPriority] = useState(false);
   const isAchievement = formData.category === 'achievements';
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -133,9 +142,23 @@ const AddEditNoticePage: React.FC = () => {
           showValidTill: notice.showValidTill !== false,
         });
         setIsHighPriority(notice.priority === "high");
+        setFormData(prev => ({ ...prev, priority: notice.priority }));
       }
     }
   }, [editId, notices]);
+
+  const setEndTimePreset = (preset: string) => {
+    const base = new Date();
+    const map: Record<string, Date> = {
+      today: new Date(new Date().setHours(23, 59, 0, 0)),
+      '1d': addDays(base, 1),
+      '3d': addDays(base, 3),
+      '1w': addWeeks(base, 1),
+      '2w': addWeeks(base, 2),
+      '1m': addMonths(base, 1),
+    };
+    if (map[preset]) setFormData(prev => ({ ...prev, endTime: map[preset] }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -286,47 +309,66 @@ const AddEditNoticePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* category and priority */}
-              <div className="grid gap-6 md:grid-cols-2">
-                {/* dropdown for category */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">
-                    Category <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={formData.category}
-                    onValueChange={(value: Category) =>
-                      setFormData((prev) => ({ ...prev, category: value }))
-                    }
-                  >
-                    <SelectTrigger className="h-11">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.value} value={cat.value}>
-                          {cat.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              {/* Category pill grid */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Category <span className="text-destructive">*</span></Label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {(Object.entries(categoryConfig) as [string, typeof categoryConfig[string]][]).map(([cat, cfg]) => {
+                    const Icon = cfg.icon;
+                    const isActive = formData.category === cat;
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, category: cat as Category }))}
+                        className={cn(
+                          'flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all text-left',
+                          isActive ? 'border-2' : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted hover:text-foreground'
+                        )}
+                        style={isActive ? { borderColor: cfg.accent, backgroundColor: `${cfg.accent}20`, color: cfg.accent } : {}}
+                      >
+                        <Icon className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{cfg.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
+                {formData.category === 'other' && (
+                  <input
+                    type="text"
+                    className="mt-2 w-full border border-dashed rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="Enter custom category (e.g. Workshop, Sports, Club)"
+                    value={formData.customCategory || ''}
+                    onChange={e => setFormData(prev => ({ ...prev, customCategory: e.target.value }))}
+                  />
+                )}
+              </div>
 
-                {/* high priority switch */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">high Priority</Label>
-                  <div className="flex items-center gap-3 h-11 px-3 rounded-md border bg-background">
-                    <Switch
-                      checked={isHighPriority}
-                      onCheckedChange={setIsHighPriority}
-                    />
-                    <span className={cn(
-                      "text-sm",
-                      isHighPriority ? "text-destructive font-medium" : "text-muted-foreground"
-                    )}>
-                      {isHighPriority ? "Urgent Notice" : "Normal Priority"}
-                    </span>
-                  </div>
+              {/* Priority 3-card picker */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Priority</Label>
+                <div className="grid grid-cols-3 gap-3">
+                  {PRIORITIES.map(p => (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, priority: p.value }));
+                        setIsHighPriority(p.value === 'high');
+                      }}
+                      className={cn(
+                        'flex flex-col items-start gap-1 p-3 rounded-xl border-2 transition-all text-left',
+                        formData.priority === p.value
+                          ? `${p.bg} ${p.color}`
+                          : 'border-border bg-muted/20 text-muted-foreground hover:bg-muted'
+                      )}
+                    >
+                      <div className={cn('flex items-center gap-1.5 font-semibold text-sm', formData.priority === p.value ? p.color : '')}>
+                        {p.icon} {p.label}
+                      </div>
+                      <span className="text-[11px] leading-tight opacity-80">{p.sub}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -356,62 +398,57 @@ const AddEditNoticePage: React.FC = () => {
                 </div>
               )}
 
-              {/* template selection — hidden for achievements since they always use the gold card */}
+              {/* Template selection — hidden for achievements */}
               {!isAchievement && (
-              <div className="space-y-4 pt-4 border-t">
-                <div className="flex items-center justify-between">
-                  <Label className="font-bold text-lg">Display Customization</Label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Placement</span>
-                    <div className="flex bg-muted rounded-lg p-1">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={formData.templatePlacement === "left" ? "default" : "ghost"}
-                        onClick={() => setFormData(prev => ({ ...prev, templatePlacement: "left" }))}
-                        className="h-8 px-3 text-xs"
-                      >
-                        Left
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={formData.templatePlacement === "right" ? "default" : "ghost"}
-                        onClick={() => setFormData(prev => ({ ...prev, templatePlacement: "right" }))}
-                        className="h-8 px-3 text-xs"
-                      >
-                        Right
-                      </Button>
-                    </div>
+                <div className="space-y-3 pt-4 border-t">
+                  <Label className="font-bold text-base">Display Style</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    {TEMPLATES.map(tpl => {
+                      const isActive = formData.template === tpl.value;
+                      return (
+                        <button
+                          key={tpl.value}
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, template: tpl.value }))}
+                          className={cn(
+                            'flex flex-col items-center gap-1.5 p-2 rounded-lg border-2 transition-all',
+                            isActive ? 'border-primary bg-primary/5 text-primary' : 'border-border bg-muted/20 text-muted-foreground hover:bg-muted'
+                          )}
+                        >
+                          <div className={cn(
+                            'w-full h-12 rounded overflow-hidden text-current border',
+                            isActive ? 'border-primary/30 bg-primary/5' : 'border-border/50 bg-muted/50'
+                          )}>
+                            {tpl.preview}
+                          </div>
+                          <div className="flex items-center gap-1 text-[10px] font-medium">{tpl.icon}<span>{tpl.label}</span></div>
+                        </button>
+                      );
+                    })}
                   </div>
-                </div>
+                  <p className="text-xs text-muted-foreground">{TEMPLATES.find(t => t.value === formData.template)?.description}</p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {templates.map((tpl) => (
-                    <div
-                      key={tpl.value}
-                      onClick={() => setFormData(prev => ({ ...prev, template: tpl.value }))}
-                      className={cn(
-                        "cursor-pointer rounded-xl border-2 p-4 transition-all hover:border-primary/50",
-                        formData.template === tpl.value
-                          ? "border-primary bg-primary/5 shadow-sm"
-                          : "border-border bg-card"
-                      )}
-                    >
-                      <div className="flex items-center gap-3 mb-2">
-                        <tpl.icon className={cn(
-                          "h-5 w-5",
-                          formData.template === tpl.value ? "text-primary" : "text-muted-foreground"
-                        )} />
-                        <span className="font-semibold text-sm">{tpl.label}</span>
+                  {/* Placement — only visible for split */}
+                  {formData.template === 'split' && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40 border">
+                      <span className="text-xs text-muted-foreground flex-1">Image position on TV</span>
+                      <div className="flex gap-1">
+                        {(['left', 'right'] as TemplatePlacement[]).map(pos => (
+                          <Button
+                            key={pos}
+                            type="button"
+                            size="sm"
+                            variant={formData.templatePlacement === pos ? 'default' : 'outline'}
+                            onClick={() => setFormData(prev => ({ ...prev, templatePlacement: pos }))}
+                            className="h-8 px-3 text-xs capitalize"
+                          >
+                            Image {pos === 'left' ? '← Left' : 'Right →'}
+                          </Button>
+                        ))}
                       </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        {tpl.description}
-                      </p>
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
               )}
 
               {/* TV Preview Section */}
@@ -469,6 +506,10 @@ const AddEditNoticePage: React.FC = () => {
 
 
               {/* date pickers */}
+              <div className="space-y-2 pt-4 border-t">
+                <Label className="font-bold text-base">Schedule</Label>
+                <p className="text-xs text-muted-foreground">Set when this notice appears and disappears from the TV board.</p>
+              </div>
               <div className="grid gap-6 md:grid-cols-2">
                 {/* date to start displaying */}
                 <div className="space-y-2">
@@ -542,6 +583,27 @@ const AddEditNoticePage: React.FC = () => {
                       />
                     </PopoverContent>
                   </Popover>
+                  {/* Quick expire presets */}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    <span className="text-xs text-muted-foreground mr-1 self-center">Quick:</span>
+                    {[
+                      { key: 'today', label: 'Today' },
+                      { key: '1d', label: '+1 day' },
+                      { key: '3d', label: '+3 days' },
+                      { key: '1w', label: '+1 week' },
+                      { key: '2w', label: '+2 weeks' },
+                      { key: '1m', label: '+1 month' },
+                    ].map(p => (
+                      <button
+                        key={p.key}
+                        type="button"
+                        onClick={() => setEndTimePreset(p.key)}
+                        className="px-2.5 py-1 text-xs rounded-full border border-border bg-muted/30 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
