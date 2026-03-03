@@ -491,7 +491,7 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({ isOpen, onClose
               <SectionHeader
                 icon={<AlignLeft className="h-3.5 w-3.5" />}
                 title="Description"
-                subtitle="The main body text — type it or extract from an image/PDF"
+                subtitle="The main body text — type it or extract from an image"
               />
               <Tabs value={descriptionTab} onValueChange={v => setDescriptionTab(v as 'text' | 'extract')}>
                 <TabsList className="h-8 mb-2">
@@ -536,11 +536,11 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({ isOpen, onClose
                         <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                           <Upload className="h-5 w-5 text-muted-foreground" />
                         </div>
-                        <p className="text-sm font-medium">Upload image or PDF</p>
+                        <p className="text-sm font-medium">Upload an image (JPG / PNG)</p>
                         <p className="text-xs text-muted-foreground">AI will extract and summarise the key points</p>
                       </div>
                     )}
-                    <input ref={fileInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleExtract} />
+                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleExtract} />
                   </div>
                   {formData.description && (
                     <div className="space-y-1">

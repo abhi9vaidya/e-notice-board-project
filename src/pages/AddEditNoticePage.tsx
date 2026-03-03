@@ -341,7 +341,7 @@ const AddEditNoticePage: React.FC = () => {
                           <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
                             <Upload className="h-6 w-6 text-muted-foreground" />
                           </div>
-                          <p className="text-sm font-medium">Upload an image or PDF</p>
+                          <p className="text-sm font-medium">Upload an image (JPG / PNG)</p>
                           <p className="text-xs text-muted-foreground">AI will extract and summarise the key points into the description</p>
                         </div>
                       )}
@@ -349,7 +349,7 @@ const AddEditNoticePage: React.FC = () => {
                     <input
                       ref={extractInputRef}
                       type="file"
-                      accept="image/*,.pdf"
+                      accept="image/*"
                       className="hidden"
                       onChange={handleExtract}
                     />
