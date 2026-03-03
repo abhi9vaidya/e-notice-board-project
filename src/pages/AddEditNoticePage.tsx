@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { uploadToCloudinary } from "@/integrations/cloudinary/cloudinaryService";
 import { extractTextFromFile } from "@/lib/extractText";
+import { QRCodeSVG } from 'qrcode.react';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -102,6 +103,7 @@ const AddEditNoticePage: React.FC = () => {
     isArchived: false,
     showIssuedBy: true,
     showValidTill: true,
+    registrationUrl: "",
   });
 
   // update name if context changes
@@ -124,6 +126,7 @@ const AddEditNoticePage: React.FC = () => {
   const [descTab, setDescTab] = useState<'type' | 'extract'>('type');
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractPreview, setExtractPreview] = useState<string>('');
+  const [extractedLinks, setExtractedLinks] = useState<string[]>([]);
   const extractInputRef = useRef<HTMLInputElement>(null);
 
   const handleExtract = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -136,12 +139,14 @@ const AddEditNoticePage: React.FC = () => {
       setIsExtracting(true);
       try {
         const type = file.type === 'application/pdf' ? 'pdf' : 'image';
-        const { title, description } = await extractTextFromFile(base64, type);
+        const { title, description, links } = await extractTextFromFile(base64, type);
         setFormData(prev => ({
           ...prev,
           description,
           ...(title && !prev.title ? { title } : {}),
+          ...(links.length > 0 ? { registrationUrl: links[0] } : {}),
         }));
+        setExtractedLinks(links);
         setDescTab('type');
         toast({ title: 'Extracted!', description: 'Title and description filled in. Review before saving.' });
       } catch (err: unknown) {
@@ -360,6 +365,23 @@ const AddEditNoticePage: React.FC = () => {
                   </TabsContent>
                 </Tabs>
               </div>
+
+              {/* QR code(s) from AI-extracted links */}
+              {extractedLinks.length > 0 && (
+                <div className="space-y-3">
+                  {extractedLinks.map((link, i) => (
+                    <div key={i} className="flex flex-col items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                        {extractedLinks.length > 1 ? `Link ${i + 1} — Scan QR to open` : 'Scan QR to Register / Open Link'}
+                      </p>
+                      <div className="rounded-lg bg-white p-3 shadow-sm">
+                        <QRCodeSVG value={link} size={160} includeMargin={false} />
+                      </div>
+                      <p className="text-xs text-muted-foreground break-all text-center max-w-xs">{link}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* file upload block */}
               <div className="space-y-2">

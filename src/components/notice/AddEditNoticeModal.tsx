@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { extractTextFromFile } from '@/lib/extractText';
+import { QRCodeSVG } from 'qrcode.react';
 import { format, addDays, addWeeks, addMonths } from 'date-fns';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -47,6 +48,7 @@ const defaultFormData: FormData = {
   templatePlacement: 'left',
   imageUrl: '',
   documentUrl: '',
+  registrationUrl: '',
   startTime: new Date(),
   endTime: addDays(new Date(), 1),
 };
@@ -332,6 +334,7 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({ isOpen, onClose
   const [descriptionTab, setDescriptionTab] = useState<'text' | 'extract'>('text');
   const [uploadedImage, setUploadedImage] = useState<string>('');
   const [isExtracting, setIsExtracting] = useState(false);
+  const [extractedLinks, setExtractedLinks] = useState<string[]>([]);
   const [showIssuedBy, setShowIssuedBy] = useState(true);
   const [showValidTill, setShowValidTill] = useState(true);
 
@@ -358,6 +361,7 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({ isOpen, onClose
       setShowIssuedBy(true);
       setShowValidTill(true);
       setUploadedImage('');
+      setExtractedLinks([]);
       setDescriptionTab('text');
     }
   }, [editingNotice, isOpen]);
@@ -394,9 +398,11 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({ isOpen, onClose
       setIsExtracting(true);
       try {
         const type = file.type === 'application/pdf' ? 'pdf' : 'image';
-        const { title, description } = await extractTextFromFile(base64, type);
+        const { title, description, links } = await extractTextFromFile(base64, type);
         set('description', description);
         if (title && !formData.title) set('title', title);
+        if (links.length > 0) set('registrationUrl', links[0]);
+        setExtractedLinks(links);
         setDescriptionTab('text');
         toast.success('Extracted! Title and description filled in. Review before saving.');
       } catch {
@@ -552,6 +558,23 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({ isOpen, onClose
                 </TabsContent>
               </Tabs>
             </div>
+
+            {/* QR code(s) from AI-extracted links */}
+            {extractedLinks.length > 0 && (
+              <div className="space-y-3">
+                {extractedLinks.map((link, i) => (
+                  <div key={i} className="flex flex-col items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                      {extractedLinks.length > 1 ? `Link ${i + 1} — Scan QR to open` : 'Scan QR to Register / Open Link'}
+                    </p>
+                    <div className="rounded-lg bg-white p-3 shadow-sm">
+                      <QRCodeSVG value={link} size={148} includeMargin={false} />
+                    </div>
+                    <p className="text-xs text-muted-foreground break-all text-center max-w-xs">{link}</p>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <Separator />
 

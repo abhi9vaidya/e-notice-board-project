@@ -25,6 +25,7 @@ export interface NoticeFormData {
     facultyId?: string;
     imageUrl?: string;
     documentUrl?: string;
+    registrationUrl?: string;
     startTime: Date;
     endTime: Date;
     showIssuedBy?: boolean;

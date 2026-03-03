@@ -11,6 +11,7 @@ import {
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { AutoScrollText } from '@/components/AutoScrollText';
+import { QRCodeSVG } from 'qrcode.react';
 
 // ── URL helpers ────────────────────────────────────────────────────────────────
 
@@ -145,9 +146,21 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
     const showIssuedBy = notice.showIssuedBy !== false;
     const showValidTill = notice.showValidTill !== false;
     const hasFooter = showIssuedBy || showValidTill;
+    const regUrl = notice.registrationUrl;
+
+    const qrBlock = regUrl ? (
+        <div className="flex flex-col items-center gap-2 shrink-0">
+            <div className="rounded-xl bg-white p-3 shadow-2xl">
+                <QRCodeSVG value={regUrl} size={160} includeMargin={false} />
+            </div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">
+                Scan to Register
+            </p>
+        </div>
+    ) : null;
 
     const footer = hasFooter ? (
-        <div className="mt-auto pt-10 border-t border-white/5 flex items-center justify-between shrink-0">
+        <div className="mt-auto pt-8 border-t border-white/5 flex items-center justify-between shrink-0">
             {showIssuedBy ? (
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
@@ -221,6 +234,14 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                     <p className="text-lg font-bold text-white/80">{notice.facultyName || 'Faculty'}</p>
                                 </div>
                             </div>
+                            {regUrl && (
+                                <div className="flex flex-col items-center gap-1">
+                                    <div className="rounded-lg bg-white p-2 shadow-2xl">
+                                        <QRCodeSVG value={regUrl} size={100} includeMargin={false} />
+                                    </div>
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-yellow-400/60">Scan to Register</p>
+                                </div>
+                            )}
                             {notice.endTime && (
                                 <p className="text-sm font-bold text-yellow-400/40 uppercase tracking-widest">
                                     {format(new Date(notice.endTime), 'dd MMM yyyy')}
@@ -303,15 +324,25 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                     content={notice.description || 'Notice description goes here...'}
                                 />
                             </div>
-                            <div className="mt-12 flex items-center gap-10">
-                                <div className="flex items-center gap-3">
-                                    <User className="h-6 w-6 text-white/60" />
-                                    <span className="text-2xl font-bold text-white">{notice.facultyName || 'Faculty Name'}</span>
+                            <div className="mt-12 flex items-center gap-10 w-full justify-between">
+                                <div className="flex items-center gap-10">
+                                    <div className="flex items-center gap-3">
+                                        <User className="h-6 w-6 text-white/60" />
+                                        <span className="text-2xl font-bold text-white">{notice.facultyName || 'Faculty Name'}</span>
+                                    </div>
+                                    <div className="w-2 h-2 rounded-full bg-white/20" />
+                                    <span className="text-2xl font-bold text-white/80">
+                                        {notice.endTime ? format(new Date(notice.endTime), 'dd MMMM') : 'DD MMMM'}
+                                    </span>
                                 </div>
-                                <div className="w-2 h-2 rounded-full bg-white/20" />
-                                <span className="text-2xl font-bold text-white/80">
-                                    {notice.endTime ? format(new Date(notice.endTime), 'dd MMMM') : 'DD MMMM'}
-                                </span>
+                                {regUrl && (
+                                    <div className="flex flex-col items-center gap-1">
+                                        <div className="rounded-lg bg-white p-2 shadow-2xl">
+                                            <QRCodeSVG value={regUrl} size={110} includeMargin={false} />
+                                        </div>
+                                        <p className="text-[11px] font-black uppercase tracking-wider text-white/70">Scan to Register</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -338,6 +369,14 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                             <div className="w-2 h-2 rounded-full bg-white/10" />
                             <span>{notice.endTime ? format(new Date(notice.endTime), 'dd MMM yyyy') : 'DD MMM YYYY'}</span>
                         </div>
+                        {regUrl && (
+                            <div className="mt-8 flex flex-col items-center gap-2 shrink-0">
+                                <div className="rounded-xl bg-white p-3 shadow-2xl">
+                                    <QRCodeSVG value={regUrl} size={140} includeMargin={false} />
+                                </div>
+                                <p className="text-sm font-black uppercase tracking-[0.2em] text-primary">Scan to Register</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             );
@@ -370,6 +409,14 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                         <p className="text-2xl font-bold text-white">{notice.facultyName || 'Faculty Name'}</p>
                                     </div>
                                 </div>
+                                {regUrl && (
+                                    <div className="ml-auto flex flex-col items-center gap-1">
+                                        <div className="rounded-xl bg-white p-2.5 shadow-2xl">
+                                            <QRCodeSVG value={regUrl} size={120} includeMargin={false} />
+                                        </div>
+                                        <p className="text-[11px] font-black uppercase tracking-wider text-primary">Scan to Register</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -379,13 +426,44 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
         default: {
             const isStandardRight = placement === 'right';
             const hasMedia = !!(notice.imageUrl || notice.documentUrl);
+            // When a QR exists and no media: right panel is the QR block.
+            // When both exist: show media on right, QR tucked below it.
+            const rightPanel = regUrl ? (
+                <div className={cn(
+                    'shrink-0 self-stretch flex flex-col items-center justify-center gap-5 py-8 px-6',
+                    hasMedia ? 'w-[30%]' : 'w-[28%]',
+                    isStandardRight && 'order-1'
+                )}>
+                    {hasMedia && (
+                        <MediaPanel
+                            imageUrl={notice.imageUrl}
+                            documentUrl={notice.documentUrl}
+                            className="w-full rounded-xl shadow-xl flex-1 min-h-0"
+                        />
+                    )}
+                    <div className="flex flex-col items-center gap-3 shrink-0">
+                        <p className="text-xs font-black uppercase tracking-[0.22em]" style={{ color: config.accent }}>Scan to Register</p>
+                        <div className="rounded-2xl bg-white p-3 shadow-[0_0_40px_rgba(255,255,255,0.12)]">
+                            <QRCodeSVG value={regUrl} size={hasMedia ? 140 : 200} includeMargin={false} />
+                        </div>
+                        <p className="text-xs text-slate-500 text-center">Open registration link</p>
+                    </div>
+                </div>
+            ) : hasMedia ? (
+                <MediaPanel
+                    imageUrl={notice.imageUrl}
+                    documentUrl={notice.documentUrl}
+                    className={cn('w-[38%] self-stretch rounded-[2rem] shadow-2xl shrink-0', isStandardRight && 'order-1')}
+                />
+            ) : null;
+
             return (
                 <div className={containerClass}>
                     <div className="h-full flex flex-col py-6 text-left">
                         {header}
-                        <div className={cn("flex-1 min-h-0 flex items-start gap-14", isStandardRight && "flex-row-reverse")}>
+                        <div className={cn('flex-1 min-h-0 flex items-start gap-12', isStandardRight && 'flex-row-reverse')}>
                             <div className="flex-1 flex flex-col min-h-0 h-full justify-center">
-                                <h1 className={cn("font-bold text-white leading-[1] tracking-tight mb-8 shrink-0 line-clamp-3", titleSize)}>
+                                <h1 className={cn('font-bold text-white leading-[1] tracking-tight mb-8 shrink-0 line-clamp-3', titleSize)}>
                                     {notice.title || 'Notice Title'}
                                 </h1>
                                 <div className="flex-1 min-h-0 overflow-hidden relative">
@@ -395,13 +473,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                     />
                                 </div>
                             </div>
-                            {hasMedia && (
-                                <MediaPanel
-                                    imageUrl={notice.imageUrl}
-                                    documentUrl={notice.documentUrl}
-                                    className="w-[38%] self-stretch rounded-[2rem] shadow-2xl shrink-0"
-                                />
-                            )}
+                            {rightPanel}
                         </div>
                         {footer}
                     </div>

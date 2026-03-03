@@ -21,6 +21,7 @@ export interface FirestoreNotice {
     facultyId: string;
     imageUrl?: string;
     documentUrl?: string;
+    registrationUrl?: string;
     startTime: Timestamp;
     endTime: Timestamp;
     createdAt: Timestamp;
@@ -58,6 +59,7 @@ export interface Notice {
     facultyId: string;
     imageUrl?: string;
     documentUrl?: string;
+    registrationUrl?: string;
     startTime: Date;
     endTime: Date;
     createdAt: Date;

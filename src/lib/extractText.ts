@@ -17,6 +17,7 @@
 export interface ExtractedNotice {
   title: string;
   description: string;
+  links: string[];
 }
 
 export async function extractTextFromFile(base64Data: string, fileType: 'image' | 'pdf'): Promise<ExtractedNotice> {
@@ -54,8 +55,13 @@ export async function extractTextFromFile(base64Data: string, fileType: 'image' 
     '3. Under each heading use bullet points ("- ") for individual facts. Keep each bullet concise.\n' +
     '4. Use **bold** for names, dates, deadlines, and key values.\n' +
     '5. Leave a blank line between every section.\n' +
-    '6. Do NOT wrap output in a code block.\n' +
-    '7. Do NOT omit any meaningful detail from the document.';
+    '6. Do NOT include any URLs or hyperlinks inside the description. If there is a registration link or any URL, put it ONLY in the LINKS section below.\n' +
+    '7. Do NOT wrap output in a code block.\n' +
+    '8. Do NOT omit any meaningful detail from the document.\n\n' +
+    'After the DESCRIPTION section, if the document contains any URLs (registration links, form links, website links, etc.), add:\n' +
+    'LINKS:\n' +
+    '<one full URL per line, label on same line separated by | e.g.  https://example.com | Registration Form>\n' +
+    'If there are no links, omit the LINKS section entirely.';
 
   const body = {
     model: 'meta-llama/llama-4-scout-17b-16e-instruct',
@@ -90,12 +96,26 @@ export async function extractTextFromFile(base64Data: string, fileType: 'image' 
   const raw: string | undefined = data?.choices?.[0]?.message?.content;
   if (!raw) throw new Error('Groq returned an empty response.');
 
-  // Parse the TITLE: / DESCRIPTION: delimiter format
+  // Parse the TITLE: / DESCRIPTION: / LINKS: delimiter format
   const titleMatch = raw.match(/^TITLE:\s*(.+)/m);
-  const descMatch = raw.match(/DESCRIPTION:\s*\n([\s\S]+)/);
+
+  // Description: everything between DESCRIPTION: and either LINKS: or end of string
+  const descMatch = raw.match(/DESCRIPTION:\s*\n([\s\S]+?)(?=\nLINKS:|$)/);
+
+  // Links section: each line after LINKS:
+  const linksMatch = raw.match(/LINKS:\s*\n([\s\S]+)$/);
+  const links: string[] = linksMatch
+    ? linksMatch[1]
+        .split('\n')
+        .map(line => line.split('|')[0].trim())   // take URL part before optional label
+        .filter(line => /^https?:\/\//i.test(line)) // only valid http(s) URLs
+    : [];
 
   const title = titleMatch ? titleMatch[1].trim() : '';
-  const description = descMatch ? descMatch[1].trim() : raw.trim();
+  let description = descMatch ? descMatch[1].trim() : raw.trim();
 
-  return { title, description };
+  // Extra safety: strip any leftover URLs from description text
+  description = description.replace(/https?:\/\/\S+/gi, '').replace(/[ \t]+$/gm, '').trim();
+
+  return { title, description, links };
 }
