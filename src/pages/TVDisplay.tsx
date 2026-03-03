@@ -7,6 +7,7 @@ import rbuLogo from '@/assets/rbu-logo.png';
 import { TVNoticePreview } from '@/components/TVNoticePreview';
 import { getDailyQuote } from '@/data/spiritualQuotes';
 import { categoryConfig } from '@/config/categoryConfig';
+import { cn } from '@/lib/utils';
 
 // Per-priority slide durations (ms)
 const DURATIONS: Record<string, number> = {
@@ -193,51 +194,55 @@ const TVDisplay: React.FC = () => {
         {/* ── Sidebar ─────────────────────────────────────────────────────── */}
         <aside className="w-72 shrink-0 border-l border-white/5 flex flex-col overflow-hidden">
 
-          {/* Upcoming Events — top half */}
-          <div className="flex-1 flex flex-col p-5 overflow-hidden min-h-0">
-            <div className="flex items-center gap-2 mb-4 shrink-0">
-              <CalendarDays className="h-3.5 w-3.5 text-purple-400" />
-              <p className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-500">Upcoming Events</p>
-            </div>
-            {upcomingEvents.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center">
-                <p className="text-[0.7rem] text-slate-600 italic text-center">No upcoming events scheduled</p>
-              </div>
-            ) : (
-              <div className="space-y-4 overflow-hidden">
-                {upcomingEvents.map((event, i) => {
-                  const d = new Date(event.startTime);
-                  const tag = isToday(d) ? 'Today' : isTomorrow(d) ? 'Tomorrow' : null;
-                  return (
-                    <div key={event.id ?? i} className="flex items-center gap-3">
-                      {/* Date chip */}
-                      <div className="shrink-0 w-10 text-center">
-                        {tag ? (
-                          <div className="text-[0.6rem] font-black text-purple-400 uppercase leading-tight">{tag}</div>
-                        ) : (
-                          <>
-                            <div className="text-[0.55rem] font-black uppercase text-purple-400 leading-none">{format(d, 'MMM')}</div>
-                            <div className="text-lg font-black text-white leading-none">{format(d, 'd')}</div>
-                          </>
-                        )}
+          {/* Upcoming Events — only shown when there are events */}
+          {upcomingEvents.length > 0 && (
+            <>
+              <div className="flex-1 flex flex-col p-5 overflow-hidden min-h-0">
+                <div className="flex items-center gap-2 mb-4 shrink-0">
+                  <CalendarDays className="h-3.5 w-3.5 text-purple-400" />
+                  <p className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-500">Upcoming Events</p>
+                </div>
+                <div className="space-y-4 overflow-hidden">
+                  {upcomingEvents.map((event, i) => {
+                    const d = new Date(event.startTime);
+                    const tag = isToday(d) ? 'Today' : isTomorrow(d) ? 'Tomorrow' : null;
+                    return (
+                      <div key={event.id ?? i} className="flex items-center gap-3">
+                        {/* Date chip */}
+                        <div className="shrink-0 w-10 text-center">
+                          {tag ? (
+                            <div className="text-[0.6rem] font-black text-purple-400 uppercase leading-tight">{tag}</div>
+                          ) : (
+                            <>
+                              <div className="text-[0.55rem] font-black uppercase text-purple-400 leading-none">{format(d, 'MMM')}</div>
+                              <div className="text-lg font-black text-white leading-none">{format(d, 'd')}</div>
+                            </>
+                          )}
+                        </div>
+                        <div className="w-px h-8 bg-white/8 shrink-0" />
+                        <p className="text-[0.78rem] text-white/65 leading-snug line-clamp-2 min-w-0">{event.title}</p>
                       </div>
-                      <div className="w-px h-8 bg-white/8 shrink-0" />
-                      <p className="text-[0.78rem] text-white/65 leading-snug line-clamp-2 min-w-0">{event.title}</p>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            )}
-          </div>
 
-          {/* Divider */}
-          <div className="h-px bg-white/5 shrink-0" />
+              {/* Divider */}
+              <div className="h-px bg-white/5 shrink-0" />
+            </>
+          )}
 
-          {/* Student Spotlight — bottom half */}
+          {/* Student Spotlight — full height when no events, bottom half otherwise */}
           <div className="flex-1 flex flex-col p-5 overflow-hidden min-h-0">
             <div className="flex items-center gap-2 mb-4 shrink-0">
-              <Trophy className="h-3.5 w-3.5 text-yellow-400" />
-              <p className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-500">Student Spotlight</p>
+              <Trophy className={cn("h-3.5 w-3.5 text-yellow-400", upcomingEvents.length === 0 && "h-4 w-4")} />
+              <p className={cn(
+                "font-black uppercase tracking-[0.3em] text-slate-500",
+                upcomingEvents.length === 0 ? "text-[0.65rem]" : "text-[0.6rem]"
+              )}>Student Spotlight</p>
+              {upcomingEvents.length === 0 && (
+                <span className="ml-auto text-[0.5rem] font-black uppercase tracking-widest text-yellow-500/50">Achievements</span>
+              )}
             </div>
             <AnimatePresence mode="wait">
               {spotlight ? (
@@ -252,7 +257,7 @@ const TVDisplay: React.FC = () => {
                   {/* Image — shown when available */}
                   {spotlight.imageUrl && (
                     <div className="w-full rounded-xl overflow-hidden shrink-0 border border-yellow-400/10"
-                      style={{ aspectRatio: '16/9' }}>
+                      style={{ aspectRatio: upcomingEvents.length === 0 ? '4/3' : '16/9' }}>
                       <img
                         src={spotlight.imageUrl}
                         alt={spotlight.title}
@@ -261,11 +266,17 @@ const TVDisplay: React.FC = () => {
                     </div>
                   )}
                   <div className="flex-1 flex flex-col justify-center min-h-0">
-                    <p className="text-base font-black text-white leading-snug mb-1 line-clamp-2">
+                    <p className={cn(
+                      "font-black text-white leading-snug mb-1",
+                      upcomingEvents.length === 0 ? "text-xl line-clamp-3" : "text-base line-clamp-2"
+                    )}>
                       {spotlight.title}
                     </p>
                     {spotlight.description && (
-                      <p className="text-[0.75rem] text-yellow-100/60 leading-relaxed line-clamp-3 mt-1">
+                      <p className={cn(
+                        "text-yellow-100/60 leading-relaxed mt-1",
+                        upcomingEvents.length === 0 ? "text-[0.82rem] line-clamp-6" : "text-[0.75rem] line-clamp-3"
+                      )}>
                         {spotlight.description}
                       </p>
                     )}
@@ -278,7 +289,10 @@ const TVDisplay: React.FC = () => {
                   animate={{ opacity: 1 }}
                   className="flex-1 flex flex-col justify-center min-h-0"
                 >
-                  <p className="text-[0.78rem] text-slate-400 leading-relaxed italic">
+                  <p className={cn(
+                    "text-slate-400 leading-relaxed italic",
+                    upcomingEvents.length === 0 ? "text-[0.9rem]" : "text-[0.78rem]"
+                  )}>
                     &ldquo;{quoteText}&rdquo;
                   </p>
                   {quoteAuthor && (
