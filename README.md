@@ -1,5 +1,5 @@
 ﻿# E-Notice Board
-### Digital Notice Display System — Rashtrasant Baba Udgir College (RBU), Nagpur
+### Digital Notice Display System — (RBU), Nagpur
 
 A cloud-based digital notice board system built for campus TV displays. Faculty post notices from a web dashboard; the TV screen runs in kiosk mode and auto-rotates them in real-time.
 
