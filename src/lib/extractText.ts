@@ -14,7 +14,12 @@
  * Note: The API key is exposed in the browser bundle. Acceptable for a college
  * project; for production, proxy through a backend function.
  */
-export async function extractTextFromFile(base64Data: string, fileType: 'image' | 'pdf'): Promise<string> {
+export interface ExtractedNotice {
+  title: string;
+  description: string;
+}
+
+export async function extractTextFromFile(base64Data: string, fileType: 'image' | 'pdf'): Promise<ExtractedNotice> {
   if (fileType === 'pdf') {
     throw new Error(
       'PDF extraction is not supported with the Groq vision API. Please upload a JPG or PNG screenshot of the document instead.'
@@ -35,16 +40,20 @@ export async function extractTextFromFile(base64Data: string, fileType: 'image' 
   }
 
   const prompt =
-    'You are helping a college faculty member create a notice board post. ' +
-    'Extract ALL key information from this document and format it as clean, well-structured raw Markdown. ' +
-    'Follow these rules strictly:\n' +
+    'You are helping a college faculty member create a notice board post from the attached document.\n' +
+    'Respond with ONLY a valid JSON object — no extra text, no markdown fences — in this exact shape:\n' +
+    '{"title": "...", "description": "..."}\n\n' +
+    'Rules for "title":\n' +
+    '- Short (5–10 words), descriptive, easy to understand at a glance.\n' +
+    '- Captures the main purpose/event (e.g. "Machine Learning Internship – Uptricks Services").\n' +
+    '- No trailing punctuation.\n\n' +
+    'Rules for "description" (raw Markdown string, use \\n for newlines inside the JSON):\n' +
     '1. Start with a short one-line summary paragraph (no heading).\n' +
-    '2. Then use "## " headings to group related details (e.g. ## Details, ## Schedule, ## Venue, ## Important Dates, ## Eligibility, ## How to Apply — use only what is relevant).\n' +
+    '2. Then use "## " headings to group related details (## Details, ## Schedule, ## Venue, ## Important Dates, ## Eligibility, ## How to Apply — use only what is relevant).\n' +
     '3. Under each heading use bullet points ("- ") for individual facts. Keep each bullet concise.\n' +
-    '4. Use **bold** for names, dates, deadlines, and important values.\n' +
-    '5. Leave a blank line between every section.\n' +
-    '6. Do NOT wrap output in a code block. Output raw Markdown only.\n' +
-    '7. Do NOT omit any meaningful detail from the document.';
+    '4. Use **bold** for names, dates, deadlines, and key values.\n' +
+    '5. Leave a blank line (\\n\\n) between every section.\n' +
+    '6. Do NOT omit any meaningful detail from the document.';
 
   const body = {
     model: 'meta-llama/llama-4-scout-17b-16e-instruct',
@@ -76,7 +85,21 @@ export async function extractTextFromFile(base64Data: string, fileType: 'image' 
   }
 
   const data = await res.json();
-  const text: string | undefined = data?.choices?.[0]?.message?.content;
-  if (!text) throw new Error('Groq returned an empty response.');
-  return text.trim();
+  const raw: string | undefined = data?.choices?.[0]?.message?.content;
+  if (!raw) throw new Error('Groq returned an empty response.');
+
+  // Strip any accidental markdown code fences before parsing
+  const jsonStr = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  let parsed: { title?: string; description?: string };
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch {
+    // Fallback: treat entire response as description with a generic title
+    return { title: '', description: raw.trim() };
+  }
+
+  return {
+    title: (parsed.title ?? '').trim(),
+    description: (parsed.description ?? '').trim(),
+  };
 }

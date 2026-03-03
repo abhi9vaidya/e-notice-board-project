@@ -394,10 +394,11 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({ isOpen, onClose
       setIsExtracting(true);
       try {
         const type = file.type === 'application/pdf' ? 'pdf' : 'image';
-        const text = await extractTextFromFile(base64, type);
-        set('description', text);
+        const { title, description } = await extractTextFromFile(base64, type);
+        set('description', description);
+        if (title && !formData.title) set('title', title);
         setDescriptionTab('text');
-        toast.success('Text extracted! Review and edit before saving.');
+        toast.success('Extracted! Title and description filled in. Review before saving.');
       } catch {
         toast.error('Failed to extract text. Please type manually.');
       } finally {

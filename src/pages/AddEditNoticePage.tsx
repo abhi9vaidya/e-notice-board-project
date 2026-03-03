@@ -136,10 +136,14 @@ const AddEditNoticePage: React.FC = () => {
       setIsExtracting(true);
       try {
         const type = file.type === 'application/pdf' ? 'pdf' : 'image';
-        const text = await extractTextFromFile(base64, type);
-        setFormData(prev => ({ ...prev, description: text }));
+        const { title, description } = await extractTextFromFile(base64, type);
+        setFormData(prev => ({
+          ...prev,
+          description,
+          ...(title && !prev.title ? { title } : {}),
+        }));
         setDescTab('type');
-        toast({ title: 'Text extracted!', description: 'Review and edit before saving.' });
+        toast({ title: 'Extracted!', description: 'Title and description filled in. Review before saving.' });
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Failed to extract text.';
         toast({ title: 'Extraction failed', description: msg, variant: 'destructive' });
