@@ -376,7 +376,7 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({ isOpen, onClose
     if (formData.category === 'other' && !formData.customCategory?.trim()) {
       toast.error('Please enter a custom category name'); return;
     }
-    if (formData.endTime <= formData.startTime) {
+    if (!isAchievement && formData.endTime <= formData.startTime) {
       toast.error('End time must be after start time'); return;
     }
     onSubmit({
@@ -384,6 +384,11 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({ isOpen, onClose
       showIssuedBy,
       showValidTill,
       facultyName: faculty?.name || 'Unknown Faculty',
+      ...(isAchievement && {
+        priority: 'low' as const,
+        startTime: new Date(),
+        endTime: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000),
+      }),
     });
     onClose();
   };
@@ -436,6 +441,7 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({ isOpen, onClose
   };
 
   const selectedTemplate = TEMPLATES.find(t => t.value === formData.template);
+  const isAchievement = formData.category === 'achievements';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -618,36 +624,39 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({ isOpen, onClose
               )}
             </div>
 
-            <Separator />
-
-            {/* 4. Priority */}
-            <div className="space-y-2">
-              <SectionHeader
-                icon={<Zap className="h-3.5 w-3.5" />}
-                title="Priority"
-                subtitle="Determines how prominently the notice is displayed on the TV"
-              />
-              <div className="grid grid-cols-3 gap-3">
-                {PRIORITIES.map(p => (
-                  <button
-                    key={p.value}
-                    type="button"
-                    onClick={() => set('priority', p.value)}
-                    className={cn(
-                      'flex flex-col items-start gap-1 p-3 rounded-xl border-2 transition-all text-left',
-                      formData.priority === p.value
-                        ? `${p.bg} ${p.color}`
-                        : 'border-border bg-muted/20 text-muted-foreground hover:bg-muted'
-                    )}
-                  >
-                    <div className={cn('flex items-center gap-1.5 font-semibold text-sm', formData.priority === p.value ? p.color : '')}>
-                      {p.icon} {p.label}
-                    </div>
-                    <span className="text-[11px] leading-tight opacity-80">{p.sub}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+            {!isAchievement && (
+              <>
+                <Separator />
+                {/* 4. Priority */}
+                <div className="space-y-2">
+                  <SectionHeader
+                    icon={<Zap className="h-3.5 w-3.5" />}
+                    title="Priority"
+                    subtitle="Determines how prominently the notice is displayed on the TV"
+                  />
+                  <div className="grid grid-cols-3 gap-3">
+                    {PRIORITIES.map(p => (
+                      <button
+                        key={p.value}
+                        type="button"
+                        onClick={() => set('priority', p.value)}
+                        className={cn(
+                          'flex flex-col items-start gap-1 p-3 rounded-xl border-2 transition-all text-left',
+                          formData.priority === p.value
+                            ? `${p.bg} ${p.color}`
+                            : 'border-border bg-muted/20 text-muted-foreground hover:bg-muted'
+                        )}
+                      >
+                        <div className={cn('flex items-center gap-1.5 font-semibold text-sm', formData.priority === p.value ? p.color : '')}>
+                          {p.icon} {p.label}
+                        </div>
+                        <span className="text-[11px] leading-tight opacity-80">{p.sub}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
 
             <Separator />
 
@@ -739,10 +748,11 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({ isOpen, onClose
               </div>
             </div>
 
-            <Separator />
-
-            {/* 7. Schedule */}
-            <div className="space-y-2">
+            {!isAchievement && (
+              <>
+                <Separator />
+                {/* 7. Schedule */}
+                <div className="space-y-2">
               <SectionHeader
                 icon={<Clock className="h-3.5 w-3.5" />}
                 title="Schedule"
@@ -794,6 +804,8 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({ isOpen, onClose
                 </p>
               )}
             </div>
+              </>
+            )}
 
             <Separator />
 
@@ -887,12 +899,14 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({ isOpen, onClose
                       </span>
                     );
                   })()}
-                  <span className="px-2 py-0.5 rounded-full bg-muted border text-[10px] capitalize">{formData.priority} priority</span>
-                  <span className="px-2 py-0.5 rounded-full bg-muted border text-[10px] capitalize">{formData.template}</span>
+                  {!isAchievement && <span className="px-2 py-0.5 rounded-full bg-muted border text-[10px] capitalize">{formData.priority} priority</span>}
+                  {!isAchievement && <span className="px-2 py-0.5 rounded-full bg-muted border text-[10px] capitalize">{formData.template}</span>}
+                  {isAchievement && <span className="px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-[10px] font-bold">Always Displayed</span>}
                 </div>
                 <div className="text-[11px] leading-relaxed space-y-1">
-                  <p>⏰ Active <strong>{format(formData.startTime, 'dd MMM, HH:mm')}</strong></p>
-                  <p>⌛ Expires <strong>{format(formData.endTime, 'dd MMM yyyy, HH:mm')}</strong></p>
+                  {!isAchievement && <p>⏰ Active <strong>{format(formData.startTime, 'dd MMM, HH:mm')}</strong></p>}
+                  {!isAchievement && <p>⌛ Expires <strong>{format(formData.endTime, 'dd MMM yyyy, HH:mm')}</strong></p>}
+                  {isAchievement && <p>🏆 Shown in <strong>Student Spotlight</strong> sidebar</p>}
                   {faculty?.name && <p>👤 Issued by <strong>{faculty.name}</strong></p>}
                 </div>
               </div>
@@ -908,7 +922,9 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({ isOpen, onClose
           <div className="flex gap-2 ml-auto">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
             <Button type="submit" form="notice-form">
-              {editingNotice ? 'Save Changes' : 'Publish Notice'}
+              {editingNotice
+                ? (isAchievement ? 'Update Achievement' : 'Save Changes')
+                : (isAchievement ? 'Publish Achievement' : 'Publish Notice')}
             </Button>
           </div>
         </div>

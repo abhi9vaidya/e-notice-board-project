@@ -5,6 +5,7 @@ import { Sparkles, Trophy, CalendarDays } from 'lucide-react';
 import { format, isToday, isTomorrow } from 'date-fns';
 import rbuLogo from '@/assets/rbu-logo.png';
 import { TVNoticePreview } from '@/components/TVNoticePreview';
+import { AutoScrollText } from '@/components/AutoScrollText';
 import { getDailyQuote } from '@/data/spiritualQuotes';
 import { categoryConfig } from '@/config/categoryConfig';
 import { cn } from '@/lib/utils';
@@ -192,7 +193,7 @@ const TVDisplay: React.FC = () => {
         </div>
 
         {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-        <aside className="w-72 shrink-0 border-l border-white/5 flex flex-col overflow-hidden">
+        <aside className="w-96 shrink-0 border-l border-white/5 flex flex-col overflow-hidden">
 
           {/* Upcoming Events — only shown when there are events */}
           {upcomingEvents.length > 0 && (
@@ -254,7 +255,15 @@ const TVDisplay: React.FC = () => {
                   transition={{ duration: 0.4 }}
                   className="flex-1 flex flex-col min-h-0 gap-3"
                 >
-                  {/* Image — shown when available */}
+                  {/* 1. Title — always first */}
+                  <p className={cn(
+                    "font-black text-white leading-snug shrink-0",
+                    upcomingEvents.length === 0 ? "text-xl" : "text-base line-clamp-2"
+                  )}>
+                    {spotlight.title}
+                  </p>
+
+                  {/* 2. Image */}
                   {spotlight.imageUrl && (
                     <div className="w-full rounded-xl overflow-hidden shrink-0 border border-yellow-400/10"
                       style={{ aspectRatio: upcomingEvents.length === 0 ? '4/3' : '16/9' }}>
@@ -265,22 +274,17 @@ const TVDisplay: React.FC = () => {
                       />
                     </div>
                   )}
-                  <div className="flex-1 flex flex-col justify-center min-h-0">
-                    <p className={cn(
-                      "font-black text-white leading-snug mb-1",
-                      upcomingEvents.length === 0 ? "text-xl line-clamp-3" : "text-base line-clamp-2"
-                    )}>
-                      {spotlight.title}
-                    </p>
-                    {spotlight.description && (
-                      <p className={cn(
-                        "text-yellow-100/60 leading-relaxed mt-1",
-                        upcomingEvents.length === 0 ? "text-[0.82rem] line-clamp-6" : "text-[0.75rem] line-clamp-3"
-                      )}>
-                        {spotlight.description}
-                      </p>
-                    )}
-                  </div>
+
+                  {/* 3. Description — auto-scrolling markdown */}
+                  {spotlight.description && (
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                      <AutoScrollText
+                        content={spotlight.description}
+                        className={upcomingEvents.length === 0 ? "text-[0.82rem] text-yellow-100/70" : "text-[0.75rem] text-yellow-100/70"}
+                        speed={upcomingEvents.length === 0 ? 22 : 18}
+                      />
+                    </div>
+                  )}
                 </motion.div>
               ) : (
                 <motion.div

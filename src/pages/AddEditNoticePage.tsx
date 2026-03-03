@@ -219,7 +219,12 @@ const AddEditNoticePage: React.FC = () => {
       const dataToSubmit: CreateNoticeInput = {
         ...formData,
         imageUrl: finalImageUrl || "",
-        priority: isHighPriority ? "high" : formData.priority,
+        priority: isAchievement ? "low" : (isHighPriority ? "high" : formData.priority),
+        // Achievements have no expiry — set 10 years out so they always display
+        ...(isAchievement && {
+          startTime: new Date(),
+          endTime: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000),
+        }),
       };
 
       let success = false;
@@ -455,33 +460,35 @@ const AddEditNoticePage: React.FC = () => {
                 )}
               </div>
 
-              {/* Priority 3-card picker */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Priority</Label>
-                <div className="grid grid-cols-3 gap-3">
-                  {PRIORITIES.map(p => (
-                    <button
-                      key={p.value}
-                      type="button"
-                      onClick={() => {
-                        setFormData(prev => ({ ...prev, priority: p.value }));
-                        setIsHighPriority(p.value === 'high');
-                      }}
-                      className={cn(
-                        'flex flex-col items-start gap-1 p-3 rounded-xl border-2 transition-all text-left',
-                        formData.priority === p.value
-                          ? `${p.bg} ${p.color}`
-                          : 'border-border bg-muted/20 text-muted-foreground hover:bg-muted'
-                      )}
-                    >
-                      <div className={cn('flex items-center gap-1.5 font-semibold text-sm', formData.priority === p.value ? p.color : '')}>
-                        {p.icon} {p.label}
-                      </div>
-                      <span className="text-[11px] leading-tight opacity-80">{p.sub}</span>
-                    </button>
-                  ))}
+              {/* Priority 3-card picker — hidden for achievements */}
+              {!isAchievement && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Priority</Label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {PRIORITIES.map(p => (
+                      <button
+                        key={p.value}
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, priority: p.value }));
+                          setIsHighPriority(p.value === 'high');
+                        }}
+                        className={cn(
+                          'flex flex-col items-start gap-1 p-3 rounded-xl border-2 transition-all text-left',
+                          formData.priority === p.value
+                            ? `${p.bg} ${p.color}`
+                            : 'border-border bg-muted/20 text-muted-foreground hover:bg-muted'
+                        )}
+                      >
+                        <div className={cn('flex items-center gap-1.5 font-semibold text-sm', formData.priority === p.value ? p.color : '')}>
+                          {p.icon} {p.label}
+                        </div>
+                        <span className="text-[11px] leading-tight opacity-80">{p.sub}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Show/hide footer fields */}
               {!isAchievement && (
@@ -562,161 +569,202 @@ const AddEditNoticePage: React.FC = () => {
                 </div>
               )}
 
-              {/* TV Preview Section */}
+              {/* TV / Achievement Preview Section */}
               <div className="space-y-4 pt-4">
-                <div className="flex items-center gap-2">
-                  {isAchievement ? (
-                    <>
+                {isAchievement ? (
+                  <>
+                    <div className="flex items-center gap-2">
                       <Trophy className="h-5 w-5 text-yellow-500" />
-                      <Label className="font-bold text-lg">Achievement Preview</Label>
+                      <Label className="font-bold text-lg">Spotlight Preview</Label>
                       <span className="text-xs bg-yellow-500/10 text-yellow-400 px-2 py-0.5 rounded-full font-bold">Student Spotlight</span>
-                    </>
-                  ) : (
-                    <>
+                    </div>
+                    {/* Sidebar card mock — exactly how it appears on the TV */}
+                    <div className="flex justify-center">
+                      <div
+                        className="w-72 rounded-2xl border border-yellow-400/20 p-5 flex flex-col gap-4"
+                        style={{ background: 'linear-gradient(160deg, #1a1200 0%, #0f0800 100%)' }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Trophy className="h-3.5 w-3.5 text-yellow-400" />
+                          <p className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-500">Student Spotlight</p>
+                        </div>
+                        {/* 1. Title */}
+                        <p className="text-xl font-black text-white leading-snug">
+                          {formData.title || <span className="opacity-30 italic">Achievement title…</span>}
+                        </p>
+                        {/* 2. Image */}
+                        {(uploadedFile ? URL.createObjectURL(uploadedFile) : formData.imageUrl) && (
+                          <div className="w-full rounded-xl overflow-hidden border border-yellow-400/10" style={{ aspectRatio: '4/3' }}>
+                            <img
+                              src={uploadedFile ? URL.createObjectURL(uploadedFile) : formData.imageUrl}
+                              alt={formData.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        {/* 3. Description — strip markdown */}
+                        {formData.description && (
+                          <p className="text-[0.82rem] text-yellow-100/60 leading-relaxed line-clamp-6">
+                            {formData.description
+                              .replace(/#{1,6}\s*/g, '')
+                              .replace(/\*\*(.+?)\*\*/g, '$1')
+                              .replace(/\*(.+?)\*/g, '$1')
+                              .replace(/^\s*[-•]\s*/gm, '• ')
+                              .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+                              .trim()
+                            }
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground text-center italic uppercase tracking-widest">
+                      * Shown in the Student Spotlight sidebar on campus TV displays
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2">
                       <Tv className="h-5 w-5 text-primary" />
                       <Label className="font-bold text-lg">TV Preview</Label>
                       <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">1080p View</span>
-                    </>
-                  )}
-                </div>
-
-                <div
-                  ref={previewContainerRef}
-                  className="relative aspect-video w-full bg-[#05060a] rounded-2xl overflow-hidden border-4 border-slate-800 shadow-2xl group"
-                >
-                  {/* Scaling the internal preview to fit the container 
-                       1792x800 is our internal reference in TVDisplay */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    </div>
                     <div
-                      className="w-[1792px] h-[800px] shrink-0 origin-center transition-transform duration-200"
-                      style={{ transform: `scale(${previewScale * 0.95})` }} // 0.95 for tiny padding margin
+                      ref={previewContainerRef}
+                      className="relative aspect-video w-full bg-[#05060a] rounded-2xl overflow-hidden border-4 border-slate-800 shadow-2xl group"
                     >
-                      <TVNoticePreview
-                        notice={{
-                          ...formData,
-                          priority: isHighPriority ? "high" : formData.priority,
-                          imageUrl: uploadedFile ? URL.createObjectURL(uploadedFile) : formData.imageUrl
-                        }}
-                      />
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div
+                          className="w-[1792px] h-[800px] shrink-0 origin-center transition-transform duration-200"
+                          style={{ transform: `scale(${previewScale * 0.95})` }}
+                        >
+                          <TVNoticePreview
+                            notice={{
+                              ...formData,
+                              priority: isHighPriority ? "high" : formData.priority,
+                              imageUrl: uploadedFile ? URL.createObjectURL(uploadedFile) : formData.imageUrl
+                            }}
+                          />
+                        </div>
+                      </div>
+                      {(formData.template === 'split' || formData.template === 'full-image') && !formData.imageUrl && !uploadedFile && (
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
+                          <p className="text-slate-400 text-sm font-medium">Please upload an image to preview this template</p>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground text-center italic uppercase tracking-widest">
+                      * This is how the notice will look on the campus TV displays
+                    </p>
+                  </>
+                )}
+              </div>
+
+
+              {/* date pickers — hidden for achievements (always shown) */}
+              {!isAchievement && (
+                <>
+                  <div className="space-y-2 pt-4 border-t">
+                    <Label className="font-bold text-base">Schedule</Label>
+                    <p className="text-xs text-muted-foreground">Set when this notice appears and disappears from the TV board.</p>
+                  </div>
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {/* date to start displaying */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">
+                        Start Date <span className="text-destructive">*</span>
+                      </Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full h-11 justify-start text-left font-normal",
+                              !formData.startTime && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {formData.startTime
+                              ? format(formData.startTime, "PPP")
+                              : "Pick a date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 bg-popover" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={formData.startTime}
+                            onSelect={(date) => {
+                              if (date) {
+                                const startOfDay = new Date(date);
+                                startOfDay.setHours(0, 0, 0, 0);
+                                setFormData((prev) => ({ ...prev, startTime: startOfDay }));
+                              }
+                            }}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    {/* date to stop displaying */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">
+                        Expiry Date <span className="text-destructive">*</span>
+                      </Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full h-11 justify-start text-left font-normal",
+                              !formData.endTime && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {formData.endTime
+                              ? format(formData.endTime, "PPP")
+                              : "Pick a date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 bg-popover" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={formData.endTime}
+                            onSelect={(date) => {
+                              if (date) {
+                                const endOfDay = new Date(date);
+                                endOfDay.setHours(23, 59, 59, 999);
+                                setFormData((prev) => ({ ...prev, endTime: endOfDay }));
+                              }
+                            }}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      {/* Quick expire presets */}
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        <span className="text-xs text-muted-foreground mr-1 self-center">Quick:</span>
+                        {[
+                          { key: 'today', label: 'Today' },
+                          { key: '1d', label: '+1 day' },
+                          { key: '3d', label: '+3 days' },
+                          { key: '1w', label: '+1 week' },
+                          { key: '2w', label: '+2 weeks' },
+                          { key: '1m', label: '+1 month' },
+                        ].map(p => (
+                          <button
+                            key={p.key}
+                            type="button"
+                            onClick={() => setEndTimePreset(p.key)}
+                            className="px-2.5 py-1 text-xs rounded-full border border-border bg-muted/30 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
-
-                  {/* Overlay if image is missing but required */}
-                  {(formData.template === 'split' || formData.template === 'full-image') && !formData.imageUrl && !uploadedFile && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
-                      <p className="text-slate-400 text-sm font-medium">Please upload an image to preview this template</p>
-                    </div>
-                  )}
-                </div>
-                <p className="text-[10px] text-muted-foreground text-center italic uppercase tracking-widest">
-                  {isAchievement
-                    ? '* Shown in the Student Spotlight sidebar on campus TV displays'
-                    : '* This is how the notice will look on the campus TV displays'}
-                </p>
-              </div>
-
-
-              {/* date pickers */}
-              <div className="space-y-2 pt-4 border-t">
-                <Label className="font-bold text-base">Schedule</Label>
-                <p className="text-xs text-muted-foreground">Set when this notice appears and disappears from the TV board.</p>
-              </div>
-              <div className="grid gap-6 md:grid-cols-2">
-                {/* date to start displaying */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">
-                    Start Date <span className="text-destructive">*</span>
-                  </Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full h-11 justify-start text-left font-normal",
-                          !formData.startTime && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.startTime
-                          ? format(formData.startTime, "PPP")
-                          : "Pick a date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-popover" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formData.startTime}
-                        onSelect={(date) => {
-                          if (date) {
-                            const startOfDay = new Date(date);
-                            startOfDay.setHours(0, 0, 0, 0);
-                            setFormData((prev) => ({ ...prev, startTime: startOfDay }));
-                          }
-                        }}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                {/* date to stop displaying */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">
-                    Expiry Date <span className="text-destructive">*</span>
-                  </Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full h-11 justify-start text-left font-normal",
-                          !formData.endTime && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.endTime
-                          ? format(formData.endTime, "PPP")
-                          : "Pick a date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-popover" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formData.endTime}
-                        onSelect={(date) => {
-                          if (date) {
-                            const endOfDay = new Date(date);
-                            endOfDay.setHours(23, 59, 59, 999);
-                            setFormData((prev) => ({ ...prev, endTime: endOfDay }));
-                          }
-                        }}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  {/* Quick expire presets */}
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    <span className="text-xs text-muted-foreground mr-1 self-center">Quick:</span>
-                    {[
-                      { key: 'today', label: 'Today' },
-                      { key: '1d', label: '+1 day' },
-                      { key: '3d', label: '+3 days' },
-                      { key: '1w', label: '+1 week' },
-                      { key: '2w', label: '+2 weeks' },
-                      { key: '1m', label: '+1 month' },
-                    ].map(p => (
-                      <button
-                        key={p.key}
-                        type="button"
-                        onClick={() => setEndTimePreset(p.key)}
-                        className="px-2.5 py-1 text-xs rounded-full border border-border bg-muted/30 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
+                </>
+              )}
 
               {/* save and cancel buttons */}
               <div className="flex items-center justify-end gap-3 pt-6 border-t">
