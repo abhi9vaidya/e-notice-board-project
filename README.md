@@ -1,33 +1,27 @@
 ﻿# E-Notice Board
-### Digital Notice Display System — (RBU), Nagpur
 
-A cloud-based digital notice board system built for campus TV displays. Faculty post notices from a web dashboard; the TV screen runs in kiosk mode and auto-rotates them in real-time.
+> A cloud-based digital notice board system for campus TV displays — built as a B.Tech 6th Semester Project.
 
 **Live:** https://mythical-geode-479809-m6.web.app
 
 ---
 
-## Project Info
+## Overview
 
-| | |
-|---|---|
-| **Institution** | Shri Ramdeobaba College of Engineering and Management, Nagpur |
-| **Course** | B.Tech Computer Science — 6th Semester Project |
-| **Academic Year** | 2026 |
-| **Team** | Abhinav Vaidya, Mansi Motghare, Parnavi Kitey, Kartik Suchak |
+Faculty post notices from a web dashboard; a TV screen running in kiosk mode auto-rotates them in real-time. The system supports rich media, role-based access, and AI-assisted notice creation.
 
 ---
 
-## What it does
+## Features
 
-- **Faculty Dashboard** — post, edit, archive notices with a rich editor and live TV preview
-- **TV Kiosk Display** — auto-rotating slides at `/tv`, designed for 1080p screens
-- **Google OAuth login** — faculty sign in with their Google account; admin controls an allowlist of approved emails
-- **Role-based access** — `faculty` can manage their own notices; `admin` can manage all notices, users, and the allowlist
-- **Cloudinary media** — images and PDFs attached to notices are uploaded to Cloudinary (free tier, no credit card)
-- **AI text extraction** — upload a PDF/image of a circular and AI extracts the key points as a draft description
-- **Student Spotlight** — achievements category displays in a separate gold panel on TV
-- **Kiosk hardening** — back-button trap, hidden unlock gesture (logo × 5), admin device flag
+- **Faculty Dashboard** — create, edit, and archive notices with a rich Markdown editor and live TV preview
+- **TV Kiosk Display** — full-screen auto-rotating slides at `/tv`, optimised for 1080p screens
+- **Google OAuth Login** — faculty sign in with institutional Google accounts; admin manages an email allowlist
+- **Role-based Access** — `faculty` manage their own notices; `admin` manages all notices, users, and the allowlist
+- **Media Uploads** — images and PDFs attached to notices are stored on Cloudinary
+- **AI Text Extraction** — upload a PDF or image of a circular and AI extracts key points as a draft
+- **Student Spotlight** — achievements category renders as a dedicated gold panel on the TV display
+- **Kiosk Hardening** — back-button trap, hidden unlock gesture (tap logo × 5), per-device admin flag
 
 ---
 
@@ -39,7 +33,7 @@ A cloud-based digital notice board system built for campus TV displays. Faculty 
 | UI | Shadcn UI + Tailwind CSS |
 | Auth | Firebase Authentication (Google OAuth) |
 | Database | Firebase Firestore |
-| Media | Cloudinary (unsigned upload preset) |
+| Media | Cloudinary |
 | Hosting | Firebase Hosting |
 | Routing | React Router v6 |
 
@@ -98,53 +92,42 @@ A cloud-based digital notice board system built for campus TV displays. Faculty 
 
 | Route | Description |
 |---|---|
-| `/` | Login screen (Google OAuth or admin email/password) |
-| `/dashboard` | Notice feed with filters |
+| `/` | Login screen |
+| `/dashboard` | Notice feed with category filters |
 | `/manage-notices` | Add / edit / archive notices |
 | `/add-notice` | Full-page notice editor with live TV preview |
-| `/admin` | Admin panel — manage users, allowlist, all notices |
+| `/admin` | Admin panel — users, allowlist, all notices |
 | `/archive` | Archived notices |
-| `/categories` | Browse by category |
-| `/profile` | Profile settings, change/set password |
-| `/settings` | Account settings |
+| `/categories` | Browse notices by category |
+| `/profile` | Profile settings |
 | `/tv` | TV kiosk display (full-screen, auto-rotating) |
 
 ---
 
 ## Local Setup
 
-### Prerequisites
-- Node.js 18+
-- A Firebase project (free tier)
-- A Cloudinary account (free tier)
+**Prerequisites:** Node.js 18+, a Firebase project, a Cloudinary account (both free tier).
 
-### 1. Clone and install
 ```bash
+# 1. Clone and install
 git clone https://github.com/abhi9vaidya/e-notice-board-project.git
 cd e-notice-board-project
 npm install
-```
 
-### 2. Configure environment variables
-Copy `.env.example` to `.env` and fill in your values:
-```bash
+# 2. Configure environment
 cp .env.example .env
-```
+# Fill in your Firebase and Cloudinary credentials — see .env.example for details
 
-See `.env.example` for all required variables and where to find them.
-
-### 3. Firebase setup
-1. [Firebase Console](https://console.firebase.google.com) → create a project
-2. **Authentication** → Sign-in method → enable **Google**
-3. **Firestore Database** → create in production mode
-4. Deploy Firestore rules: `firebase deploy --only firestore:rules`
-5. Copy the web app config into your `.env`
-
-### 4. Run locally
-```bash
+# 3. Run locally
 npm run dev
+# → http://localhost:5173
 ```
-Open `http://localhost:5173`
+
+**Firebase setup:**
+1. [Firebase Console](https://console.firebase.google.com) → create a project
+2. Authentication → Sign-in method → enable **Google**
+3. Firestore Database → create in production mode
+4. Deploy rules: `firebase deploy --only firestore:rules`
 
 ---
 
@@ -159,35 +142,21 @@ firebase deploy --only hosting
 
 ## TV Kiosk Setup
 
-1. Open a browser on the TV and navigate to `https://your-app.web.app/tv`
-2. Use a kiosk browser app (e.g. *Fully Kiosk Browser* on Android TV) with:
-   - Start URL: `https://your-app.web.app/tv`
-   - Keep Screen On: enabled
-   - Auto-Start on Boot: enabled
-   - Lock navigation bar
-3. To unlock the display for management: click the RBU logo **5 times** within 2 seconds
-
----
-
-## Branch Structure
-
-| Branch | Description |
-|---|---|
-| `main` | Current production code |
-| `backup-old-main` | Previous version backup |
-| `feature/allowlist-oauth` | Feature branch (merged into main) |
+1. Navigate to `https://your-app.web.app/tv` on the TV browser
+2. Use a kiosk browser (e.g. *Fully Kiosk Browser* on Android TV) with auto-start and screen-lock enabled
+3. To unlock: tap the college logo **5 times** within 2 seconds
 
 ---
 
 ## Team
 
-| Name | Role |
-|---|---|
-| Abhinav Vaidya | Full-stack development, Firebase |
-| Parnavi Kite | Frontend development, UI design |
-| Kartik Suchak | Testing, documentation |
-| Mansi Motghare | Firebase Backend integration, API Connectivity |
+| Name | Role | Email |
+|---|---|---|
+| Abhinav Vaidya | Full-stack development, Firebase | abhinavvaidya2005@gmail.com |
+| Mansi Motghare | Firebase backend, API integration | mansimotghare167@gmail.com |
+| Parnavi Kitey | Frontend development, UI design | — |
+| Kartik Suchak | Testing, documentation | suchakku@rknec.edu |
 
----
+**Institution:** Shri Ramdeobaba College of Engineering and Management, Nagpur
+**Course:** B.Tech Computer Science — 6th Semester Project (2026)
 
-*Built as a 6th semester project.*
