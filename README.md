@@ -14,7 +14,7 @@ A cloud-based digital notice board system built for campus TV displays. Faculty 
 | **Institution** | Shri Ramdeobaba College of Engineering and Management, Nagpur |
 | **Course** | B.Tech Computer Science — 6th Semester Project |
 | **Academic Year** | 2026 |
-| **Team** | Abhinav Vaidya, Mansi Motghare, Parnavi Kite, Kartik Suchak |
+| **Team** | Abhinav Vaidya, Mansi Motghare, Parnavi Kitey, Kartik Suchak |
 
 ---
 
