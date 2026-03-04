@@ -154,7 +154,7 @@ firebase deploy --only hosting
 |---|---|---|
 | Abhinav Vaidya | Full-stack development, Firebase | abhinavvaidya2005@gmail.com |
 | Mansi Motghare | Firebase backend, API integration | mansimotghare167@gmail.com |
-| Parnavi Kitey | Frontend development, UI design | — |
+| Parnavi Kite | Frontend development, UI design | parnavikite@gmail.com |
 | Kartik Suchak | Testing, documentation | suchakku@rknec.edu |
 
 **Institution:** Shri Ramdeobaba College of Engineering and Management, Nagpur
