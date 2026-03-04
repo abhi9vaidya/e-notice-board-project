@@ -121,8 +121,8 @@ const SettingsPage: React.FC = () => {
     >
       <div className="container max-w-4xl py-6 px-4 md:px-6">
         <div className="grid gap-6">
-          {/* ── TV Display Mode ─────────────────────────────────────────── */}
-          <Card>
+          {/* ── TV Display Mode (admin only) ────────────────────────── */}
+          {faculty?.role === 'admin' && <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Tv className="h-5 w-5 text-primary" />
@@ -475,7 +475,7 @@ const SettingsPage: React.FC = () => {
               )}
 
             </CardContent>
-          </Card>
+          </Card>}
 
           {/* TV Display Settings (general) */}
           <Card>
