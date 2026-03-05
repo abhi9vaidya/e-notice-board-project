@@ -13,6 +13,13 @@ import { cn } from '@/lib/utils';
 import { useTVDisplaySettings } from '@/hooks/useTVDisplaySettings';
 
 const TVDisplay: React.FC = () => {
+  // Hide body overflow to prevent scrollbars from the scaled 125vw × 125vh root
+  useEffect(() => {
+    const prev = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    return () => { document.documentElement.style.overflow = prev; };
+  }, []);
+
   const { notices: activeNotices, loading: noticesLoading } = useActiveNotices();
   const { achievements, loading: achievementsLoading } = useActiveAchievements();
   const { settings } = useTVDisplaySettings();
@@ -168,7 +175,15 @@ const TVDisplay: React.FC = () => {
 
   if (noticesLoading || achievementsLoading) {
     return (
-      <div className={`h-screen ${rootBg} flex items-center justify-center`}>
+      <div
+        className={`${rootBg} flex items-center justify-center`}
+        style={{
+          width: '125vw',
+          height: '125vh',
+          transform: 'scale(0.8)',
+          transformOrigin: 'top left',
+        }}
+      >
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-black/10 border-t-primary rounded-full animate-spin mb-5 mx-auto" />
           <p className="text-slate-500 font-bold tracking-[0.3em] uppercase text-xs">Updating Board</p>
@@ -178,10 +193,18 @@ const TVDisplay: React.FC = () => {
   }
 
   return (
-    <div className={`h-screen w-screen ${rootBg} ${rootText} flex flex-col overflow-hidden select-none`}>
+    <div
+      className={`${rootBg} ${rootText} flex flex-col overflow-hidden select-none`}
+      style={{
+        width: '125vw',
+        height: '125vh',
+        transform: 'scale(0.8)',
+        transformOrigin: 'top left',
+      }}
+    >
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <header className={`shrink-0 h-[4.5rem] px-10 flex items-center justify-between border-b ${isLight ? "border-slate-200 bg-white/90 backdrop-blur-sm" : "border-white/5"} z-20 relative`}>
+      <header className={`shrink-0 h-[5rem] px-10 flex items-center justify-between border-b ${isLight ? "border-slate-200 bg-white/90 backdrop-blur-sm" : "border-white/5"} z-20 relative`}>
         <div className="flex items-center gap-4">
           <div className="h-10 w-10 bg-white/95 p-1 rounded-lg shrink-0">
             <img src={rbuLogo} className="h-full w-full object-contain" alt="RBU" />
@@ -299,7 +322,7 @@ const TVDisplay: React.FC = () => {
             {/* ── Single-view layout ── */}
             <div className="flex-1 flex overflow-hidden min-h-0">
               {/* Main slide area */}
-              <div className="flex-1 relative overflow-hidden p-6 pr-4 min-w-0">
+              <div className="flex-1 relative overflow-hidden p-4 pr-3 min-w-0">
                 {displayItems.length === 0 ? (
                   <div className="h-full flex items-center justify-center">
                     <div className="text-center opacity-30">
@@ -324,12 +347,12 @@ const TVDisplay: React.FC = () => {
               </div>
 
               {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-              <aside className={`w-96 shrink-0 border-l ${isLight ? "border-slate-200 bg-white/60" : "border-white/5"} flex flex-col overflow-hidden`}>
+              <aside className={`w-80 shrink-0 border-l ${isLight ? "border-slate-200 bg-white/60" : "border-white/5"} flex flex-col overflow-hidden`}>
 
                 {/* Upcoming Events — only shown when there are events */}
                 {upcomingEvents.length > 0 && (
                   <>
-                    <div className="flex-1 flex flex-col p-5 overflow-hidden min-h-0">
+                    <div className="flex-1 flex flex-col p-4 overflow-hidden min-h-0">
                       <div className="flex items-center gap-2 mb-4 shrink-0">
                         <CalendarDays className="h-3.5 w-3.5 text-purple-400" />
                         <p className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-500">Upcoming Events</p>
@@ -365,7 +388,7 @@ const TVDisplay: React.FC = () => {
                 )}
 
                 {/* Student Spotlight — full height when no events, bottom half otherwise */}
-                <div className="flex-1 flex flex-col p-5 overflow-hidden min-h-0">
+                <div className="flex-1 flex flex-col p-4 overflow-hidden min-h-0">
                   <div className="flex items-center gap-2 mb-4 shrink-0">
                     <Trophy className={cn("h-3.5 w-3.5 text-yellow-400", upcomingEvents.length === 0 && "h-4 w-4")} />
                     <p className={cn(
@@ -446,7 +469,7 @@ const TVDisplay: React.FC = () => {
 
       {/* ── Progress bar — single-view only (above ticker) ───────────────── */}
       {activeMode === 'single' && (
-        <div className={`h-[3px] ${isLight ? "bg-slate-200" : "bg-white/5"} shrink-0 relative overflow-hidden`}>
+        <div className={`h-[4px] ${isLight ? "bg-slate-200" : "bg-white/5"} shrink-0 relative overflow-hidden`}>
           <motion.div
             key={`${progressKey}-${currentIndex}`}
             className="absolute inset-y-0 left-0 bg-primary"
@@ -477,7 +500,7 @@ const TVDisplay: React.FC = () => {
 
       {/* ── Ticker ──────────────────────────────────────────────────────── */}
       {displayItems.length > 0 && (
-        <footer className={`shrink-0 h-9 flex items-center overflow-hidden ${isLight ? "bg-slate-100 border-t border-slate-200" : "bg-black/20"}`}>
+        <footer className={`shrink-0 h-8 flex items-center overflow-hidden ${isLight ? "bg-slate-100 border-t border-slate-200" : "bg-black/20"}`}>
           <div className="shrink-0 h-full px-5 flex items-center bg-primary text-white font-black uppercase tracking-widest text-[0.6rem]">
             Notice Board
           </div>

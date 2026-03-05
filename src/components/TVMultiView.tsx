@@ -32,7 +32,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Zap, User, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
-import { TVNoticePreview } from '@/components/TVNoticePreview';
 import { AutoScrollText } from '@/components/AutoScrollText';
 import { categoryConfig } from '@/config/categoryConfig';
 import { cn } from '@/lib/utils';
@@ -113,8 +112,18 @@ const LargeNoticeCard: React.FC<{ notice: Notice }> = ({ notice }) => {
   const Icon = cfg.icon;
   const isHigh = notice.priority === 'high';
 
+  // Dynamic title sizing — shorter titles get bigger fonts to fill space
+  const titleLen = (notice.title || '').length;
+  const titleSize =
+    titleLen > 100 ? 'text-[1.5rem]' :
+      titleLen > 70 ? 'text-[1.8rem]' :
+        titleLen > 45 ? 'text-[2.2rem]' :
+          titleLen > 25 ? 'text-3xl' :
+            'text-4xl';
+  const descSize = notice.imageUrl ? 'text-[0.85rem]' : 'text-[0.95rem]';
+
   return (
-    <div className={`h-full flex flex-col rounded-2xl border ${isLight ? "border-slate-200 bg-white shadow-sm" : "border-white/8 bg-white/[0.03]"} overflow-hidden p-6 gap-4`}>
+    <div className={`h-full flex flex-col rounded-2xl border ${isLight ? "border-slate-200 bg-white shadow-sm" : "border-white/8 bg-white/[0.03]"} overflow-hidden p-5 gap-3`}>
       {/* Badge row */}
       <div className="flex items-center gap-3 shrink-0">
         <div
@@ -135,8 +144,8 @@ const LargeNoticeCard: React.FC<{ notice: Notice }> = ({ notice }) => {
         </span>
       </div>
 
-      {/* Title */}
-      <h2 className={`text-3xl font-black ${isLight ? "text-slate-900" : "text-white"} leading-snug shrink-0 line-clamp-3`}>{notice.title}</h2>
+      {/* Title — dynamically sized */}
+      <h2 className={cn(`font-black ${isLight ? "text-slate-900" : "text-white"} leading-snug shrink-0 line-clamp-3`, titleSize)}>{notice.title}</h2>
 
       {/* Image + description split */}
       {notice.imageUrl ? (
@@ -148,7 +157,7 @@ const LargeNoticeCard: React.FC<{ notice: Notice }> = ({ notice }) => {
             <div className="flex-1 min-h-0 overflow-hidden">
               <AutoScrollText
                 content={notice.description}
-                className={`text-[0.9rem] ${isLight ? "text-slate-500" : "text-slate-400"} leading-relaxed`}
+                className={`${descSize} ${isLight ? "text-slate-500" : "text-slate-400"} leading-relaxed`}
                 speed={20}
               />
             </div>
@@ -158,14 +167,17 @@ const LargeNoticeCard: React.FC<{ notice: Notice }> = ({ notice }) => {
         <div className="flex-1 min-h-0 overflow-hidden">
           <AutoScrollText
             content={notice.description}
-            className={`text-[1rem] ${isLight ? "text-slate-500" : "text-slate-400"} leading-relaxed`}
+            className={`${descSize} ${isLight ? "text-slate-500" : "text-slate-400"} leading-relaxed`}
             speed={20}
           />
         </div>
-      ) : null}
+      ) : (
+        /* No image or description — spacer fills dynamically */
+        <div className="flex-1" />
+      )}
 
       {/* Footer */}
-      <div className={`flex items-center gap-2 shrink-0 mt-auto pt-3 border-t ${isLight ? "border-slate-100" : "border-white/5"}`}>
+      <div className={`flex items-center gap-2 shrink-0 mt-auto pt-2 border-t ${isLight ? "border-slate-100" : "border-white/5"}`}>
         <User className="h-4 w-4 text-slate-600" />
         <span className="text-xs text-slate-500 font-medium">{notice.facultyName}</span>
         {notice.endTime && (
@@ -305,7 +317,7 @@ const MultiAchievementSidebar: React.FC<{
   return (
     <aside className={`flex-1 border-l ${isLight ? "border-slate-200" : "border-white/5"} flex flex-col overflow-hidden min-h-0`}>
       {/* Header */}
-      <div className="flex items-center gap-2.5 px-5 pt-4 pb-3 shrink-0">
+      <div className="flex items-center gap-2.5 px-4 pt-3 pb-2 shrink-0">
         <Trophy className="h-3.5 w-3.5 text-yellow-400" />
         <span className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-500">
           Student Spotlight
@@ -316,10 +328,10 @@ const MultiAchievementSidebar: React.FC<{
           </span>
         )}
       </div>
-      <div className={`h-px ${isLight ? "bg-slate-200" : "bg-white/5"} shrink-0 mx-5`} />
+      <div className={`h-px ${isLight ? "bg-slate-200" : "bg-white/5"} shrink-0 mx-4`} />
 
       {/* Cards */}
-      <div className="flex-1 overflow-hidden p-4 flex flex-col gap-3 min-h-0">
+      <div className="flex-1 overflow-hidden p-3 flex flex-col gap-3 min-h-0">
         {visible.length > 0 ? (
           <AnimatePresence mode="wait">
             <motion.div
@@ -405,8 +417,8 @@ const SpotlightSidebar: React.FC<{
 }> = ({ achievements, spotlightIdx, quoteText, quoteAuthor, spotlight, wide }) => {
   const isLight = useTVTheme();
   return (
-    <aside className={`${wide ? "w-[30rem]" : "w-80"} shrink-0 border-l ${isLight ? "border-slate-200" : "border-white/5"} flex flex-col overflow-hidden`}>
-      <div className="flex items-center gap-2.5 px-5 pt-4 pb-3 shrink-0">
+    <aside className={`${wide ? "w-[28rem]" : "w-72"} shrink-0 border-l ${isLight ? "border-slate-200" : "border-white/5"} flex flex-col overflow-hidden`}>
+      <div className="flex items-center gap-2.5 px-4 pt-3 pb-2 shrink-0">
         <Trophy className="h-3.5 w-3.5 text-yellow-400" />
         <span className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-500">
           Student Spotlight
@@ -418,8 +430,8 @@ const SpotlightSidebar: React.FC<{
         </span>
         <span className="ml-auto text-[0.5rem] font-black uppercase tracking-widest text-yellow-500/50">Achievements</span>
       </div>
-      <div className={`h-px ${isLight ? "bg-slate-200" : "bg-white/5"} shrink-0 mx-5`} />
-      <div className="flex-1 overflow-hidden p-5 flex flex-col min-h-0">
+      <div className={`h-px ${isLight ? "bg-slate-200" : "bg-white/5"} shrink-0 mx-4`} />
+      <div className="flex-1 overflow-hidden p-4 flex flex-col min-h-0">
         <Spotlight
           achievement={spotlight}
           quoteText={quoteText}
@@ -509,7 +521,7 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
   if (layout === 'achievements-only') {
     return (
       <TVThemeContext.Provider value={isLight}>
-        <div className="flex-1 flex flex-col overflow-hidden min-h-0 px-6 py-4 gap-4">
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0 px-4 py-3 gap-3">
           {/* Header row */}
           <div className="flex items-center gap-2.5 shrink-0">
             <Trophy className="h-4 w-4 text-yellow-400" />
@@ -582,7 +594,7 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
       <TVThemeContext.Provider value={isLight}>
         <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Large notice */}
-          <div className="flex-1 flex flex-col overflow-hidden min-h-0 p-6 pr-4">
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0 p-4 pr-3">
             {/* Section label */}
             <div className="flex items-center gap-2.5 mb-3 shrink-0">
               <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_6px_hsl(var(--primary))]" />
@@ -619,7 +631,7 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
       <TVThemeContext.Provider value={isLight}>
         <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Full-height notices grid */}
-          <div className="flex-1 flex flex-col overflow-hidden min-h-0 p-6 pr-4 gap-3">
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0 p-4 pr-3 gap-3">
             {/* Section label */}
             <div className="flex items-center gap-2.5 shrink-0">
               <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_6px_hsl(var(--primary))]" />
@@ -663,7 +675,7 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
           {/* HIGH PRIORITY panel â€” only shown when high-priority notices exist */}
           {heroNotice && (
             <div className="flex flex-col overflow-hidden" style={{ flex: '1 1 58%' }}>
-              <div className="flex items-center gap-2.5 px-6 pt-4 pb-2.5 shrink-0">
+              <div className="flex items-center gap-2.5 px-4 pt-3 pb-2 shrink-0">
                 <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_#f43f5e]" />
                 <span className="text-[0.6rem] font-black uppercase tracking-[0.35em] text-slate-500">
                   High Priority
@@ -672,7 +684,7 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
                   )}
                 </span>
               </div>
-              <div className="flex-1 min-h-0 px-6 pb-3 relative">
+              <div className="flex-1 min-h-0 px-4 pb-2 relative">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={heroNotice.id ?? highIdx}
@@ -682,11 +694,8 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
                     transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                     className="h-full"
                   >
-                    <div className={`h-full rounded-2xl border ${isLight ? "border-slate-300 bg-white/50" : "border-white/8 bg-white/[0.02]"} overflow-hidden`}
-                      style={{ containerType: 'size' }}>
-                      <div className="h-full" style={{ transform: 'scale(0.55)', transformOrigin: 'top left', width: '181.8%', height: '181.8%' }}>
-                        <TVNoticePreview notice={heroNotice} isLight={isLight} />
-                      </div>
+                    <div className="h-full">
+                      <LargeNoticeCard notice={heroNotice} />
                     </div>
                   </motion.div>
                 </AnimatePresence>
@@ -697,7 +706,7 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
           {/* NOTICES grid panel */}
           {otherNotices.length > 0 && (
             <div className="flex flex-col overflow-hidden" style={{ flex: heroNotice ? '1 1 42%' : '1 1 100%' }}>
-              <div className="flex items-center gap-2.5 px-6 pt-1 pb-2.5 shrink-0">
+              <div className="flex items-center gap-2.5 px-4 pt-1 pb-2 shrink-0">
                 <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_6px_hsl(var(--primary))]" />
                 <span className="text-[0.6rem] font-black uppercase tracking-[0.35em] text-slate-500">Notices</span>
                 <span className="text-[0.55rem] font-black text-primary/50 uppercase tracking-widest ml-1">
@@ -714,7 +723,7 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
                   </div>
                 )}
               </div>
-              <div className="flex-1 min-h-0 px-6 pb-4">
+              <div className="flex-1 min-h-0 px-4 pb-3">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={noticePageIdx}

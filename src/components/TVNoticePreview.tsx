@@ -201,7 +201,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                         style={{ background: 'radial-gradient(ellipse 70% 55% at 40% 40%, rgba(250,204,21,0.1) 0%, transparent 70%)' }} />
                     {/* Trophy watermark — centered right half */}
                     <Trophy className="absolute right-20 top-1/2 -translate-y-1/2 h-[26rem] w-[26rem] text-yellow-400/[0.07] pointer-events-none select-none" />
-                    <div className="relative z-10 h-full flex flex-col p-14">
+                    <div className="relative z-10 h-full flex flex-col p-10">
                         {/* Top badge */}
                         <div className="flex items-center gap-4 shrink-0 mb-10">
                             <div className="flex items-center gap-2.5 px-5 py-2 rounded-full border border-yellow-400/30 bg-yellow-400/10">
@@ -263,7 +263,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
             const hasMedia = !!(notice.imageUrl || notice.documentUrl);
             return (
                 <div className={containerClass}>
-                    <div className="h-full flex gap-10">
+                    <div className="h-full flex gap-8">
                         {/* Text side — takes remaining width */}
                         <div className={cn("flex-1 flex flex-col h-full py-6 min-h-0", isRight && "order-2")}>
                             {header}
@@ -313,7 +313,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                             </div>
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-                        <div className="absolute inset-x-0 bottom-0 p-20 flex flex-col items-start">
+                        <div className="absolute inset-x-0 bottom-0 p-14 flex flex-col items-start">
                             <div className="px-6 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white font-bold mb-8">
                                 {notice.customCategory || config.label}
                             </div>
@@ -386,7 +386,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
         case 'featured':
             return (
                 <div className={containerClass}>
-                    <div className={`h-full ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-white/5 border-white/10'} rounded-[3rem] border p-20 relative overflow-hidden text-left`}>
+                    <div className={`h-full ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-white/5 border-white/10'} rounded-[3rem] border p-14 relative overflow-hidden text-left`}>
                         <div className="absolute top-0 right-0 p-10">
                             <Trophy className="h-40 w-40 text-white/5 -rotate-12" />
                         </div>
