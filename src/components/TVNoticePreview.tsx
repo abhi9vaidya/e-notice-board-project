@@ -18,7 +18,11 @@ import { QRCodeSVG } from 'qrcode.react';
 /** True when the URL points to a PDF document. */
 const isPdfUrl = (url: string) => {
     const u = url.toLowerCase();
-    return u.includes('.pdf') || u.includes('export=download');
+    // Google Drive returns "uc?export=view&id=..." for images, but because we specify MIME types 
+    // when uploading, Drive knows it's a PDF. We have to assume anything that's a direct Drive 
+    // link could be a PDF if it doesn't explicitly look like a known image.
+    // To be safe, any Drive link will trigger the thumbnail API anyway, which handles both safely.
+    return u.includes('.pdf') || u.includes('export=download') || u.includes('export=view');
 };
 
 /**
@@ -83,8 +87,22 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ imageUrl, documentUrl, classNam
     // toDisplayImageUrl handles Cloudinary images, Cloudinary PDFs, and Drive URLs
     const src = toDisplayImageUrl(effectiveUrl);
 
-    return (
-        <div className={cn('relative overflow-hidden bg-slate-900', className)}>
+    const renderContent = () => {
+        const isDriveUrl = effectiveUrl.includes('drive.google.com') || effectiveUrl.includes('docs.google.com');
+        if (isPdf && isDriveUrl) {
+            const idMatch = effectiveUrl.match(/[?&]id=([a-zA-Z0-9_-]{20,})/) || effectiveUrl.match(/\/d\/([a-zA-Z0-9_-]{20,})/);
+            if (idMatch) {
+                return (
+                    <iframe
+                        src={`https://drive.google.com/file/d/${idMatch[1]}/preview`}
+                        className="w-full h-full border-0 bg-white"
+                        title="PDF Preview"
+                    />
+                );
+            }
+        }
+
+        return (
             <img
                 src={src}
                 className={cn('w-full h-full', fit === 'cover' ? 'object-cover' : 'object-contain')}
@@ -95,6 +113,12 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ imageUrl, documentUrl, classNam
                     if (img.src !== effectiveUrl) img.src = effectiveUrl;
                 }}
             />
+        );
+    };
+
+    return (
+        <div className={cn('relative overflow-hidden bg-slate-900', className)}>
+            {renderContent()}
             {isPdf && (
                 <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-red-600/90 backdrop-blur-sm text-white font-black text-sm px-4 py-2 rounded-full shadow-xl pointer-events-none">
                     <FileText className="h-4 w-4" />
@@ -312,41 +336,45 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                 <Sparkles className="h-32 w-32 text-white/5" />
                             </div>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-                        <div className="absolute inset-x-0 bottom-0 p-14 flex flex-col items-start">
-                            <div className="px-6 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white font-bold mb-8">
-                                {notice.customCategory || config.label}
-                            </div>
-                            <h1 className={cn('font-bold text-white leading-tight mb-6 drop-shadow-xl line-clamp-3', titleSize)}>
-                                {notice.title || 'Notice Title'}
-                            </h1>
-                            <div className="max-h-48 overflow-hidden w-full relative">
-                                <AutoScrollText
-                                    className="text-3xl text-slate-200 leading-relaxed max-w-4xl drop-shadow-lg"
-                                    content={notice.description || 'Notice description goes here...'}
-                                />
-                            </div>
-                            <div className="mt-12 flex items-center gap-10 w-full justify-between">
-                                <div className="flex items-center gap-10">
-                                    <div className="flex items-center gap-3">
-                                        <User className="h-6 w-6 text-white/60" />
-                                        <span className="text-2xl font-bold text-white">{notice.facultyName || 'Faculty Name'}</span>
+                        {notice.showTextOverlay !== false && (
+                            <>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                                <div className="absolute inset-x-0 bottom-0 p-14 flex flex-col items-start">
+                                    <div className="px-6 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white font-bold mb-8">
+                                        {notice.customCategory || config.label}
                                     </div>
-                                    <div className="w-2 h-2 rounded-full bg-white/20" />
-                                    <span className="text-2xl font-bold text-white/80">
-                                        {notice.endTime ? format(new Date(notice.endTime), 'dd MMMM') : 'DD MMMM'}
-                                    </span>
-                                </div>
-                                {regUrl && (
-                                    <div className="flex flex-col items-center gap-1">
-                                        <div className="rounded-lg bg-white p-2 shadow-2xl">
-                                            <QRCodeSVG value={regUrl} size={110} includeMargin={false} />
+                                    <h1 className={cn('font-bold text-white leading-tight mb-6 drop-shadow-xl line-clamp-3', titleSize)}>
+                                        {notice.title || 'Notice Title'}
+                                    </h1>
+                                    <div className="max-h-48 overflow-hidden w-full relative">
+                                        <AutoScrollText
+                                            className="text-3xl text-slate-200 leading-relaxed max-w-4xl drop-shadow-lg"
+                                            content={notice.description || 'Notice description goes here...'}
+                                        />
+                                    </div>
+                                    <div className="mt-12 flex items-center gap-10 w-full justify-between">
+                                        <div className="flex items-center gap-10">
+                                            <div className="flex items-center gap-3">
+                                                <User className="h-6 w-6 text-white/60" />
+                                                <span className="text-2xl font-bold text-white">{notice.facultyName || 'Faculty Name'}</span>
+                                            </div>
+                                            <div className="w-2 h-2 rounded-full bg-white/20" />
+                                            <span className="text-2xl font-bold text-white/80">
+                                                {notice.endTime ? format(new Date(notice.endTime), 'dd MMMM') : 'DD MMMM'}
+                                            </span>
                                         </div>
-                                        <p className="text-[11px] font-black uppercase tracking-wider text-white/70">Scan to Register</p>
+                                        {regUrl && (
+                                            <div className="flex flex-col items-center gap-1">
+                                                <div className="rounded-lg bg-white p-2 shadow-2xl">
+                                                    <QRCodeSVG value={regUrl} size={110} includeMargin={false} />
+                                                </div>
+                                                <p className="text-[11px] font-black uppercase tracking-wider text-white/70">Scan to Register</p>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
-                        </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             );

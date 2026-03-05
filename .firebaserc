@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "mythical-geode-479809-m6"
+  },
+  "targets": {
+    "mythical-geode-479809-m6": {
+      "hosting": {
+        "production": [
+          "rbu-notice-board"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

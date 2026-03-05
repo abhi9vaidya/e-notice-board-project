@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { uploadToCloudinary } from "@/integrations/cloudinary/cloudinaryService";
+import { uploadNoticeFile } from "@/integrations/firebase/storageService";
 import { extractTextFromFile } from "@/lib/extractText";
 import { QRCodeSVG } from 'qrcode.react';
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -31,9 +31,9 @@ import { categoryConfig } from "@/config/categoryConfig";
 import { addDays, addWeeks, addMonths } from "date-fns";
 
 const PRIORITIES: { value: Priority; label: string; sub: string; color: string; bg: string; icon: React.ReactNode }[] = [
-  { value: 'high',   label: 'Urgent',    sub: 'Alert style, shown on top',  color: 'text-rose-600 border-rose-500',  bg: 'bg-rose-500/10',  icon: <Zap className="h-4 w-4" /> },
-  { value: 'medium', label: 'Important', sub: 'Standard mid-priority',       color: 'text-amber-600 border-amber-500', bg: 'bg-amber-500/10', icon: <AlertTriangle className="h-4 w-4" /> },
-  { value: 'low',    label: 'General',   sub: 'Informational notice',        color: 'text-sky-600 border-sky-500',    bg: 'bg-sky-500/10',   icon: <Minus className="h-4 w-4" /> },
+  { value: 'high', label: 'Urgent', sub: 'Alert style, shown on top', color: 'text-rose-600 border-rose-500', bg: 'bg-rose-500/10', icon: <Zap className="h-4 w-4" /> },
+  { value: 'medium', label: 'Important', sub: 'Standard mid-priority', color: 'text-amber-600 border-amber-500', bg: 'bg-amber-500/10', icon: <AlertTriangle className="h-4 w-4" /> },
+  { value: 'low', label: 'General', sub: 'Informational notice', color: 'text-sky-600 border-sky-500', bg: 'bg-sky-500/10', icon: <Minus className="h-4 w-4" /> },
 ];
 
 const TEMPLATES: { value: Template; label: string; description: string; icon: React.ReactNode; hasPlacement: boolean; preview: React.ReactNode }[] = [
@@ -103,6 +103,7 @@ const AddEditNoticePage: React.FC = () => {
     isArchived: false,
     showIssuedBy: true,
     showValidTill: true,
+    showTextOverlay: true,
     registrationUrl: "",
   });
 
@@ -179,6 +180,7 @@ const AddEditNoticePage: React.FC = () => {
           isArchived: notice.isArchived,
           showIssuedBy: notice.showIssuedBy !== false,
           showValidTill: notice.showValidTill !== false,
+          showTextOverlay: notice.showTextOverlay !== false,
         });
         setIsHighPriority(notice.priority === "high");
         setFormData(prev => ({ ...prev, priority: notice.priority }));
@@ -213,7 +215,7 @@ const AddEditNoticePage: React.FC = () => {
           description: 'Please wait while we save your file...',
         });
         setUploadProgress(0);
-        finalImageUrl = await uploadToCloudinary(uploadedFile, setUploadProgress);
+        finalImageUrl = await uploadNoticeFile(uploadedFile, setUploadProgress);
       }
 
       const dataToSubmit: CreateNoticeInput = {
@@ -547,6 +549,7 @@ const AddEditNoticePage: React.FC = () => {
                   <p className="text-xs text-muted-foreground">{TEMPLATES.find(t => t.value === formData.template)?.description}</p>
 
                   {/* Placement — only visible for split */}
+                  {/* Placement — only visible for split */}
                   {formData.template === 'split' && (
                     <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40 border">
                       <span className="text-xs text-muted-foreground flex-1">Image position on TV</span>
@@ -564,6 +567,17 @@ const AddEditNoticePage: React.FC = () => {
                           </Button>
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Text Overlay Toggle — only visible for full-image */}
+                  {formData.template === 'full-image' && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40 border">
+                      <span className="text-xs text-muted-foreground flex-1">Show title & description overlay on top of image</span>
+                      <Switch
+                        checked={formData.showTextOverlay !== false}
+                        onCheckedChange={(v) => setFormData(prev => ({ ...prev, showTextOverlay: v }))}
+                      />
                     </div>
                   )}
                 </div>

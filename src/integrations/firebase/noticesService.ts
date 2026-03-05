@@ -42,6 +42,7 @@ const toAppNotice = (id: string, data: FirestoreNotice): Notice => ({
     isArchived: data.isArchived ?? false,
     showIssuedBy: data.showIssuedBy !== false,
     showValidTill: data.showValidTill !== false,
+    showTextOverlay: data.showTextOverlay !== false,
 });
 
 // ── Queries ────────────────────────────────────────────────────────────────────

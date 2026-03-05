@@ -29,6 +29,7 @@ export interface FirestoreNotice {
     isArchived: boolean;
     showIssuedBy?: boolean;
     showValidTill?: boolean;
+    showTextOverlay?: boolean;
 }
 
 /** Shape stored in Firestore `profiles` collection */
@@ -67,6 +68,7 @@ export interface Notice {
     isArchived: boolean;
     showIssuedBy?: boolean;
     showValidTill?: boolean;
+    showTextOverlay?: boolean;
 }
 
 export interface Faculty {
