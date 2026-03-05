@@ -31,6 +31,8 @@ const TVDisplay: React.FC = () => {
   // (cross-tab via the storage event). We track the previous value so the effect
   // is a no-op on the first render — preventing it from overwriting the auto-switch
   // timer that starts from the useState initializer above.
+
+
   const prevDisplayMode = useRef(settings.displayMode);
   useEffect(() => {
     if (prevDisplayMode.current === settings.displayMode) return;
@@ -99,9 +101,9 @@ const TVDisplay: React.FC = () => {
   const current = displayItems[currentIndex];
   // Per-priority durations derived from settings (ms)
   const slideDurations: Record<string, number> = {
-    high:   settings.singleHighDuration   * 1000,
+    high: settings.singleHighDuration * 1000,
     medium: settings.singleMediumDuration * 1000,
-    low:    settings.singleNormalDuration * 1000,
+    low: settings.singleNormalDuration * 1000,
   };
   const slideDuration = slideDurations[current?.priority] ?? 12000;
 
@@ -160,22 +162,26 @@ const TVDisplay: React.FC = () => {
   }, [achievements]);
   const spotlight = achievements && achievements.length > 0 ? achievements[spotlightIdx % achievements.length] : null;
 
+  const isLight = settings.tvTheme === 'light';
+  const rootBg = isLight ? 'bg-[#f0f3fa]' : 'bg-[#060810]';
+  const rootText = isLight ? 'text-slate-900' : 'text-white';
+
   if (noticesLoading || achievementsLoading) {
     return (
-      <div className="h-screen bg-[#060810] flex items-center justify-center">
+      <div className={`h-screen ${rootBg} flex items-center justify-center`}>
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-white/10 border-t-primary rounded-full animate-spin mb-5 mx-auto" />
-          <p className="text-slate-600 font-bold tracking-[0.3em] uppercase text-xs">Updating Board</p>
+          <div className="w-12 h-12 border-2 border-black/10 border-t-primary rounded-full animate-spin mb-5 mx-auto" />
+          <p className="text-slate-500 font-bold tracking-[0.3em] uppercase text-xs">Updating Board</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen w-screen bg-[#060810] text-white flex flex-col overflow-hidden select-none">
+    <div className={`h-screen w-screen ${rootBg} ${rootText} flex flex-col overflow-hidden select-none`}>
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <header className="shrink-0 h-[4.5rem] px-10 flex items-center justify-between border-b border-white/5 z-20 relative">
+      <header className={`shrink-0 h-[4.5rem] px-10 flex items-center justify-between border-b ${isLight ? "border-slate-200 bg-white/90 backdrop-blur-sm" : "border-white/5"} z-20 relative`}>
         <div className="flex items-center gap-4">
           <div className="h-10 w-10 bg-white/95 p-1 rounded-lg shrink-0">
             <img src={rbuLogo} className="h-full w-full object-contain" alt="RBU" />
@@ -200,7 +206,7 @@ const TVDisplay: React.FC = () => {
                     width: i === currentIndex ? 20 : 6,
                     height: 6,
                     backgroundColor:
-                      i === currentIndex ? 'hsl(var(--primary))' : 'rgba(255,255,255,0.12)',
+                      i === currentIndex ? 'hsl(var(--primary))' : (isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)'),
                   }}
                 />
               ))}
@@ -213,7 +219,7 @@ const TVDisplay: React.FC = () => {
                 'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.55rem] font-black uppercase tracking-widest border',
                 activeMode === 'single'
                   ? 'text-primary border-primary/30 bg-primary/10'
-                  : 'text-purple-400 border-purple-500/30 bg-purple-500/10'
+                  : (isLight ? 'text-purple-700 border-purple-300 bg-purple-100' : 'text-purple-400 border-purple-500/30 bg-purple-500/10')
               )}>
                 {activeMode === 'single'
                   ? <><MonitorPlay className="h-3 w-3" /> Single View</>
@@ -234,7 +240,7 @@ const TVDisplay: React.FC = () => {
               'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.52rem] font-black uppercase tracking-widest border',
               settings.displayMode === 'multi'
                 ? 'text-purple-400 border-purple-500/20 bg-purple-500/8'
-                : 'text-slate-600 border-white/8 bg-white/3'
+                : (isLight ? 'text-slate-600 border-slate-300 bg-slate-100' : 'text-slate-400 border-white/8 bg-white/3')
             )}>
               {settings.displayMode === 'multi'
                 ? <><LayoutGrid className="h-2.5 w-2.5" /> Overview Mode</>
@@ -278,6 +284,7 @@ const TVDisplay: React.FC = () => {
               quoteText={quoteText}
               quoteAuthor={quoteAuthor}
               settings={settings}
+              isLight={isLight}
             />
           </motion.div>
         ) : (
@@ -310,14 +317,14 @@ const TVDisplay: React.FC = () => {
                       transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
                       className="h-full"
                     >
-                      <TVNoticePreview notice={current} />
+                      <TVNoticePreview notice={current} isLight={isLight} />
                     </motion.div>
                   </AnimatePresence>
                 )}
               </div>
 
               {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-              <aside className="w-96 shrink-0 border-l border-white/5 flex flex-col overflow-hidden">
+              <aside className={`w-96 shrink-0 border-l ${isLight ? "border-slate-200 bg-white/60" : "border-white/5"} flex flex-col overflow-hidden`}>
 
                 {/* Upcoming Events — only shown when there are events */}
                 {upcomingEvents.length > 0 && (
@@ -340,12 +347,12 @@ const TVDisplay: React.FC = () => {
                                 ) : (
                                   <>
                                     <div className="text-[0.55rem] font-black uppercase text-purple-400 leading-none">{format(d, 'MMM')}</div>
-                                    <div className="text-lg font-black text-white leading-none">{format(d, 'd')}</div>
+                                    <div className={`text-lg font-black ${isLight ? "text-slate-800" : "text-white"} leading-none`}>{format(d, 'd')}</div>
                                   </>
                                 )}
                               </div>
-                              <div className="w-px h-8 bg-white/8 shrink-0" />
-                              <p className="text-[0.78rem] text-white/65 leading-snug line-clamp-2 min-w-0">{event.title}</p>
+                              <div className={`w-px h-8 ${isLight ? "bg-slate-200" : "bg-white/8"} shrink-0`} />
+                              <p className={`text-[0.78rem] ${isLight ? "text-slate-600" : "text-white/65"} leading-snug line-clamp-2 min-w-0`}>{event.title}</p>
                             </div>
                           );
                         })}
@@ -353,7 +360,7 @@ const TVDisplay: React.FC = () => {
                     </div>
 
                     {/* Divider */}
-                    <div className="h-px bg-white/5 shrink-0" />
+                    <div className={`h-px ${isLight ? "bg-slate-200" : "bg-white/5"} shrink-0`} />
                   </>
                 )}
 
@@ -381,7 +388,7 @@ const TVDisplay: React.FC = () => {
                       >
                         {/* 1. Title — always first */}
                         <p className={cn(
-                          "font-black text-white leading-snug shrink-0",
+                          `font-black ${isLight ? "text-slate-900" : "text-white"} leading-snug shrink-0`,
                           upcomingEvents.length === 0 ? "text-xl" : "text-base line-clamp-2"
                         )}>
                           {spotlight.title}
@@ -389,7 +396,7 @@ const TVDisplay: React.FC = () => {
 
                         {/* 2. Image */}
                         {spotlight.imageUrl && (
-                          <div className="w-full rounded-xl overflow-hidden shrink-0 border border-yellow-400/10"
+                          <div className={`w-full rounded-xl overflow-hidden shrink-0 border ${isLight ? "border-yellow-300" : "border-yellow-400/10"}`}
                             style={{ aspectRatio: upcomingEvents.length === 0 ? '4/3' : '16/9' }}>
                             <img
                               src={spotlight.imageUrl}
@@ -404,7 +411,7 @@ const TVDisplay: React.FC = () => {
                           <div className="flex-1 min-h-0 overflow-hidden">
                             <AutoScrollText
                               content={spotlight.description}
-                              className={upcomingEvents.length === 0 ? "text-[0.82rem] text-yellow-100/70" : "text-[0.75rem] text-yellow-100/70"}
+                              className={upcomingEvents.length === 0 ? `text-[0.82rem] ${isLight ? "text-yellow-800" : "text-yellow-100/70"}` : `text-[0.75rem] ${isLight ? "text-yellow-800" : "text-yellow-100/70"}`}
                               speed={upcomingEvents.length === 0 ? 22 : 18}
                             />
                           </div>
@@ -418,13 +425,13 @@ const TVDisplay: React.FC = () => {
                         className="flex-1 flex flex-col justify-center min-h-0"
                       >
                         <p className={cn(
-                          "text-slate-400 leading-relaxed italic",
+                          `${isLight ? "text-slate-500" : "text-slate-400"} leading-relaxed italic`,
                           upcomingEvents.length === 0 ? "text-[0.9rem]" : "text-[0.78rem]"
                         )}>
                           &ldquo;{quoteText}&rdquo;
                         </p>
                         {quoteAuthor && (
-                          <p className="text-[0.65rem] text-slate-600 font-bold mt-2">&mdash; {quoteAuthor}</p>
+                          <p className={`text-[0.65rem] ${isLight ? "text-slate-400" : "text-slate-500"} font-bold mt-2`}>&mdash; {quoteAuthor}</p>
                         )}
                       </motion.div>
                     )}
@@ -439,7 +446,7 @@ const TVDisplay: React.FC = () => {
 
       {/* ── Progress bar — single-view only (above ticker) ───────────────── */}
       {activeMode === 'single' && (
-        <div className="h-[3px] bg-white/5 shrink-0 relative overflow-hidden">
+        <div className={`h-[3px] ${isLight ? "bg-slate-200" : "bg-white/5"} shrink-0 relative overflow-hidden`}>
           <motion.div
             key={`${progressKey}-${currentIndex}`}
             className="absolute inset-y-0 left-0 bg-primary"
@@ -452,7 +459,7 @@ const TVDisplay: React.FC = () => {
 
       {/* ── Auto-switch progress bar (mode-level, shown in auto mode) ────── */}
       {settings.displayMode === 'auto' && (
-        <div className="h-[2px] bg-white/5 shrink-0 relative overflow-hidden">
+        <div className={`h-[2px] ${isLight ? "bg-slate-200" : "bg-white/5"} shrink-0 relative overflow-hidden`}>
           <motion.div
             key={`auto-${activeMode}`}
             className={cn("absolute inset-y-0 left-0",
@@ -470,8 +477,8 @@ const TVDisplay: React.FC = () => {
 
       {/* ── Ticker ──────────────────────────────────────────────────────── */}
       {displayItems.length > 0 && (
-        <footer className="shrink-0 h-9 flex items-center overflow-hidden bg-black/20">
-          <div className="shrink-0 h-full px-5 flex items-center bg-primary text-black font-black uppercase tracking-widest text-[0.6rem]">
+        <footer className={`shrink-0 h-9 flex items-center overflow-hidden ${isLight ? "bg-slate-100 border-t border-slate-200" : "bg-black/20"}`}>
+          <div className="shrink-0 h-full px-5 flex items-center bg-primary text-white font-black uppercase tracking-widest text-[0.6rem]">
             Notice Board
           </div>
           <div className="flex-1 overflow-hidden relative">
@@ -488,7 +495,7 @@ const TVDisplay: React.FC = () => {
                       className="w-1.5 h-1.5 rounded-full shrink-0"
                       style={{ backgroundColor: cfg.accent }}
                     />
-                    <span className="text-[0.78rem] font-medium text-white/50">{item.title}</span>
+                    <span className={`text-[0.78rem] font-medium ${isLight ? "text-slate-600" : "text-white/50"}`}>{item.title}</span>
                   </span>
                 );
               })}

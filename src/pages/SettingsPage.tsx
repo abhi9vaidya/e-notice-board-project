@@ -29,6 +29,8 @@ import {
   RefreshCw,
   Clock,
   Layers,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
@@ -166,6 +168,39 @@ const SettingsPage: React.FC = () => {
                           {isActive && <Badge variant="secondary" className="ml-auto text-[0.6rem] py-0">Active</Badge>}
                         </div>
                         <p className="text-[0.72rem] text-muted-foreground leading-relaxed">{desc}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* ── TV Theme ───────────────────────────────────────────────────────── */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Palette className="h-4 w-4 text-primary" />
+                  <Label className="text-sm font-semibold">TV Screen Theme</Label>
+                </div>
+                <div className="flex gap-3">
+                  {(["dark", "light"] as const).map(t => {
+                    const active = tvForm.tvTheme === t;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setTVForm(f => ({ ...f, tvTheme: t }))}
+                        className={cn(
+                          "flex-1 flex items-center justify-center gap-2 rounded-xl border-2 py-3 px-4 text-sm font-semibold transition-all",
+                          active
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-muted/20 text-muted-foreground hover:bg-muted/40"
+                        )}
+                      >
+                        {t === "dark"
+                          ? <><Moon className="h-4 w-4" /> Dark</>
+                          : <><Sun className="h-4 w-4" /> Light</>}
+                        {active && <Badge variant="default" className="ml-auto text-[10px] px-1.5 py-0">Active</Badge>}
                       </button>
                     );
                   })}

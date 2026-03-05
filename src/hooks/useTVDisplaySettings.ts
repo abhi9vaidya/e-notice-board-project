@@ -34,7 +34,9 @@ export interface TVDisplaySettings {
   autoMultiDuration: number;
   /** Whether to start in single or multi mode when the TV loads */
   autoStartMode: 'single' | 'multi';
-}
+  // ── Theme ──────────────────────────────────────────────────────────────
+  /** Whether the TV display uses a dark or light colour scheme */
+  tvTheme: 'dark' | 'light';}
 
 export const TV_SETTINGS_DEFAULTS: TVDisplaySettings = {
   displayMode: 'single',
@@ -48,6 +50,7 @@ export const TV_SETTINGS_DEFAULTS: TVDisplaySettings = {
   autoSingleDuration: 120,
   autoMultiDuration: 60,
   autoStartMode: 'single',
+  tvTheme: 'dark',
 };
 
 const STORAGE_KEY = 'rbu-tv-display-settings';

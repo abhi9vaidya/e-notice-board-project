@@ -11,20 +11,21 @@ interface AutoScrollTextProps {
 
 // Markdown prose wrapper — all spacing done via explicit inline styles on
 // each element so Tailwind preflight resets can't strip them.
+// Uses 'inherit' for text colors so the parent className controls the palette.
 const MdContent: React.FC<{ children: string }> = ({ children }) => (
     <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-            p:      ({ children: c }) => <p style={{ display: 'block', marginBottom: '0.6em' }}>{c}</p>,
-            strong: ({ children: c }) => <strong style={{ fontWeight: 700, color: 'white' }}>{c}</strong>,
-            em:     ({ children: c }) => <em style={{ fontStyle: 'italic', opacity: 0.9 }}>{c}</em>,
-            h1:     ({ children: c }) => <div style={{ display: 'block', fontWeight: 900, fontSize: '1.35em', marginBottom: '0.4em', marginTop: '0.6em', color: 'white' }}>{c}</div>,
-            h2:     ({ children: c }) => <div style={{ display: 'block', fontWeight: 800, fontSize: '1.15em', marginBottom: '0.35em', marginTop: '0.5em', color: 'white' }}>{c}</div>,
-            h3:     ({ children: c }) => <div style={{ display: 'block', fontWeight: 700, fontSize: '1.05em', marginBottom: '0.3em', marginTop: '0.4em', color: 'rgba(255,255,255,0.9)' }}>{c}</div>,
-            ul:     ({ children: c }) => <ul style={{ display: 'block', marginBottom: '0.6em', marginTop: '0.2em', paddingLeft: '1.4em', listStyleType: 'disc' }}>{c}</ul>,
-            ol:     ({ children: c }) => <ol style={{ display: 'block', marginBottom: '0.6em', marginTop: '0.2em', paddingLeft: '1.6em', listStyleType: 'decimal' }}>{c}</ol>,
-            li:     ({ children: c }) => <li style={{ display: 'list-item', marginBottom: '0.3em' }}>{c}</li>,
-            hr:     () => <hr style={{ display: 'block', border: 'none', borderTop: '1px solid rgba(255,255,255,0.15)', margin: '0.8em 0' }} />,
+            p: ({ children: c }) => <p style={{ display: 'block', marginBottom: '0.6em' }}>{c}</p>,
+            strong: ({ children: c }) => <strong style={{ fontWeight: 700, color: 'inherit' }}>{c}</strong>,
+            em: ({ children: c }) => <em style={{ fontStyle: 'italic', opacity: 0.9 }}>{c}</em>,
+            h1: ({ children: c }) => <div style={{ display: 'block', fontWeight: 900, fontSize: '1.35em', marginBottom: '0.4em', marginTop: '0.6em', color: 'inherit' }}>{c}</div>,
+            h2: ({ children: c }) => <div style={{ display: 'block', fontWeight: 800, fontSize: '1.15em', marginBottom: '0.35em', marginTop: '0.5em', color: 'inherit' }}>{c}</div>,
+            h3: ({ children: c }) => <div style={{ display: 'block', fontWeight: 700, fontSize: '1.05em', marginBottom: '0.3em', marginTop: '0.4em', color: 'inherit', opacity: 0.9 }}>{c}</div>,
+            ul: ({ children: c }) => <ul style={{ display: 'block', marginBottom: '0.6em', marginTop: '0.2em', paddingLeft: '1.4em', listStyleType: 'disc' }}>{c}</ul>,
+            ol: ({ children: c }) => <ol style={{ display: 'block', marginBottom: '0.6em', marginTop: '0.2em', paddingLeft: '1.6em', listStyleType: 'decimal' }}>{c}</ol>,
+            li: ({ children: c }) => <li style={{ display: 'list-item', marginBottom: '0.3em' }}>{c}</li>,
+            hr: () => <hr style={{ display: 'block', border: 'none', borderTop: '1px solid currentColor', opacity: 0.15, margin: '0.8em 0' }} />,
         }}
     >
         {children}

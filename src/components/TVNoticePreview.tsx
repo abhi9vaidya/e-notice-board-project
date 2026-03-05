@@ -48,7 +48,7 @@ function toDisplayImageUrl(url: string): string {
     // ── Google Drive ────────────────────────────────────────────────────────
     // Extract file ID from /uc?id=ID, /file/d/ID/view, /open?id=ID etc.
     const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]{20,})/) ||
-                    url.match(/\/d\/([a-zA-Z0-9_-]{20,})/);
+        url.match(/\/d\/([a-zA-Z0-9_-]{20,})/);
     if (idMatch) {
         // thumbnail endpoint works for both images and PDFs (first-page PNG)
         // and does NOT redirect to a virus-scan warning page
@@ -108,9 +108,10 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ imageUrl, documentUrl, classNam
 interface TVNoticePreviewProps {
     notice: Partial<Notice>;
     isHero?: boolean;
+    isLight?: boolean;
 }
 
-export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero = true }) => {
+export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero = true, isLight = false }) => {
     const category = notice.category || 'other';
     const config = categoryConfig[category] || categoryConfig.other;
     const CategoryIcon = config.icon;
@@ -121,9 +122,9 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
     const titleLen = (notice.title || '').length;
     const titleSize =
         titleLen > 100 ? 'text-[2.6rem]' :
-        titleLen > 70  ? 'text-[3.2rem]' :
-        titleLen > 45  ? 'text-[4rem]'   :
-                         'text-[5.5rem]';
+            titleLen > 70 ? 'text-[3.2rem]' :
+                titleLen > 45 ? 'text-[4rem]' :
+                    'text-[5.5rem]';
 
     const header = (
         <div className="flex items-center gap-6 mb-8 shrink-0">
@@ -160,22 +161,22 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
     ) : null;
 
     const footer = hasFooter ? (
-        <div className="mt-auto pt-8 border-t border-white/5 flex items-center justify-between shrink-0">
+        <div className={`mt-auto pt-8 border-t ${isLight ? 'border-slate-200' : 'border-white/5'} flex items-center justify-between shrink-0`}>
             {showIssuedBy ? (
                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
+                    <div className={`w-12 h-12 rounded-full ${isLight ? 'bg-slate-100' : 'bg-white/5'} flex items-center justify-center`}>
                         <User className="h-6 w-6 text-slate-400" />
                     </div>
                     <div>
                         <p className="text-xs uppercase tracking-[0.2em] font-bold text-slate-500">Issued By</p>
-                        <p className="text-xl font-bold text-white">{notice.facultyName || 'Faculty Name'}</p>
+                        <p className={`text-xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>{notice.facultyName || 'Faculty Name'}</p>
                     </div>
                 </div>
             ) : <div />}
             {showValidTill ? (
                 <div className="text-right">
                     <p className="text-xs uppercase tracking-[0.2em] font-bold text-slate-500">Valid Till</p>
-                    <p className="text-xl font-bold text-white">
+                    <p className={`text-xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>
                         {notice.endTime ? format(new Date(notice.endTime), 'dd MMM yyyy') : 'DD MMM YYYY'}
                     </p>
                 </div>
@@ -184,7 +185,8 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
     ) : null;
 
     const containerClass = cn(
-        "h-full w-full text-white font-sans",
+        "h-full w-full font-sans",
+        isLight ? 'text-slate-900' : 'text-white',
         !isHero && "p-4"
     );
 
@@ -265,12 +267,12 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                         {/* Text side — takes remaining width */}
                         <div className={cn("flex-1 flex flex-col h-full py-6 min-h-0", isRight && "order-2")}>
                             {header}
-                            <h1 className={cn("font-bold text-white leading-[1] tracking-tight mb-8 shrink-0 line-clamp-3", titleSize)}>
+                            <h1 className={cn(`font-bold ${isLight ? 'text-slate-900' : 'text-white'} leading-[1] tracking-tight mb-8 shrink-0 line-clamp-3`, titleSize)}>
                                 {notice.title || 'Notice Title'}
                             </h1>
                             <div className="flex-1 overflow-hidden min-h-0 relative">
                                 <AutoScrollText
-                                    className="text-3xl text-slate-400 leading-relaxed"
+                                    className={`text-3xl ${isLight ? 'text-slate-600' : 'text-slate-400'} leading-relaxed`}
                                     content={notice.description || 'Notice description goes here.'}
                                 />
                             </div>
@@ -282,10 +284,10 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                 <MediaPanel
                                     imageUrl={notice.imageUrl}
                                     documentUrl={notice.documentUrl}
-                                    className="h-full w-full rounded-[2rem] border border-white/10 shadow-2xl"
+                                    className={`h-full w-full rounded-[2rem] border ${isLight ? 'border-slate-200' : 'border-white/10'} shadow-2xl`}
                                 />
                             ) : (
-                                <div className="h-full rounded-[2rem] bg-white/5 border border-dashed border-white/10 flex items-center justify-center">
+                                <div className={`h-full rounded-[2rem] ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-white/5 border-white/10'} border border-dashed flex items-center justify-center`}>
                                     <FileText className="h-32 w-32 text-white/5" />
                                 </div>
                             )}
@@ -298,7 +300,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
         case 'full-image':
             return (
                 <div className={containerClass}>
-                    <div className="relative h-full w-full rounded-[3rem] overflow-hidden border border-white/5">
+                    <div className={`relative h-full w-full rounded-[3rem] overflow-hidden border ${isLight ? 'border-slate-200' : 'border-white/5'}`}>
                         {(notice.imageUrl || notice.documentUrl) ? (
                             <MediaPanel
                                 imageUrl={notice.imageUrl}
@@ -315,7 +317,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                             <div className="px-6 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white font-bold mb-8">
                                 {notice.customCategory || config.label}
                             </div>
-                            <h1 className={cn("font-bold text-white leading-tight mb-6 drop-shadow-xl line-clamp-3", titleSize)}>
+                            <h1 className={cn('font-bold text-white leading-tight mb-6 drop-shadow-xl line-clamp-3', titleSize)}>
                                 {notice.title || 'Notice Title'}
                             </h1>
                             <div className="max-h-48 overflow-hidden w-full relative">
@@ -354,19 +356,19 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                 <div className={containerClass}>
                     <div className="h-full flex flex-col items-center justify-center text-center max-w-6xl mx-auto py-10">
                         {header}
-                        <h1 className={cn("font-bold text-white leading-[1] tracking-tight mb-10 shrink-0 line-clamp-3", titleSize)}>
+                        <h1 className={cn(`font-bold ${isLight ? 'text-slate-900' : 'text-white'} leading-[1] tracking-tight mb-10 shrink-0 line-clamp-3`, titleSize)}>
                             {notice.title || 'Notice Title'}
                         </h1>
                         <div className="w-32 h-1 mb-12 shrink-0" style={{ backgroundColor: config.accent }} />
                         <div className="w-full flex-1 min-h-0 max-w-5xl overflow-hidden relative">
                             <AutoScrollText
-                                className="text-[2.25rem] text-slate-400 leading-[1.4] mx-auto text-center"
+                                className={`text-[2.25rem] ${isLight ? 'text-slate-600' : 'text-slate-400'} leading-[1.4] mx-auto text-center`}
                                 content={notice.description || 'Notice description goes here in large text...'}
                             />
                         </div>
-                        <div className="mt-20 flex items-center gap-16 text-slate-500 font-bold uppercase tracking-[0.2em] text-lg shrink-0">
+                        <div className={`mt-20 flex items-center gap-16 ${isLight ? 'text-slate-500' : 'text-slate-500'} font-bold uppercase tracking-[0.2em] text-lg shrink-0`}>
                             <span>{notice.facultyName || 'Faculty Name'}</span>
-                            <div className="w-2 h-2 rounded-full bg-white/10" />
+                            <div className={`w-2 h-2 rounded-full ${isLight ? 'bg-slate-300' : 'bg-white/10'}`} />
                             <span>{notice.endTime ? format(new Date(notice.endTime), 'dd MMM yyyy') : 'DD MMM YYYY'}</span>
                         </div>
                         {regUrl && (
@@ -384,18 +386,18 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
         case 'featured':
             return (
                 <div className={containerClass}>
-                    <div className="h-full bg-white/5 rounded-[3rem] border border-white/10 p-20 relative overflow-hidden text-left">
+                    <div className={`h-full ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-white/5 border-white/10'} rounded-[3rem] border p-20 relative overflow-hidden text-left`}>
                         <div className="absolute top-0 right-0 p-10">
                             <Trophy className="h-40 w-40 text-white/5 -rotate-12" />
                         </div>
                         <div className="relative z-10 h-full flex flex-col">
                             <div className="text-primary font-black uppercase tracking-[0.4em] mb-4 shrink-0">Featured Update</div>
-                            <h1 className={cn("font-bold text-white mb-10 leading-tight shrink-0 line-clamp-3", titleSize)}>
+                            <h1 className={cn(`font-bold ${isLight ? 'text-slate-900' : 'text-white'} mb-10 leading-tight shrink-0 line-clamp-3`, titleSize)}>
                                 {notice.title || 'Notice Title'}
                             </h1>
                             <div className="flex-1 overflow-hidden pr-10 min-h-0 relative">
                                 <AutoScrollText
-                                    className="text-4xl text-slate-300 leading-relaxed"
+                                    className={`text-4xl ${isLight ? 'text-slate-600' : 'text-slate-300'} leading-relaxed`}
                                     content={notice.description || 'Notice description goes here...'}
                                 />
                             </div>
@@ -406,7 +408,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                     </div>
                                     <div>
                                         <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Authorized By</p>
-                                        <p className="text-2xl font-bold text-white">{notice.facultyName || 'Faculty Name'}</p>
+                                        <p className={`text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>{notice.facultyName || 'Faculty Name'}</p>
                                     </div>
                                 </div>
                                 {regUrl && (
@@ -463,12 +465,12 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                         {header}
                         <div className={cn('flex-1 min-h-0 flex items-start gap-12', isStandardRight && 'flex-row-reverse')}>
                             <div className="flex-1 flex flex-col min-h-0 h-full justify-center">
-                                <h1 className={cn('font-bold text-white leading-[1] tracking-tight mb-8 shrink-0 line-clamp-3', titleSize)}>
+                                <h1 className={cn(`font-bold ${isLight ? 'text-slate-900' : 'text-white'} leading-[1] tracking-tight mb-8 shrink-0 line-clamp-3`, titleSize)}>
                                     {notice.title || 'Notice Title'}
                                 </h1>
                                 <div className="flex-1 min-h-0 overflow-hidden relative">
                                     <AutoScrollText
-                                        className="text-3xl text-slate-400 leading-relaxed"
+                                        className={`text-3xl ${isLight ? 'text-slate-600' : 'text-slate-400'} leading-relaxed`}
                                         content={notice.description || 'Notice description goes here...'}
                                     />
                                 </div>
