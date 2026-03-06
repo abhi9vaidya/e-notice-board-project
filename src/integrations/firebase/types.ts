@@ -22,6 +22,7 @@ export interface FirestoreNotice {
     imageUrl?: string;
     documentUrl?: string;
     registrationUrl?: string;
+    pdfOrientation?: 'landscape' | 'portrait';
     startTime: Timestamp;
     endTime: Timestamp;
     createdAt: Timestamp;
@@ -61,6 +62,7 @@ export interface Notice {
     imageUrl?: string;
     documentUrl?: string;
     registrationUrl?: string;
+    pdfOrientation?: 'landscape' | 'portrait';
     startTime: Date;
     endTime: Date;
     createdAt: Date;

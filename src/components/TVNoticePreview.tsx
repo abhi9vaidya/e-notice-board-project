@@ -93,11 +93,21 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ imageUrl, documentUrl, classNam
             const idMatch = effectiveUrl.match(/[?&]id=([a-zA-Z0-9_-]{20,})/) || effectiveUrl.match(/\/d\/([a-zA-Z0-9_-]{20,})/);
             if (idMatch) {
                 return (
-                    <iframe
-                        src={`https://drive.google.com/file/d/${idMatch[1]}/preview`}
-                        className="w-full h-full border-0 bg-white"
-                        title="PDF Preview"
-                    />
+                    // Negative-offset wrapper crops out Google Drive's top toolbar
+                    // and stretches the PDF to fill the container edge-to-edge.
+                    <div className="absolute inset-0 overflow-hidden bg-white">
+                        <iframe
+                            src={`https://drive.google.com/file/d/${idMatch[1]}/preview`}
+                            className="absolute border-0 bg-white"
+                            style={{
+                                top:    '-00px',
+                                left:   '-1%',
+                                width:  '102%',
+                                height: 'calc(100% + 108px)',
+                            }}
+                            title="PDF Preview"
+                        />
+                    </div>
                 );
             }
         }

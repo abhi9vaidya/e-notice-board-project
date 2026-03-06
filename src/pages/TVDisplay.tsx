@@ -11,15 +11,13 @@ import { getDailyQuote } from '@/data/spiritualQuotes';
 import { categoryConfig } from '@/config/categoryConfig';
 import { cn } from '@/lib/utils';
 import { useTVDisplaySettings } from '@/hooks/useTVDisplaySettings';
+import type { Notice } from '@/integrations/firebase/types';
+
+type Slide =
+  | { type: 'single'; notice: Notice }
+  | { type: 'double'; notices: [Notice, Notice] };
 
 const TVDisplay: React.FC = () => {
-  // Hide body overflow to prevent scrollbars from the scaled 125vw × 125vh root
-  useEffect(() => {
-    const prev = document.documentElement.style.overflow;
-    document.documentElement.style.overflow = 'hidden';
-    return () => { document.documentElement.style.overflow = prev; };
-  }, []);
-
   const { notices: activeNotices, loading: noticesLoading } = useActiveNotices();
   const { achievements, loading: achievementsLoading } = useActiveAchievements();
   const { settings } = useTVDisplaySettings();
@@ -96,6 +94,27 @@ const TVDisplay: React.FC = () => {
       });
   }, [activeNotices]);
 
+  // Group portrait-PDF notices into double slides; everything else is a single slide
+  const slides = useMemo<Slide[]>(() => {
+    const result: Slide[] = [];
+    let i = 0;
+    while (i < displayItems.length) {
+      const n = displayItems[i];
+      if (
+        n.pdfOrientation === 'portrait' &&
+        i + 1 < displayItems.length &&
+        displayItems[i + 1].pdfOrientation === 'portrait'
+      ) {
+        result.push({ type: 'double', notices: [n, displayItems[i + 1]] });
+        i += 2;
+      } else {
+        result.push({ type: 'single', notice: n });
+        i++;
+      }
+    }
+    return result;
+  }, [displayItems]);
+
   // Upcoming events (category === 'events', end in future), up to 4
   const upcomingEvents = useMemo(() => {
     const now = new Date();
@@ -105,25 +124,32 @@ const TVDisplay: React.FC = () => {
       .slice(0, 4);
   }, [activeNotices]);
 
-  const current = displayItems[currentIndex];
+  const currentSlide = slides[currentIndex];
   // Per-priority durations derived from settings (ms)
   const slideDurations: Record<string, number> = {
-    high: settings.singleHighDuration * 1000,
+    high:   settings.singleHighDuration   * 1000,
     medium: settings.singleMediumDuration * 1000,
-    low: settings.singleNormalDuration * 1000,
+    low:    settings.singleNormalDuration * 1000,
   };
-  const slideDuration = slideDurations[current?.priority] ?? 12000;
+  const slideDuration = (() => {
+    if (!currentSlide) return 12000;
+    if (currentSlide.type === 'single') return slideDurations[currentSlide.notice.priority] ?? 12000;
+    // Double slide: use the higher-priority notice's duration
+    const p: Record<string, number> = { high: 0, medium: 1, low: 2 };
+    const top = currentSlide.notices.reduce((a, b) => p[a.priority] <= p[b.priority] ? a : b);
+    return slideDurations[top.priority] ?? 12000;
+  })();
 
   // Auto-advance slides — only when the single-view is active
   useEffect(() => {
     if (activeMode !== 'single') return;
-    if (displayItems.length <= 1) return;
+    if (slides.length <= 1) return;
     const t = setTimeout(() => {
-      setCurrentIndex(i => (i + 1) % displayItems.length);
+      setCurrentIndex(i => (i + 1) % slides.length);
       setProgressKey(k => k + 1);
     }, slideDuration);
     return () => clearTimeout(t);
-  }, [displayItems, currentIndex, slideDuration, activeMode]);
+  }, [slides.length, currentIndex, slideDuration, activeMode]);
 
   // Auto-refresh: if the tab regains visibility after being hidden >10 min
   // (e.g., TV screensaver or power-save mode), reload so Firestore listeners
@@ -170,20 +196,12 @@ const TVDisplay: React.FC = () => {
   const spotlight = achievements && achievements.length > 0 ? achievements[spotlightIdx % achievements.length] : null;
 
   const isLight = settings.tvTheme === 'light';
-  const rootBg = isLight ? 'bg-[#f0f3fa]' : 'bg-[#060810]';
+  const rootBg  = isLight ? 'bg-[#f0f3fa]' : 'bg-[#060810]';
   const rootText = isLight ? 'text-slate-900' : 'text-white';
 
   if (noticesLoading || achievementsLoading) {
     return (
-      <div
-        className={`${rootBg} flex items-center justify-center`}
-        style={{
-          width: '125vw',
-          height: '125vh',
-          transform: 'scale(0.8)',
-          transformOrigin: 'top left',
-        }}
-      >
+      <div className={`h-screen ${rootBg} flex items-center justify-center`}>
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-black/10 border-t-primary rounded-full animate-spin mb-5 mx-auto" />
           <p className="text-slate-500 font-bold tracking-[0.3em] uppercase text-xs">Updating Board</p>
@@ -193,18 +211,10 @@ const TVDisplay: React.FC = () => {
   }
 
   return (
-    <div
-      className={`${rootBg} ${rootText} flex flex-col overflow-hidden select-none`}
-      style={{
-        width: '125vw',
-        height: '125vh',
-        transform: 'scale(0.8)',
-        transformOrigin: 'top left',
-      }}
-    >
+    <div className={`h-screen w-screen ${rootBg} ${rootText} flex flex-col overflow-hidden select-none`}>
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <header className={`shrink-0 h-[5rem] px-10 flex items-center justify-between border-b ${isLight ? "border-slate-200 bg-white/90 backdrop-blur-sm" : "border-white/5"} z-20 relative`}>
+      <header className={`shrink-0 h-[4.5rem] px-10 flex items-center justify-between border-b ${isLight ? "border-slate-200 bg-white/90 backdrop-blur-sm" : "border-white/5"} z-20 relative`}>
         <div className="flex items-center gap-4">
           <div className="h-10 w-10 bg-white/95 p-1 rounded-lg shrink-0">
             <img src={rbuLogo} className="h-full w-full object-contain" alt="RBU" />
@@ -219,9 +229,9 @@ const TVDisplay: React.FC = () => {
 
         {/* Centre: slide dots (single mode only) or mode badge */}
         <div className="flex flex-col items-center gap-1 absolute left-1/2 -translate-x-1/2">
-          {activeMode === 'single' && displayItems.length > 1 && (
+          {activeMode === 'single' && slides.length > 1 && (
             <div className="flex items-center gap-1.5">
-              {displayItems.map((_, i) => (
+              {slides.map((_, i) => (
                 <div
                   key={i}
                   className="rounded-full transition-all duration-500"
@@ -302,7 +312,7 @@ const TVDisplay: React.FC = () => {
             className="flex-1 flex overflow-hidden min-h-0"
           >
             <TVMultiView
-              notices={displayItems}
+              notices={displayItems.filter(n => n.pdfOrientation !== 'portrait')}
               achievements={achievements ?? []}
               quoteText={quoteText}
               quoteAuthor={quoteAuthor}
@@ -322,8 +332,8 @@ const TVDisplay: React.FC = () => {
             {/* ── Single-view layout ── */}
             <div className="flex-1 flex overflow-hidden min-h-0">
               {/* Main slide area */}
-              <div className="flex-1 relative overflow-hidden p-4 pr-3 min-w-0">
-                {displayItems.length === 0 ? (
+              <div className="flex-1 relative overflow-hidden p-6 pr-4 min-w-0">
+                {slides.length === 0 ? (
                   <div className="h-full flex items-center justify-center">
                     <div className="text-center opacity-30">
                       <Sparkles className="h-14 w-14 mx-auto mb-4" />
@@ -331,28 +341,41 @@ const TVDisplay: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={current?.id ?? currentIndex}
-                      initial={{ opacity: 0, x: 24 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -24 }}
-                      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                      className="h-full"
-                    >
-                      <TVNoticePreview notice={current} isLight={isLight} />
-                    </motion.div>
-                  </AnimatePresence>
+                  // Render all slides in a stack — iframes stay mounted so PDFs never reload
+                  <div className="h-full relative">
+                    {slides.map((slide, i) => (
+                      <motion.div
+                        key={slide.type === 'single' ? slide.notice.id : `double-${i}`}
+                        className="absolute inset-0"
+                        animate={{ opacity: i === currentIndex ? 1 : 0 }}
+                        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                        style={{ pointerEvents: i === currentIndex ? 'auto' : 'none' }}
+                      >
+                        {slide.type === 'double' ? (
+                          <div className="h-full flex gap-4">
+                            <div className="flex-1 h-full">
+                              <TVNoticePreview notice={slide.notices[0]} />
+                            </div>
+                            <div className="flex-1 h-full">
+                              <TVNoticePreview notice={slide.notices[1]} />
+                            </div>
+                          </div>
+                        ) : (
+                          <TVNoticePreview notice={slide.notice} />
+                        )}
+                      </motion.div>
+                    ))}
+                  </div>
                 )}
               </div>
 
               {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-              <aside className={`w-80 shrink-0 border-l ${isLight ? "border-slate-200 bg-white/60" : "border-white/5"} flex flex-col overflow-hidden`}>
+              <aside className={`w-96 shrink-0 border-l ${isLight ? "border-slate-200 bg-white/60" : "border-white/5"} flex flex-col overflow-hidden`}>
 
                 {/* Upcoming Events — only shown when there are events */}
                 {upcomingEvents.length > 0 && (
                   <>
-                    <div className="flex-1 flex flex-col p-4 overflow-hidden min-h-0">
+                    <div className="flex-1 flex flex-col p-5 overflow-hidden min-h-0">
                       <div className="flex items-center gap-2 mb-4 shrink-0">
                         <CalendarDays className="h-3.5 w-3.5 text-purple-400" />
                         <p className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-500">Upcoming Events</p>
@@ -388,7 +411,7 @@ const TVDisplay: React.FC = () => {
                 )}
 
                 {/* Student Spotlight — full height when no events, bottom half otherwise */}
-                <div className="flex-1 flex flex-col p-4 overflow-hidden min-h-0">
+                <div className="flex-1 flex flex-col p-5 overflow-hidden min-h-0">
                   <div className="flex items-center gap-2 mb-4 shrink-0">
                     <Trophy className={cn("h-3.5 w-3.5 text-yellow-400", upcomingEvents.length === 0 && "h-4 w-4")} />
                     <p className={cn(
@@ -469,7 +492,7 @@ const TVDisplay: React.FC = () => {
 
       {/* ── Progress bar — single-view only (above ticker) ───────────────── */}
       {activeMode === 'single' && (
-        <div className={`h-[4px] ${isLight ? "bg-slate-200" : "bg-white/5"} shrink-0 relative overflow-hidden`}>
+        <div className={`h-[3px] ${isLight ? "bg-slate-200" : "bg-white/5"} shrink-0 relative overflow-hidden`}>
           <motion.div
             key={`${progressKey}-${currentIndex}`}
             className="absolute inset-y-0 left-0 bg-primary"
@@ -500,7 +523,7 @@ const TVDisplay: React.FC = () => {
 
       {/* ── Ticker ──────────────────────────────────────────────────────── */}
       {displayItems.length > 0 && (
-        <footer className={`shrink-0 h-8 flex items-center overflow-hidden ${isLight ? "bg-slate-100 border-t border-slate-200" : "bg-black/20"}`}>
+        <footer className={`shrink-0 h-9 flex items-center overflow-hidden ${isLight ? "bg-slate-100 border-t border-slate-200" : "bg-black/20"}`}>
           <div className="shrink-0 h-full px-5 flex items-center bg-primary text-white font-black uppercase tracking-widest text-[0.6rem]">
             Notice Board
           </div>

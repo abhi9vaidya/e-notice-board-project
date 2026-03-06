@@ -18,7 +18,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarIcon, Upload, X, FileText, Loader2, Zap, Tv, Clock, Sparkles, Trophy, GalleryHorizontal, Image, AlignLeft, AlertTriangle, Minus } from "lucide-react";
+import { CalendarIcon, Upload, X, FileText, Loader2, Zap, Tv, Clock, Sparkles, Trophy, GalleryHorizontal, Image, AlignLeft, AlertTriangle, Minus, Monitor, Smartphone } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useNotices } from "@/hooks/useFirebaseNotices";
@@ -121,7 +121,20 @@ const AddEditNoticePage: React.FC = () => {
   // isHighPriority is kept for backward compat with submit logic but priority card drives it too
   const [isHighPriority, setIsHighPriority] = useState(false);
   const isAchievement = formData.category === 'achievements';
+
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+
+  // Detect whether the current upload / existing file is a PDF
+  const hasPdf = React.useMemo(() => {
+    if (uploadedFile) {
+      return uploadedFile.type === 'application/pdf' || uploadedFile.name.toLowerCase().endsWith('.pdf');
+    }
+    if (editId && formData.imageUrl) {
+      const url = formData.imageUrl.toLowerCase();
+      return url.includes('.pdf') || url.includes('export=download');
+    }
+    return false;
+  }, [uploadedFile, formData.imageUrl, editId]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [descTab, setDescTab] = useState<'type' | 'extract'>('type');
@@ -183,7 +196,7 @@ const AddEditNoticePage: React.FC = () => {
           showTextOverlay: notice.showTextOverlay !== false,
         });
         setIsHighPriority(notice.priority === "high");
-        setFormData(prev => ({ ...prev, priority: notice.priority }));
+        setFormData(prev => ({ ...prev, priority: notice.priority, pdfOrientation: notice.pdfOrientation }));
       }
     }
   }, [editId, notices]);
@@ -426,6 +439,41 @@ const AddEditNoticePage: React.FC = () => {
                   )}
                 </div>
               </div>
+
+              {/* PDF Orientation selector — only visible when a PDF is present */}
+              {hasPdf && !isAchievement && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Document Shape</Label>
+                  <p className="text-xs text-muted-foreground">Controls how this PDF is displayed on TV.</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['landscape', 'portrait'] as const).map(orient => (
+                      <button
+                        key={orient}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, pdfOrientation: orient }))}
+                        className={cn(
+                          'flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all',
+                          formData.pdfOrientation === orient
+                            ? 'border-primary bg-primary/5 text-primary'
+                            : 'border-border bg-muted/20 text-muted-foreground hover:bg-muted'
+                        )}
+                      >
+                        {orient === 'landscape'
+                          ? <Monitor className="h-5 w-5" />
+                          : <Smartphone className="h-5 w-5" />}
+                        <span className="text-xs font-semibold">
+                          {orient === 'landscape' ? 'Landscape — Full Screen' : 'Portrait — Side-by-Side'}
+                        </span>
+                        <span className="text-[10px] opacity-60 leading-tight text-center">
+                          {orient === 'landscape'
+                            ? 'PDF fills the entire TV width'
+                            : 'Two portrait PDFs shown next to each other'}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Category pill grid */}
               <div className="space-y-2">

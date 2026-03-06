@@ -32,6 +32,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Zap, User, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
+import { TVNoticePreview } from '@/components/TVNoticePreview';
 import { AutoScrollText } from '@/components/AutoScrollText';
 import { categoryConfig } from '@/config/categoryConfig';
 import { cn } from '@/lib/utils';
@@ -65,9 +66,9 @@ const CompactCard: React.FC<{ notice: Notice }> = ({ notice }) => {
   const cfg = categoryConfig[notice.category] ?? categoryConfig.other;
   const Icon = cfg.icon;
   const priorityColor =
-    notice.priority === 'high' ? 'text-red-400 border-red-500/40'
-      : notice.priority === 'medium' ? 'text-amber-400 border-amber-500/40'
-        : (isLight ? 'text-slate-500 border-slate-300' : 'text-slate-400 border-white/10');
+    notice.priority === 'high'   ? 'text-red-400 border-red-500/40'
+    : notice.priority === 'medium' ? 'text-amber-400 border-amber-500/40'
+    : (isLight ? 'text-slate-500 border-slate-300' : 'text-slate-400 border-white/10');
 
   return (
     <div className={`h-full flex flex-col rounded-2xl border ${isLight ? "border-slate-200 bg-white shadow-sm" : "border-white/8 bg-white/[0.03]"} overflow-hidden p-4 gap-2.5`}>
@@ -112,18 +113,8 @@ const LargeNoticeCard: React.FC<{ notice: Notice }> = ({ notice }) => {
   const Icon = cfg.icon;
   const isHigh = notice.priority === 'high';
 
-  // Dynamic title sizing — shorter titles get bigger fonts to fill space
-  const titleLen = (notice.title || '').length;
-  const titleSize =
-    titleLen > 100 ? 'text-[1.5rem]' :
-      titleLen > 70 ? 'text-[1.8rem]' :
-        titleLen > 45 ? 'text-[2.2rem]' :
-          titleLen > 25 ? 'text-3xl' :
-            'text-4xl';
-  const descSize = notice.imageUrl ? 'text-[0.85rem]' : 'text-[0.95rem]';
-
   return (
-    <div className={`h-full flex flex-col rounded-2xl border ${isLight ? "border-slate-200 bg-white shadow-sm" : "border-white/8 bg-white/[0.03]"} overflow-hidden p-5 gap-3`}>
+    <div className={`h-full flex flex-col rounded-2xl border ${isLight ? "border-slate-200 bg-white shadow-sm" : "border-white/8 bg-white/[0.03]"} overflow-hidden p-6 gap-4`}>
       {/* Badge row */}
       <div className="flex items-center gap-3 shrink-0">
         <div
@@ -144,8 +135,8 @@ const LargeNoticeCard: React.FC<{ notice: Notice }> = ({ notice }) => {
         </span>
       </div>
 
-      {/* Title — dynamically sized */}
-      <h2 className={cn(`font-black ${isLight ? "text-slate-900" : "text-white"} leading-snug shrink-0 line-clamp-3`, titleSize)}>{notice.title}</h2>
+      {/* Title */}
+      <h2 className={`text-3xl font-black ${isLight ? "text-slate-900" : "text-white"} leading-snug shrink-0 line-clamp-3`}>{notice.title}</h2>
 
       {/* Image + description split */}
       {notice.imageUrl ? (
@@ -157,7 +148,7 @@ const LargeNoticeCard: React.FC<{ notice: Notice }> = ({ notice }) => {
             <div className="flex-1 min-h-0 overflow-hidden">
               <AutoScrollText
                 content={notice.description}
-                className={`${descSize} ${isLight ? "text-slate-500" : "text-slate-400"} leading-relaxed`}
+                className={`text-[0.9rem] ${isLight ? "text-slate-500" : "text-slate-400"} leading-relaxed`}
                 speed={20}
               />
             </div>
@@ -167,17 +158,14 @@ const LargeNoticeCard: React.FC<{ notice: Notice }> = ({ notice }) => {
         <div className="flex-1 min-h-0 overflow-hidden">
           <AutoScrollText
             content={notice.description}
-            className={`${descSize} ${isLight ? "text-slate-500" : "text-slate-400"} leading-relaxed`}
+            className={`text-[1rem] ${isLight ? "text-slate-500" : "text-slate-400"} leading-relaxed`}
             speed={20}
           />
         </div>
-      ) : (
-        /* No image or description — spacer fills dynamically */
-        <div className="flex-1" />
-      )}
+      ) : null}
 
       {/* Footer */}
-      <div className={`flex items-center gap-2 shrink-0 mt-auto pt-2 border-t ${isLight ? "border-slate-100" : "border-white/5"}`}>
+      <div className={`flex items-center gap-2 shrink-0 mt-auto pt-3 border-t ${isLight ? "border-slate-100" : "border-white/5"}`}>
         <User className="h-4 w-4 text-slate-600" />
         <span className="text-xs text-slate-500 font-medium">{notice.facultyName}</span>
         {notice.endTime && (
@@ -197,47 +185,47 @@ const LargeNoticeCard: React.FC<{ notice: Notice }> = ({ notice }) => {
 const AchievementCard: React.FC<{ achievement: Notice; idx: number; total: number }> = ({ achievement, idx, total }) => {
   const isLight = useTVTheme();
   return (
-    <div className={`h-full flex flex-col rounded-2xl border ${isLight ? "border-yellow-300 bg-amber-50/80" : "border-yellow-400/15 bg-white/[0.02]"} overflow-hidden p-5 gap-3`}
-      style={{ background: isLight ? 'linear-gradient(135deg, rgba(255,251,235,0.9) 0%, rgba(254,252,232,0.75) 100%)' : 'linear-gradient(135deg, rgba(26,18,0,0.6) 0%, rgba(15,10,0,0.4) 100%)' }}>
-      {/* Header */}
-      <div className="flex items-center gap-2 shrink-0">
-        <Trophy className="h-4 w-4 text-yellow-400" />
-        <span className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-yellow-400/60">Achievement</span>
-        {total > 1 && (
-          <span className="ml-auto text-[0.55rem] text-yellow-400/40 font-bold">{idx + 1}/{total}</span>
-        )}
-      </div>
-
-      {/* Image */}
-      {achievement.imageUrl && (
-        <div className={`w-full rounded-xl overflow-hidden shrink-0 border ${isLight ? "border-yellow-300" : "border-yellow-400/10"}`}
-          style={{ aspectRatio: '16/9' }}>
-          <img src={achievement.imageUrl} alt={achievement.title} className="w-full h-full object-cover" />
-        </div>
-      )}
-
-      {/* Title */}
-      <h3 className={`text-xl font-black ${isLight ? "text-slate-900" : "text-white"} leading-snug shrink-0 line-clamp-2`}>{achievement.title}</h3>
-
-      {/* Description */}
-      {achievement.description && (
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <AutoScrollText
-            content={achievement.description}
-            className={`text-[0.78rem] ${isLight ? "text-yellow-800" : "text-yellow-100/60"}`}
-            speed={18}
-          />
-        </div>
-      )}
-
-      {/* Faculty */}
-      {achievement.facultyName && (
-        <div className={`shrink-0 flex items-center gap-1.5 mt-auto pt-2 border-t ${isLight ? "border-yellow-200" : "border-yellow-400/8"}`}>
-          <User className="h-3 w-3 text-yellow-400/30" />
-          <span className="text-[0.6rem] text-yellow-400/40 font-medium">{achievement.facultyName}</span>
-        </div>
+  <div className={`h-full flex flex-col rounded-2xl border ${isLight ? "border-yellow-300 bg-amber-50/80" : "border-yellow-400/15 bg-white/[0.02]"} overflow-hidden p-5 gap-3`}
+    style={{ background: isLight ? 'linear-gradient(135deg, rgba(255,251,235,0.9) 0%, rgba(254,252,232,0.75) 100%)' : 'linear-gradient(135deg, rgba(26,18,0,0.6) 0%, rgba(15,10,0,0.4) 100%)' }}>
+    {/* Header */}
+    <div className="flex items-center gap-2 shrink-0">
+      <Trophy className="h-4 w-4 text-yellow-400" />
+      <span className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-yellow-400/60">Achievement</span>
+      {total > 1 && (
+        <span className="ml-auto text-[0.55rem] text-yellow-400/40 font-bold">{idx + 1}/{total}</span>
       )}
     </div>
+
+    {/* Image */}
+    {achievement.imageUrl && (
+      <div className={`w-full rounded-xl overflow-hidden shrink-0 border ${isLight ? "border-yellow-300" : "border-yellow-400/10"}`}
+        style={{ aspectRatio: '16/9' }}>
+        <img src={achievement.imageUrl} alt={achievement.title} className="w-full h-full object-cover" />
+      </div>
+    )}
+
+    {/* Title */}
+    <h3 className={`text-xl font-black ${isLight ? "text-slate-900" : "text-white"} leading-snug shrink-0 line-clamp-2`}>{achievement.title}</h3>
+
+    {/* Description */}
+    {achievement.description && (
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <AutoScrollText
+          content={achievement.description}
+          className={`text-[0.78rem] ${isLight ? "text-yellow-800" : "text-yellow-100/60"}`}
+          speed={18}
+        />
+      </div>
+    )}
+
+    {/* Faculty */}
+    {achievement.facultyName && (
+      <div className={`shrink-0 flex items-center gap-1.5 mt-auto pt-2 border-t ${isLight ? "border-yellow-200" : "border-yellow-400/8"}`}>
+        <User className="h-3 w-3 text-yellow-400/30" />
+        <span className="text-[0.6rem] text-yellow-400/40 font-medium">{achievement.facultyName}</span>
+      </div>
+    )}
+  </div>
   );
 };
 
@@ -254,47 +242,47 @@ interface SpotlightProps {
 const Spotlight: React.FC<SpotlightProps> = ({ achievement, quoteText, quoteAuthor, totalCount, currentIdx }) => {
   const isLight = useTVTheme();
   return (
-    <AnimatePresence mode="wait">
-      {achievement ? (
-        <motion.div
-          key={achievement.id ?? currentIdx}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.4 }}
-          className="flex-1 flex flex-col min-h-0 gap-3"
-        >
-          <p className={`text-xl font-black ${isLight ? "text-slate-900" : "text-white"} leading-snug shrink-0`}>{achievement.title}</p>
-          {achievement.imageUrl && (
-            <div className={`w-full rounded-xl overflow-hidden shrink-0 border ${isLight ? "border-yellow-300" : "border-yellow-400/10"}`} style={{ aspectRatio: '4/3' }}>
-              <img src={achievement.imageUrl} alt={achievement.title} className="w-full h-full object-cover" />
-            </div>
-          )}
-          {achievement.description && (
-            <div className="flex-1 min-h-0 overflow-hidden">
-              <AutoScrollText content={achievement.description} className={`text-[0.82rem] ${isLight ? "text-yellow-800" : "text-yellow-100/70"}`} speed={22} />
-            </div>
-          )}
-          {totalCount > 1 && (
-            <div className="flex justify-center gap-1 shrink-0">
-              {Array.from({ length: totalCount }).map((_, i) => (
-                <div key={i} className="rounded-full transition-all duration-500" style={{
-                  width: i === currentIdx % totalCount ? 14 : 5, height: 5,
-                  backgroundColor: i === currentIdx % totalCount ? '#facc15' : (isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)'),
-                }} />
-              ))}
-            </div>
-          )}
-        </motion.div>
-      ) : (
-        <motion.div key="no-achievement" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          className="flex-1 flex flex-col justify-center items-center min-h-0 text-center">
-          <Trophy className="h-12 w-12 text-yellow-400/20 mb-4" />
-          <p className={`text-[0.78rem] ${isLight ? 'text-slate-500' : 'text-slate-400'} leading-relaxed italic`}>&ldquo;{quoteText}&rdquo;</p>
-          {quoteAuthor && <p className={`text-[0.62rem] ${isLight ? 'text-slate-500' : 'text-slate-500'} font-bold mt-2`}>&mdash; {quoteAuthor}</p>}
-        </motion.div>
-      )}
-    </AnimatePresence>
+  <AnimatePresence mode="wait">
+    {achievement ? (
+      <motion.div
+        key={achievement.id ?? currentIdx}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -8 }}
+        transition={{ duration: 0.4 }}
+        className="flex-1 flex flex-col min-h-0 gap-3"
+      >
+        <p className={`text-xl font-black ${isLight ? "text-slate-900" : "text-white"} leading-snug shrink-0`}>{achievement.title}</p>
+        {achievement.imageUrl && (
+          <div className={`w-full rounded-xl overflow-hidden shrink-0 border ${isLight ? "border-yellow-300" : "border-yellow-400/10"}`} style={{ aspectRatio: '4/3' }}>
+            <img src={achievement.imageUrl} alt={achievement.title} className="w-full h-full object-cover" />
+          </div>
+        )}
+        {achievement.description && (
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <AutoScrollText content={achievement.description} className={`text-[0.82rem] ${isLight ? "text-yellow-800" : "text-yellow-100/70"}`} speed={22} />
+          </div>
+        )}
+        {totalCount > 1 && (
+          <div className="flex justify-center gap-1 shrink-0">
+            {Array.from({ length: totalCount }).map((_, i) => (
+              <div key={i} className="rounded-full transition-all duration-500" style={{
+                width: i === currentIdx % totalCount ? 14 : 5, height: 5,
+                backgroundColor: i === currentIdx % totalCount ? '#facc15' : (isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)'),
+              }} />
+            ))}
+          </div>
+        )}
+      </motion.div>
+    ) : (
+      <motion.div key="no-achievement" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+        className="flex-1 flex flex-col justify-center items-center min-h-0 text-center">
+        <Trophy className="h-12 w-12 text-yellow-400/20 mb-4" />
+        <p className={`text-[0.78rem] ${isLight ? 'text-slate-500' : 'text-slate-400'} leading-relaxed italic`}>&ldquo;{quoteText}&rdquo;</p>
+        {quoteAuthor && <p className={`text-[0.62rem] ${isLight ? 'text-slate-500' : 'text-slate-500'} font-bold mt-2`}>&mdash; {quoteAuthor}</p>}
+      </motion.div>
+    )}
+  </AnimatePresence>
   );
 };
 
@@ -317,7 +305,7 @@ const MultiAchievementSidebar: React.FC<{
   return (
     <aside className={`flex-1 border-l ${isLight ? "border-slate-200" : "border-white/5"} flex flex-col overflow-hidden min-h-0`}>
       {/* Header */}
-      <div className="flex items-center gap-2.5 px-4 pt-3 pb-2 shrink-0">
+      <div className="flex items-center gap-2.5 px-5 pt-4 pb-3 shrink-0">
         <Trophy className="h-3.5 w-3.5 text-yellow-400" />
         <span className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-500">
           Student Spotlight
@@ -328,10 +316,10 @@ const MultiAchievementSidebar: React.FC<{
           </span>
         )}
       </div>
-      <div className={`h-px ${isLight ? "bg-slate-200" : "bg-white/5"} shrink-0 mx-4`} />
+      <div className={`h-px ${isLight ? "bg-slate-200" : "bg-white/5"} shrink-0 mx-5`} />
 
       {/* Cards */}
-      <div className="flex-1 overflow-hidden p-3 flex flex-col gap-3 min-h-0">
+      <div className="flex-1 overflow-hidden p-4 flex flex-col gap-3 min-h-0">
         {visible.length > 0 ? (
           <AnimatePresence mode="wait">
             <motion.div
@@ -417,30 +405,30 @@ const SpotlightSidebar: React.FC<{
 }> = ({ achievements, spotlightIdx, quoteText, quoteAuthor, spotlight, wide }) => {
   const isLight = useTVTheme();
   return (
-    <aside className={`${wide ? "w-[28rem]" : "w-72"} shrink-0 border-l ${isLight ? "border-slate-200" : "border-white/5"} flex flex-col overflow-hidden`}>
-      <div className="flex items-center gap-2.5 px-4 pt-3 pb-2 shrink-0">
-        <Trophy className="h-3.5 w-3.5 text-yellow-400" />
-        <span className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-500">
-          Student Spotlight
-          {achievements.length > 0 && (
-            <span className="ml-1.5 text-yellow-400/60">
-              ({(spotlightIdx % achievements.length) + 1}/{achievements.length})
-            </span>
-          )}
-        </span>
-        <span className="ml-auto text-[0.5rem] font-black uppercase tracking-widest text-yellow-500/50">Achievements</span>
-      </div>
-      <div className={`h-px ${isLight ? "bg-slate-200" : "bg-white/5"} shrink-0 mx-4`} />
-      <div className="flex-1 overflow-hidden p-4 flex flex-col min-h-0">
-        <Spotlight
-          achievement={spotlight}
-          quoteText={quoteText}
-          quoteAuthor={quoteAuthor}
-          totalCount={achievements.length}
-          currentIdx={spotlightIdx}
-        />
-      </div>
-    </aside>
+  <aside className={`${wide ? "w-[30rem]" : "w-80"} shrink-0 border-l ${isLight ? "border-slate-200" : "border-white/5"} flex flex-col overflow-hidden`}>
+    <div className="flex items-center gap-2.5 px-5 pt-4 pb-3 shrink-0">
+      <Trophy className="h-3.5 w-3.5 text-yellow-400" />
+      <span className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-500">
+        Student Spotlight
+        {achievements.length > 0 && (
+          <span className="ml-1.5 text-yellow-400/60">
+            ({(spotlightIdx % achievements.length) + 1}/{achievements.length})
+          </span>
+        )}
+      </span>
+      <span className="ml-auto text-[0.5rem] font-black uppercase tracking-widest text-yellow-500/50">Achievements</span>
+    </div>
+    <div className={`h-px ${isLight ? "bg-slate-200" : "bg-white/5"} shrink-0 mx-5`} />
+    <div className="flex-1 overflow-hidden p-5 flex flex-col min-h-0">
+      <Spotlight
+        achievement={spotlight}
+        quoteText={quoteText}
+        quoteAuthor={quoteAuthor}
+        totalCount={achievements.length}
+        currentIdx={spotlightIdx}
+      />
+    </div>
+  </aside>
   );
 };
 
@@ -506,8 +494,8 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
     return otherNotices.slice(start, start + perPage);
   }, [otherNotices, noticePageIdx, perPage]);
 
-  const heroNotice = highNotices.length > 0 ? highNotices[highIdx % highNotices.length] : null;
-  const spotlight = achievements.length > 0 ? achievements[spotlightIdx % achievements.length] : null;
+  const heroNotice   = highNotices.length  > 0 ? highNotices[highIdx % highNotices.length]        : null;
+  const spotlight    = achievements.length > 0 ? achievements[spotlightIdx % achievements.length]  : null;
   const visibleAchievements = useMemo(() => {
     const start = achievePageIdx * achievePerPage;
     return achievements.slice(start, start + achievePerPage);
@@ -521,66 +509,66 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
   if (layout === 'achievements-only') {
     return (
       <TVThemeContext.Provider value={isLight}>
-        <div className="flex-1 flex flex-col overflow-hidden min-h-0 px-4 py-3 gap-3">
-          {/* Header row */}
-          <div className="flex items-center gap-2.5 shrink-0">
-            <Trophy className="h-4 w-4 text-yellow-400" />
-            <span className="text-[0.6rem] font-black uppercase tracking-[0.35em] text-slate-500">
-              Student Spotlight â€” Achievements
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0 px-6 py-4 gap-4">
+        {/* Header row */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <Trophy className="h-4 w-4 text-yellow-400" />
+          <span className="text-[0.6rem] font-black uppercase tracking-[0.35em] text-slate-500">
+            Student Spotlight â€” Achievements
+          </span>
+          {achievements.length > achievePerPage && (
+            <span className="ml-2 text-yellow-400/50 text-[0.55rem] font-black">
+              ({achievePageIdx + 1}/{totalAchievePages})
             </span>
-            {achievements.length > achievePerPage && (
-              <span className="ml-2 text-yellow-400/50 text-[0.55rem] font-black">
-                ({achievePageIdx + 1}/{totalAchievePages})
-              </span>
-            )}
-          </div>
-
-          {/* Achievement cards grid */}
-          {achievements.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center opacity-25">
-                <Sparkles className="h-14 w-14 mx-auto mb-4" />
-                <p className="font-bold uppercase tracking-[0.4em] text-sm">No announcements or achievements yet</p>
-              </div>
-            </div>
-          ) : (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={achievePageIdx}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.4 }}
-                className={cn(
-                  'flex-1 min-h-0 grid gap-4',
-                  visibleAchievements.length === 1 ? 'grid-cols-1' :
-                    visibleAchievements.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
-                )}
-              >
-                {visibleAchievements.map((a, i) => (
-                  <AchievementCard
-                    key={a.id ?? i}
-                    achievement={a}
-                    idx={achievePageIdx * achievePerPage + i}
-                    total={achievements.length}
-                  />
-                ))}
-              </motion.div>
-            </AnimatePresence>
-          )}
-
-          {/* Page dots for achievement pages */}
-          {totalAchievePages > 1 && (
-            <div className="flex justify-center gap-1.5 shrink-0">
-              {Array.from({ length: totalAchievePages }).map((_, i) => (
-                <div key={i} className="rounded-full transition-all duration-500" style={{
-                  width: i === achievePageIdx ? 16 : 6, height: 6,
-                  backgroundColor: i === achievePageIdx ? '#facc15' : (isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)'),
-                }} />
-              ))}
-            </div>
           )}
         </div>
+
+        {/* Achievement cards grid */}
+        {achievements.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center opacity-25">
+              <Sparkles className="h-14 w-14 mx-auto mb-4" />
+              <p className="font-bold uppercase tracking-[0.4em] text-sm">No announcements or achievements yet</p>
+            </div>
+          </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={achievePageIdx}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.4 }}
+              className={cn(
+                'flex-1 min-h-0 grid gap-4',
+                visibleAchievements.length === 1 ? 'grid-cols-1' :
+                visibleAchievements.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
+              )}
+            >
+              {visibleAchievements.map((a, i) => (
+                <AchievementCard
+                  key={a.id ?? i}
+                  achievement={a}
+                  idx={achievePageIdx * achievePerPage + i}
+                  total={achievements.length}
+                />
+              ))}
+            </motion.div>
+          </AnimatePresence>
+        )}
+
+        {/* Page dots for achievement pages */}
+        {totalAchievePages > 1 && (
+          <div className="flex justify-center gap-1.5 shrink-0">
+            {Array.from({ length: totalAchievePages }).map((_, i) => (
+              <div key={i} className="rounded-full transition-all duration-500" style={{
+                width: i === achievePageIdx ? 16 : 6, height: 6,
+                backgroundColor: i === achievePageIdx ? '#facc15' : (isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)'),
+              }} />
+            ))}
+          </div>
+        )}
+      </div>
       </TVThemeContext.Provider>
     );
   }
@@ -592,32 +580,32 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
     const theNotice = notices[0];
     return (
       <TVThemeContext.Provider value={isLight}>
-        <div className="flex-1 flex overflow-hidden min-h-0">
-          {/* Large notice */}
-          <div className="flex-1 flex flex-col overflow-hidden min-h-0 p-4 pr-3">
-            {/* Section label */}
-            <div className="flex items-center gap-2.5 mb-3 shrink-0">
-              <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_6px_hsl(var(--primary))]" />
-              <span className="text-[0.6rem] font-black uppercase tracking-[0.35em] text-slate-500">Notice</span>
-            </div>
-            <div className="flex-1 min-h-0">
-              <AnimatePresence mode="wait">
-                <motion.div key={theNotice.id} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.4 }} className="h-full">
-                  <LargeNoticeCard notice={theNotice} />
-                </motion.div>
-              </AnimatePresence>
-            </div>
+      <div className="flex-1 flex overflow-hidden min-h-0">
+        {/* Large notice */}
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0 p-6 pr-4">
+          {/* Section label */}
+          <div className="flex items-center gap-2.5 mb-3 shrink-0">
+            <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_6px_hsl(var(--primary))]" />
+            <span className="text-[0.6rem] font-black uppercase tracking-[0.35em] text-slate-500">Notice</span>
           </div>
-
-          {/* Multi-achievement panel — show 2-3 achievements simultaneously */}
-          <MultiAchievementSidebar
-            achievements={achievements}
-            spotlightIdx={spotlightIdx}
-            quoteText={quoteText}
-            quoteAuthor={quoteAuthor}
-          />
+          <div className="flex-1 min-h-0">
+            <AnimatePresence mode="wait">
+              <motion.div key={theNotice.id} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.4 }} className="h-full">
+                <LargeNoticeCard notice={theNotice} />
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
+
+        {/* Multi-achievement panel — show 2-3 achievements simultaneously */}
+        <MultiAchievementSidebar
+          achievements={achievements}
+          spotlightIdx={spotlightIdx}
+          quoteText={quoteText}
+          quoteAuthor={quoteAuthor}
+        />
+      </div>
       </TVThemeContext.Provider>
     );
   }
@@ -629,36 +617,36 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
     const fewCols = notices.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
     return (
       <TVThemeContext.Provider value={isLight}>
-        <div className="flex-1 flex overflow-hidden min-h-0">
-          {/* Full-height notices grid */}
-          <div className="flex-1 flex flex-col overflow-hidden min-h-0 p-4 pr-3 gap-3">
-            {/* Section label */}
-            <div className="flex items-center gap-2.5 shrink-0">
-              <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_6px_hsl(var(--primary))]" />
-              <span className="text-[0.6rem] font-black uppercase tracking-[0.35em] text-slate-500">
-                Notices
-              </span>
-              <span className="text-[0.55rem] font-black text-primary/50 uppercase tracking-widest ml-1">
-                ({notices.length})
-              </span>
-            </div>
-            {/* Cards â€” full height, no pagination needed */}
-            <div className={cn('flex-1 min-h-0 grid gap-4', fewCols)}>
-              {notices.map(n => (
-                <CompactCard key={n.id} notice={n} />
-              ))}
-            </div>
+      <div className="flex-1 flex overflow-hidden min-h-0">
+        {/* Full-height notices grid */}
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0 p-6 pr-4 gap-3">
+          {/* Section label */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_6px_hsl(var(--primary))]" />
+            <span className="text-[0.6rem] font-black uppercase tracking-[0.35em] text-slate-500">
+              Notices
+            </span>
+            <span className="text-[0.55rem] font-black text-primary/50 uppercase tracking-widest ml-1">
+              ({notices.length})
+            </span>
           </div>
-
-          {/* Spotlight sidebar */}
-          <SpotlightSidebar
-            achievements={achievements}
-            spotlightIdx={spotlightIdx}
-            quoteText={quoteText}
-            quoteAuthor={quoteAuthor}
-            spotlight={spotlight}
-          />
+          {/* Cards â€” full height, no pagination needed */}
+          <div className={cn('flex-1 min-h-0 grid gap-4', fewCols)}>
+            {notices.map(n => (
+              <CompactCard key={n.id} notice={n} />
+            ))}
+          </div>
         </div>
+
+        {/* Spotlight sidebar */}
+        <SpotlightSidebar
+          achievements={achievements}
+          spotlightIdx={spotlightIdx}
+          quoteText={quoteText}
+          quoteAuthor={quoteAuthor}
+          spotlight={spotlight}
+        />
+      </div>
       </TVThemeContext.Provider>
     );
   }
@@ -668,97 +656,100 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   return (
     <TVThemeContext.Provider value={isLight}>
-      <div className="flex-1 flex overflow-hidden min-h-0">
-        {/* â”€â”€ Left column â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-        <div className="flex-1 flex flex-col overflow-hidden min-h-0 min-w-0">
+    <div className="flex-1 flex overflow-hidden min-h-0">
+      {/* â”€â”€ Left column â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0 min-w-0">
 
-          {/* HIGH PRIORITY panel â€” only shown when high-priority notices exist */}
-          {heroNotice && (
-            <div className="flex flex-col overflow-hidden" style={{ flex: '1 1 58%' }}>
-              <div className="flex items-center gap-2.5 px-4 pt-3 pb-2 shrink-0">
-                <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_#f43f5e]" />
-                <span className="text-[0.6rem] font-black uppercase tracking-[0.35em] text-slate-500">
-                  High Priority
-                  {highNotices.length > 1 && (
-                    <span className="ml-2 text-rose-500/70">({(highIdx % highNotices.length) + 1}/{highNotices.length})</span>
-                  )}
-                </span>
-              </div>
-              <div className="flex-1 min-h-0 px-4 pb-2 relative">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={heroNotice.id ?? highIdx}
-                    initial={{ opacity: 0, x: 16 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -16 }}
-                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                    className="h-full"
-                  >
-                    <div className="h-full">
-                      <LargeNoticeCard notice={heroNotice} />
-                    </div>
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-            </div>
-          )}
-
-          {/* NOTICES grid panel */}
-          {otherNotices.length > 0 && (
-            <div className="flex flex-col overflow-hidden" style={{ flex: heroNotice ? '1 1 42%' : '1 1 100%' }}>
-              <div className="flex items-center gap-2.5 px-4 pt-1 pb-2 shrink-0">
-                <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_6px_hsl(var(--primary))]" />
-                <span className="text-[0.6rem] font-black uppercase tracking-[0.35em] text-slate-500">Notices</span>
-                <span className="text-[0.55rem] font-black text-primary/50 uppercase tracking-widest ml-1">
-                  ({noticePageIdx + 1}/{totalNoticePages})
-                </span>
-                {totalNoticePages > 1 && (
-                  <div className="flex items-center gap-1 ml-3">
-                    {Array.from({ length: totalNoticePages }).map((_, i) => (
-                      <div key={i} className="rounded-full transition-all duration-500" style={{
-                        width: i === noticePageIdx ? 14 : 5, height: 5,
-                        backgroundColor: i === noticePageIdx ? 'hsl(var(--primary))' : (isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)'),
-                      }} />
-                    ))}
-                  </div>
+        {/* HIGH PRIORITY panel â€” only shown when high-priority notices exist */}
+        {heroNotice && (
+          <div className="flex flex-col overflow-hidden" style={{ flex: '1 1 58%' }}>
+            <div className="flex items-center gap-2.5 px-6 pt-4 pb-2.5 shrink-0">
+              <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_#f43f5e]" />
+              <span className="text-[0.6rem] font-black uppercase tracking-[0.35em] text-slate-500">
+                High Priority
+                {highNotices.length > 1 && (
+                  <span className="ml-2 text-rose-500/70">({(highIdx % highNotices.length) + 1}/{highNotices.length})</span>
                 )}
-              </div>
-              <div className="flex-1 min-h-0 px-4 pb-3">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={noticePageIdx}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.35 }}
-                    className={cn('grid h-full gap-3', gridCols)}
-                  >
-                    {visibleNotices.map(n => (
-                      <CompactCard key={n.id} notice={n} />
-                    ))}
-                  </motion.div>
-                </AnimatePresence>
-              </div>
+              </span>
             </div>
-          )}
-
-          {/* Edge case: high-priority notices only (no normal notices) */}
-          {otherNotices.length === 0 && !heroNotice && (
-            <div className="flex-1 flex items-center justify-center">
-              <p className={`text-[0.65rem] ${isLight ? "text-slate-400" : "text-slate-600"} font-bold uppercase tracking-widest`}>No pending notices</p>
+            <div className="flex-1 min-h-0 px-6 pb-3 relative">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={heroNotice.id ?? highIdx}
+                  initial={{ opacity: 0, x: 16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -16 }}
+                  transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                  className="h-full"
+                >
+                  <div className={`h-full rounded-2xl border ${isLight ? "border-slate-300 bg-white/50" : "border-white/8 bg-white/[0.02]"} overflow-hidden`}
+                    style={{ containerType: 'size' }}>
+                    <div className="h-full" style={{ transform: 'scale(0.55)', transformOrigin: 'top left', width: '181.8%', height: '181.8%' }}>
+                      <TVNoticePreview notice={heroNotice} />
+                    </div>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* â”€â”€ Right sidebar: Student Spotlight â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-        <SpotlightSidebar
-          achievements={achievements}
-          spotlightIdx={spotlightIdx}
-          quoteText={quoteText}
-          quoteAuthor={quoteAuthor}
-          spotlight={spotlight}
-        />
+        {/* NOTICES grid panel */}
+        {otherNotices.length > 0 && (
+          <div className="flex flex-col overflow-hidden" style={{ flex: heroNotice ? '1 1 42%' : '1 1 100%' }}>
+            <div className="flex items-center gap-2.5 px-6 pt-1 pb-2.5 shrink-0">
+              <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_6px_hsl(var(--primary))]" />
+              <span className="text-[0.6rem] font-black uppercase tracking-[0.35em] text-slate-500">Notices</span>
+              <span className="text-[0.55rem] font-black text-primary/50 uppercase tracking-widest ml-1">
+                ({noticePageIdx + 1}/{totalNoticePages})
+              </span>
+              {totalNoticePages > 1 && (
+                <div className="flex items-center gap-1 ml-3">
+                  {Array.from({ length: totalNoticePages }).map((_, i) => (
+                    <div key={i} className="rounded-full transition-all duration-500" style={{
+                      width: i === noticePageIdx ? 14 : 5, height: 5,
+                      backgroundColor: i === noticePageIdx ? 'hsl(var(--primary))' : (isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)'),
+                    }} />
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-h-0 px-6 pb-4">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={noticePageIdx}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.35 }}
+                  className={cn('grid h-full gap-3', gridCols)}
+                >
+                  {visibleNotices.map(n => (
+                    <CompactCard key={n.id} notice={n} />
+                  ))}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+        )}
+
+        {/* Edge case: high-priority notices only (no normal notices) */}
+        {otherNotices.length === 0 && !heroNotice && (
+          <div className="flex-1 flex items-center justify-center">
+            <p className={`text-[0.65rem] ${isLight ? "text-slate-400" : "text-slate-600"} font-bold uppercase tracking-widest`}>No pending notices</p>
+          </div>
+        )}
       </div>
+
+      {/* â”€â”€ Right sidebar: Student Spotlight â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      <SpotlightSidebar
+        achievements={achievements}
+        spotlightIdx={spotlightIdx}
+        quoteText={quoteText}
+        quoteAuthor={quoteAuthor}
+        spotlight={spotlight}
+      />
+    </div>
     </TVThemeContext.Provider>
   );
 };
