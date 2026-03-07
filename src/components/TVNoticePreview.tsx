@@ -127,7 +127,7 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ imageUrl, documentUrl, classNam
     };
 
     return (
-        <div className={cn('relative overflow-hidden bg-slate-900', className)}>
+        <div className={cn('relative overflow-hidden bg-slate-900', className, isPdf && '[border-radius:0!important]')}>
             {renderContent()}
             {isPdf && (
                 <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-red-600/90 backdrop-blur-sm text-white font-black text-sm px-4 py-2 rounded-full shadow-xl pointer-events-none">

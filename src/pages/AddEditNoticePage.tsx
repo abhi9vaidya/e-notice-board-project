@@ -129,12 +129,15 @@ const AddEditNoticePage: React.FC = () => {
     if (uploadedFile) {
       return uploadedFile.type === 'application/pdf' || uploadedFile.name.toLowerCase().endsWith('.pdf');
     }
+    if (formData.pdfOrientation) {
+      return true;
+    }
     if (editId && formData.imageUrl) {
       const url = formData.imageUrl.toLowerCase();
       return url.includes('.pdf') || url.includes('export=download');
     }
     return false;
-  }, [uploadedFile, formData.imageUrl, editId]);
+  }, [uploadedFile, formData.imageUrl, formData.pdfOrientation, editId]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [descTab, setDescTab] = useState<'type' | 'extract'>('type');
@@ -216,10 +219,37 @@ const AddEditNoticePage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // For PDF notices, title/description are optional.
+    // For all other notices, keep them mandatory.
+    if (!hasPdf && !formData.title.trim()) {
+      toast({
+        title: "Missing title",
+        description: "Please enter a notice title.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!hasPdf && !formData.description.trim()) {
+      toast({
+        title: "Missing description",
+        description: "Please enter a notice description.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsUploading(true);
 
     try {
       let finalImageUrl = formData.imageUrl;
+      const pdfFallbackTime = format(new Date(), "dd MMM yyyy, hh:mm a");
+      const normalizedTitle = hasPdf
+        ? (formData.title.trim() || `PDF Notice (${pdfFallbackTime})`)
+        : formData.title.trim();
+      const normalizedDescription = hasPdf
+        ? (formData.description.trim() || "PDF document notice uploaded. Open the attached document for full details.")
+        : formData.description.trim();
 
       // check for new file upload
       if (uploadedFile) {
@@ -228,11 +258,20 @@ const AddEditNoticePage: React.FC = () => {
           description: 'Please wait while we save your file...',
         });
         setUploadProgress(0);
-        finalImageUrl = await uploadNoticeFile(uploadedFile, setUploadProgress);
+        finalImageUrl = await uploadNoticeFile(uploadedFile, setUploadProgress, {
+          category: formData.category,
+          facultyId: formData.facultyId,
+          facultyName: formData.facultyName,
+          noticeTitle: normalizedTitle,
+          startTime: formData.startTime,
+          endTime: formData.endTime,
+        });
       }
 
       const dataToSubmit: CreateNoticeInput = {
         ...formData,
+        title: normalizedTitle,
+        description: normalizedDescription,
         imageUrl: finalImageUrl || "",
         priority: isAchievement ? "low" : (isHighPriority ? "high" : formData.priority),
         // Achievements have no expiry — set 10 years out so they always display
@@ -254,9 +293,10 @@ const AddEditNoticePage: React.FC = () => {
       }
     } catch (error) {
       console.error("Submission error:", error);
+      const message = error instanceof Error ? error.message : "There was an error uploading your file. Please check your connection.";
       toast({
         title: "Upload Failed",
-        description: "There was an error uploading your file. Please check your connection.",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -302,7 +342,7 @@ const AddEditNoticePage: React.FC = () => {
               {/* title field */}
               <div className="space-y-2">
                 <Label htmlFor="title" className="text-sm font-medium">
-                  {isAchievement ? 'Achievement Title' : 'Notice Title'} <span className="text-destructive">*</span>
+                  {isAchievement ? 'Achievement Title' : 'Notice Title'} {!hasPdf && <span className="text-destructive">*</span>}
                 </Label>
                 <Input
                   id="title"
@@ -310,8 +350,8 @@ const AddEditNoticePage: React.FC = () => {
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, title: e.target.value }))
                   }
-                  placeholder={isAchievement ? 'e.g. 1st Place at TechFest 2026' : 'Enter notice title'}
-                  required
+                  placeholder={hasPdf ? 'Optional for PDF notices' : (isAchievement ? 'e.g. 1st Place at TechFest 2026' : 'Enter notice title')}
+                  required={!hasPdf}
                   className="h-11"
                 />
               </div>
@@ -319,7 +359,7 @@ const AddEditNoticePage: React.FC = () => {
               {/* details field */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">
-                  {isAchievement ? 'Achievement Description' : 'Description'} <span className="text-destructive">*</span>
+                  {isAchievement ? 'Achievement Description' : 'Description'} {!hasPdf && <span className="text-destructive">*</span>}
                 </Label>
                 <Tabs value={descTab} onValueChange={v => setDescTab(v as 'type' | 'extract')}>
                   <TabsList className="h-8 mb-2">
@@ -336,8 +376,8 @@ const AddEditNoticePage: React.FC = () => {
                       id="description"
                       value={formData.description}
                       onChange={(val) => setFormData((prev) => ({ ...prev, description: val }))}
-                      placeholder={isAchievement ? 'Brief description, e.g. Won 1st place competing against 200+ teams...' : 'Enter detailed description... Use **bold**, - bullet lists, ## headings and more.'}
-                      required
+                      placeholder={hasPdf ? 'Optional for PDF notices' : (isAchievement ? 'Brief description, e.g. Won 1st place competing against 200+ teams...' : 'Enter detailed description... Use **bold**, - bullet lists, ## headings and more.')}
+                      required={!hasPdf}
                       minRows={10}
                     />
                   </TabsContent>
