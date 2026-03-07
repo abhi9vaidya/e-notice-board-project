@@ -9,7 +9,7 @@ import {
     getDoc,
     query,
     where,
-    orderBy,
+    writeBatch,
     Timestamp,
     onSnapshot,
     type Unsubscribe,
@@ -139,6 +139,10 @@ export const subscribeToActiveNotices = (
 // ── Mutations ─────────────────────────────────────────────────────────────────
 
 export type CreateNoticeInput = Omit<Notice, 'id' | 'createdAt' | 'updatedAt'>;
+export interface AutoArchiveOptions {
+    userId: string;
+    isAdmin: boolean;
+}
 
 // create notice
 export const createNotice = async (input: CreateNoticeInput): Promise<string> => {
@@ -176,6 +180,42 @@ export const updateNotice = async (id: string, updates: Partial<CreateNoticeInpu
 export const archiveNotice = async (id: string): Promise<void> => {
     const ref = doc(db, NOTICES_COLLECTION, id);
     await updateDoc(ref, { isArchived: true, updatedAt: Timestamp.now() });
+};
+
+// archive expired notices that the current user is allowed to modify
+export const autoArchiveExpiredNotices = async (options: AutoArchiveOptions): Promise<number> => {
+    const now = Timestamp.now();
+    const constraints = [
+        where('isArchived', '==', false),
+        where('endTime', '<=', now),
+    ];
+
+    if (!options.isAdmin) {
+        constraints.push(where('facultyId', '==', options.userId));
+    }
+
+    const q = query(collection(db, NOTICES_COLLECTION), ...constraints);
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return 0;
+
+    let total = 0;
+    const docs = snapshot.docs;
+    const chunkSize = 400;
+
+    for (let i = 0; i < docs.length; i += chunkSize) {
+        const chunk = docs.slice(i, i + chunkSize);
+        const batch = writeBatch(db);
+        const updatedAt = Timestamp.now();
+
+        chunk.forEach((snap) => {
+            batch.update(snap.ref, { isArchived: true, updatedAt });
+            total += 1;
+        });
+
+        await batch.commit();
+    }
+
+    return total;
 };
 
 // delete notice permanently
