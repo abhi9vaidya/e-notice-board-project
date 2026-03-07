@@ -1,60 +1,102 @@
 ﻿# E-Notice Board
 
-> A cloud-based digital notice board system for campus TV displays — built as a B.Tech 6th Semester Project.
+A cloud-based digital notice board for campus communication, optimized for both faculty workflow and always-on TV display screens.
 
-**Live:** https://mythical-geode-479809-m6.web.app
-
----
+Live URL: https://rbu-notice-board.web.app
 
 ## Overview
 
-Faculty post notices from a web dashboard; a TV screen running in kiosk mode auto-rotates them in real-time. The system supports rich media, role-based access, and AI-assisted notice creation.
+Faculty and admins create notices from a web dashboard. Notices are stored in Firestore and rendered in real time on a dedicated TV route (`/tv`) with animated slideshow and multi-view layouts.
 
----
-
-## Features
-
-- **Faculty Dashboard** — create, edit, and archive notices with a rich Markdown editor and live TV preview
-- **TV Kiosk Display** — full-screen auto-rotating slides at `/tv`, optimised for 1080p screens
-- **Google OAuth Login** — faculty sign in with institutional Google accounts; admin manages an email allowlist
-- **Role-based Access** — `faculty` manage their own notices; `admin` manages all notices, users, and the allowlist
-- **Media Uploads** — images and PDFs attached to notices are stored on Cloudinary
-- **AI Text Extraction** — upload a PDF or image of a circular and AI extracts key points as a draft
-- **Student Spotlight** — achievements category renders as a dedicated gold panel on the TV display
-- **Kiosk Hardening** — back-button trap, hidden unlock gesture (tap logo × 5), per-device admin flag
-
----
+The current version includes:
+- Allowlist-first Google authentication for faculty onboarding
+- Admin role management and access governance
+- Notice scheduling, auto-archiving, and category-based display
+- Image/PDF upload via Google Drive Apps Script proxy
+- AI-assisted text extraction from uploaded images
+- Configurable TV behavior (single, multi, and auto-switch modes)
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18 + Vite + TypeScript |
-| UI | Shadcn UI + Tailwind CSS |
-| Auth | Firebase Authentication (Google OAuth) |
-| Database | Firebase Firestore |
-| Media | Cloudinary |
-| Hosting | Firebase Hosting |
+| Frontend | React 18, TypeScript, Vite |
+| UI | Tailwind CSS, shadcn/ui, Framer Motion |
 | Routing | React Router v6 |
+| State/Data | TanStack Query, custom hooks |
+| Auth | Firebase Authentication (Google + optional email/password for admin/legacy) |
+| Database | Cloud Firestore |
+| File Storage Bridge | Google Drive via Apps Script Web App proxy |
+| Hosting | Firebase Hosting |
+| Testing | Vitest + Testing Library |
 
----
+## Core Features
 
-## Firestore Schema
+- Faculty and admin dashboard for end-to-end notice management
+- Rich notice composer with Markdown editor and live TV preview
+- Template support: `standard`, `split`, `full-image`, `text-only`, `featured`
+- PDF/image notice uploads with generated metadata-aware naming
+- Optional registration URL (QR-enabled in TV notice cards)
+- Student Spotlight for `achievements` category (separate TV panel)
+- Real-time TV updates from Firestore snapshots
+- Auto-expiry and archive support
+- TV themes (`dark`/`light`) and mode controls:
+- `single`: slideshow with per-priority durations
+- `multi`: overview layout with high-priority + grid + spotlight
+- `auto`: timed alternation between single and multi
+
+## Access and Authentication Flow
+
+1. Admin adds faculty email to Firestore `allowlist`.
+2. Faculty signs in with Google.
+3. On first login, faculty confirms department.
+4. Profile is created in Firestore as approved `faculty`.
+5. Admin can promote users to `admin` from the Admin page.
+
+Notes:
+- Self-registration is intentionally disabled.
+- Email/password login exists as fallback for admin/legacy accounts.
+
+## Current Routes
+
+| Route | Purpose |
+|---|---|
+| `/` | Entry route (splash + sign in + dashboard handoff) |
+| `/tv` | Public TV display view |
+| `/manage-notices` | Notice management list |
+| `/add-notice` | Create/Edit notice page (`?edit=<id>` for edits) |
+| `/archive` | Archived notices |
+| `/categories` | Category view |
+| `/profile` | Profile page |
+| `/settings` | Settings page (TV controls, password tools; admin features gated) |
+| `/admin` | Admin console (allowlist + role management) |
+| `/about` | Public about page |
+
+## Firestore Data Model
 
 ### `profiles/{uid}`
 ```json
 {
   "name": "string",
-  "email": "string",
   "department": "string",
-  "role": "faculty | admin",
-  "status": "pending | approved | rejected",
+  "email": "string",
+  "phone": "string (optional)",
   "profilePhotoUrl": "string (optional)",
+  "role": "faculty | admin",
+  "status": "approved | pending | rejected",
   "createdAt": "Timestamp"
 }
 ```
 
-### `notices/{id}`
+### `allowlist/{email}`
+```json
+{
+  "department": "string (optional)",
+  "addedAt": "Timestamp"
+}
+```
+
+### `notices/{noticeId}`
 ```json
 {
   "title": "string",
@@ -63,13 +105,16 @@ Faculty post notices from a web dashboard; a TV screen running in kiosk mode aut
   "customCategory": "string (optional)",
   "priority": "high | medium | low",
   "template": "standard | split | full-image | text-only | featured",
-  "templatePlacement": "left | right",
+  "templatePlacement": "left | right (optional)",
   "facultyName": "string",
   "facultyId": "string",
   "imageUrl": "string (optional)",
   "documentUrl": "string (optional)",
-  "showIssuedBy": "boolean",
-  "showValidTill": "boolean",
+  "registrationUrl": "string (optional)",
+  "pdfOrientation": "portrait | landscape (optional)",
+  "showIssuedBy": "boolean (optional)",
+  "showValidTill": "boolean (optional)",
+  "showTextOverlay": "boolean (optional)",
   "startTime": "Timestamp",
   "endTime": "Timestamp",
   "isArchived": "boolean",
@@ -78,85 +123,79 @@ Faculty post notices from a web dashboard; a TV screen running in kiosk mode aut
 }
 ```
 
-### `allowlist/{email}`
-```json
-{
-  "addedAt": "Timestamp",
-  "addedBy": "string (admin uid)"
-}
-```
+## Environment Variables
 
----
+Create `.env` from `.env.example` and provide values before running locally.
 
-## Pages
+Required for current workflow:
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_APP_ID`
+- `VITE_GOOGLE_DRIVE_PROXY_URL` (Apps Script endpoint for uploads)
 
-| Route | Description |
-|---|---|
-| `/` | Login screen |
-| `/dashboard` | Notice feed with category filters |
-| `/manage-notices` | Add / edit / archive notices |
-| `/add-notice` | Full-page notice editor with live TV preview |
-| `/admin` | Admin panel — users, allowlist, all notices |
-| `/archive` | Archived notices |
-| `/categories` | Browse notices by category |
-| `/profile` | Profile settings |
-| `/tv` | TV kiosk display (full-screen, auto-rotating) |
+Optional:
+- `VITE_GROQ_API_KEY` (AI extraction from uploaded images)
+- `VITE_FIREBASE_MEASUREMENT_ID`
 
----
+Important: `.env.example` currently includes some legacy placeholders (for older integrations). Follow the list above for the active implementation.
 
-## Local Setup
+## Local Development
 
-**Prerequisites:** Node.js 18+, a Firebase project, a Cloudinary account (both free tier).
+Prerequisites:
+- Node.js 18+
+- npm
+- Firebase project with Auth + Firestore
+- Deployed Google Apps Script proxy (see `docs/drive_proxy.gs`)
+
+Install and run:
 
 ```bash
-# 1. Clone and install
 git clone https://github.com/abhi9vaidya/e-notice-board-project.git
 cd e-notice-board-project
 npm install
-
-# 2. Configure environment
-cp .env.example .env
-# Fill in your Firebase and Cloudinary credentials — see .env.example for details
-
-# 3. Run locally
 npm run dev
-# → http://localhost:5173
 ```
 
-**Firebase setup:**
-1. [Firebase Console](https://console.firebase.google.com) → create a project
-2. Authentication → Sign-in method → enable **Google**
-3. Firestore Database → create in production mode
-4. Deploy rules: `firebase deploy --only firestore:rules`
+Local app URL: `http://localhost:5173`
 
----
+## Firebase Setup Checklist
 
-## Deployment
+1. Create Firebase project.
+2. Enable Google sign-in in Firebase Authentication.
+3. Create Firestore database.
+4. Deploy rules:
+```bash
+firebase deploy --only firestore:rules
+```
+5. Create at least one admin profile and seed allowlist entries.
+
+## Build, Test, and Deploy
 
 ```bash
+npm run lint
+npm run test
 npm run build
 firebase deploy --only hosting
 ```
 
----
+## TV Deployment Notes
 
-## TV Kiosk Setup
+- Open `https://<your-domain>/tv` on the display device.
+- Use kiosk browser mode for full-screen persistence.
+- TV display reads Firestore updates in real time.
+- If tab remains hidden for long periods, the display auto-refreshes when visible again.
 
-1. Navigate to `https://your-app.web.app/tv` on the TV browser
-2. Use a kiosk browser (e.g. *Fully Kiosk Browser* on Android TV) with auto-start and screen-lock enabled
-3. To unlock: tap the college logo **5 times** within 2 seconds
+## Contributors
 
----
+| Name | Focus |
+|---|---|
+| Abhinav Vaidya | Full-stack implementation, Firebase integration |
+| Mansi Motghare | Backend integration and API work |
+| Parnavi Kite | Frontend development and UI |
+| Kartik Suchak | Testing and documentation |
 
-## Team
-
-| Name | Role | Email |
-|---|---|---|
-| Abhinav Vaidya | Full-stack development, Firebase | abhinavvaidya2005@gmail.com |
-| Mansi Motghare | Firebase backend, API integration | mansimotghare167@gmail.com |
-| Parnavi Kite | Frontend development, UI design | parnavikite@gmail.com |
-| Kartik Suchak | Testing, documentation | suchakku@rknec.edu |
-
-**Institution:** Shri Ramdeobaba College of Engineering and Management, Nagpur
-**Course:** B.Tech Computer Science — 6th Semester Project (2026)
-
+Institution: Shri Ramdeobaba College of Engineering and Management, Nagpur  
+Course: B.Tech CSE, 6th Semester Project (2026)
