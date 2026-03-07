@@ -26,6 +26,8 @@ const Dashboard: React.FC = () => {
   const filteredNotices = notices.filter(n =>
     (selectedCategory === 'all' || n.category === selectedCategory)
     && !n.isArchived
+    && n.isDraft !== true
+    && n.startTime.getTime() <= nowMs
     && n.endTime.getTime() >= nowMs
   );
 

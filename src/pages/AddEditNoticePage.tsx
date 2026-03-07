@@ -64,6 +64,24 @@ const TEMPLATES: { value: Template; label: string; description: string; icon: Re
   },
 ];
 
+const toTimeInputValue = (date: Date) => format(date, "HH:mm");
+
+const applyTimeToDate = (baseDate: Date, timeValue: string) => {
+  const [hours, minutes] = timeValue.split(':').map(Number);
+  const next = new Date(baseDate);
+  next.setHours(Number.isFinite(hours) ? hours : 0, Number.isFinite(minutes) ? minutes : 0, 0, 0);
+  return next;
+};
+
+const getUtcOffsetLabel = () => {
+  const offset = -new Date().getTimezoneOffset();
+  const sign = offset >= 0 ? '+' : '-';
+  const abs = Math.abs(offset);
+  const hh = String(Math.floor(abs / 60)).padStart(2, '0');
+  const mm = String(abs % 60).padStart(2, '0');
+  return `UTC${sign}${hh}:${mm}`;
+};
+
 
 const AddEditNoticePage: React.FC = () => {
   const navigate = useNavigate();
@@ -106,6 +124,8 @@ const AddEditNoticePage: React.FC = () => {
     showTextOverlay: true,
     registrationUrl: "",
   });
+  const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Local Time';
+  const utcOffsetLabel = getUtcOffsetLabel();
 
   // update name if context changes
   useEffect(() => {
@@ -239,6 +259,47 @@ const AddEditNoticePage: React.FC = () => {
       return;
     }
 
+    const now = new Date();
+    const selectedStartTime = new Date(formData.startTime);
+    const computedEndTime = new Date(formData.endTime);
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const selectedStartDateOnly = new Date(
+      selectedStartTime.getFullYear(),
+      selectedStartTime.getMonth(),
+      selectedStartTime.getDate()
+    );
+    const isPublishNow = selectedStartDateOnly.getTime() === startOfToday.getTime();
+    const isScheduled = selectedStartDateOnly.getTime() > startOfToday.getTime();
+    const isPastDate = selectedStartDateOnly.getTime() < startOfToday.getTime();
+    const computedStartTime = isPublishNow ? now : selectedStartTime;
+
+    if (!isAchievement) {
+      if (isPastDate) {
+        toast({
+          title: "Invalid start date",
+          description: "Start date cannot be in the past.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (isScheduled && computedStartTime.getTime() <= now.getTime()) {
+        toast({
+          title: "Invalid schedule",
+          description: "Scheduled notices must have a future start time.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (computedEndTime.getTime() <= computedStartTime.getTime()) {
+        toast({
+          title: "Invalid schedule window",
+          description: "End time must be after start time.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setIsUploading(true);
 
     try {
@@ -263,8 +324,8 @@ const AddEditNoticePage: React.FC = () => {
           facultyId: formData.facultyId,
           facultyName: formData.facultyName,
           noticeTitle: normalizedTitle,
-          startTime: formData.startTime,
-          endTime: formData.endTime,
+          startTime: computedStartTime,
+          endTime: computedEndTime,
         });
       }
 
@@ -274,6 +335,8 @@ const AddEditNoticePage: React.FC = () => {
         description: normalizedDescription,
         imageUrl: finalImageUrl || "",
         priority: isAchievement ? "low" : (isHighPriority ? "high" : formData.priority),
+        startTime: computedStartTime,
+        endTime: computedEndTime,
         // Achievements have no expiry — set 10 years out so they always display
         ...(isAchievement && {
           startTime: new Date(),
@@ -767,7 +830,12 @@ const AddEditNoticePage: React.FC = () => {
                 <>
                   <div className="space-y-2 pt-4 border-t">
                     <Label className="font-bold text-base">Schedule</Label>
-                    <p className="text-xs text-muted-foreground">Set when this notice appears and disappears from the TV board.</p>
+                    <p className="text-xs text-muted-foreground">
+                      If Start Date is today, notice publishes immediately. If Start Date is in the future, notice is scheduled.
+                    </p>
+                    <div className="text-[11px] text-muted-foreground bg-muted/40 border rounded-md px-3 py-2">
+                      Timezone: <span className="font-semibold text-foreground">{localTimeZone}</span> ({utcOffsetLabel})
+                    </div>
                   </div>
                   <div className="grid gap-6 md:grid-cols-2">
                     {/* date to start displaying */}
@@ -794,17 +862,30 @@ const AddEditNoticePage: React.FC = () => {
                           <Calendar
                             mode="single"
                             selected={formData.startTime}
+                            disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                             onSelect={(date) => {
                               if (date) {
-                                const startOfDay = new Date(date);
-                                startOfDay.setHours(0, 0, 0, 0);
-                                setFormData((prev) => ({ ...prev, startTime: startOfDay }));
+                                const next = new Date(date);
+                                next.setHours(formData.startTime.getHours(), formData.startTime.getMinutes(), 0, 0);
+                                setFormData((prev) => ({ ...prev, startTime: next }));
                               }
                             }}
                             initialFocus
                           />
                         </PopoverContent>
                       </Popover>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Start Time ({localTimeZone})</Label>
+                        <Input
+                          type="time"
+                          value={toTimeInputValue(formData.startTime)}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setFormData((prev) => ({ ...prev, startTime: applyTimeToDate(prev.startTime, value) }));
+                          }}
+                          className="h-10"
+                        />
+                      </div>
                     </div>
 
                     {/* date to stop displaying */}
@@ -831,17 +912,30 @@ const AddEditNoticePage: React.FC = () => {
                           <Calendar
                             mode="single"
                             selected={formData.endTime}
+                            disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                             onSelect={(date) => {
                               if (date) {
-                                const endOfDay = new Date(date);
-                                endOfDay.setHours(23, 59, 59, 999);
-                                setFormData((prev) => ({ ...prev, endTime: endOfDay }));
+                                const next = new Date(date);
+                                next.setHours(formData.endTime.getHours(), formData.endTime.getMinutes(), 0, 0);
+                                setFormData((prev) => ({ ...prev, endTime: next }));
                               }
                             }}
                             initialFocus
                           />
                         </PopoverContent>
                       </Popover>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">End Time ({localTimeZone})</Label>
+                        <Input
+                          type="time"
+                          value={toTimeInputValue(formData.endTime)}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setFormData((prev) => ({ ...prev, endTime: applyTimeToDate(prev.endTime, value) }));
+                          }}
+                          className="h-10"
+                        />
+                      </div>
                       {/* Quick expire presets */}
                       <div className="flex flex-wrap gap-1.5 pt-1">
                         <span className="text-xs text-muted-foreground mr-1 self-center">Quick:</span>
@@ -905,3 +999,4 @@ const AddEditNoticePage: React.FC = () => {
 };
 
 export default AddEditNoticePage;
+

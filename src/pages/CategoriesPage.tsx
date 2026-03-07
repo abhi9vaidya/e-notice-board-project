@@ -44,14 +44,18 @@ const categoryConfigs: CategoryConfig[] = [
 const CategoriesPage: React.FC = () => {
   const { notices } = useNotices();
   const [selectedCategory, setSelectedCategory] = useState<CategoryConfig | null>(null);
+  const nowMs = Date.now();
+  const visibleNotices = notices.filter(
+    (n) => !n.isArchived && n.isDraft !== true && n.startTime.getTime() <= nowMs && n.endTime.getTime() >= nowMs
+  );
 
   const getNoticeCount = (config: CategoryConfig) => {
-    return notices.filter((n) => n.category === config.mappedCategory).length;
+    return visibleNotices.filter((n) => n.category === config.mappedCategory).length;
   };
 
   const getCategoryNotices = () => {
     if (!selectedCategory) return [];
-    return notices.filter((n) => n.category === selectedCategory.mappedCategory);
+    return visibleNotices.filter((n) => n.category === selectedCategory.mappedCategory);
   };
 
   if (selectedCategory) {

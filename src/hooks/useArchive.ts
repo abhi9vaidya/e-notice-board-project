@@ -23,7 +23,7 @@ export const useArchive = () => {
       // Fetch all active notices and identify the expired ones (auto-archived)
       const allUnarchived = await getAllNotices();
       const nowMs = Date.now();
-      const expiredNotices = allUnarchived.filter(n => n.endTime.getTime() < nowMs);
+      const expiredNotices = allUnarchived.filter(n => n.isDraft !== true && n.endTime.getTime() < nowMs);
 
       // Combine and sort them by date
       const combined = [...manuallyArchived, ...expiredNotices]

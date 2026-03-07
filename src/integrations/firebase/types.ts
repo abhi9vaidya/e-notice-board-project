@@ -28,6 +28,7 @@ export interface FirestoreNotice {
     createdAt: Timestamp;
     updatedAt: Timestamp;
     isArchived: boolean;
+    isDraft?: boolean;
     showIssuedBy?: boolean;
     showValidTill?: boolean;
     showTextOverlay?: boolean;
@@ -68,6 +69,7 @@ export interface Notice {
     createdAt: Date;
     updatedAt: Date;
     isArchived: boolean;
+    isDraft?: boolean;
     showIssuedBy?: boolean;
     showValidTill?: boolean;
     showTextOverlay?: boolean;

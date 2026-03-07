@@ -41,6 +41,7 @@ const toAppNotice = (id: string, data: FirestoreNotice): Notice => ({
     createdAt: data.createdAt.toDate(),
     updatedAt: data.updatedAt.toDate(),
     isArchived: data.isArchived ?? false,
+    isDraft: data.isDraft ?? false,
     showIssuedBy: data.showIssuedBy !== false,
     showValidTill: data.showValidTill !== false,
     showTextOverlay: data.showTextOverlay !== false,
@@ -59,7 +60,7 @@ export const getActiveNotices = async (): Promise<Notice[]> => {
 
     const nowMs = Date.now();
     return rawNotices
-        .filter(n => n.endTime.getTime() >= nowMs && n.startTime.getTime() <= nowMs)
+        .filter(n => n.isDraft !== true && n.endTime.getTime() >= nowMs && n.startTime.getTime() <= nowMs)
         .sort((a, b) => a.endTime.getTime() - b.endTime.getTime());
 };
 
@@ -73,7 +74,7 @@ export const getActiveAchievements = async (): Promise<Notice[]> => {
     const rawNotices = snapshot.docs.map(d => toAppNotice(d.id, d.data() as FirestoreNotice));
 
     return rawNotices
-        .filter(n => n.category === 'achievements')
+        .filter(n => n.isDraft !== true && n.category === 'achievements')
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 };
 
@@ -124,7 +125,7 @@ export const subscribeToActiveNotices = (
             const nowMs = Date.now();
 
             const activeNotices = rawNotices
-                .filter(n => n.endTime.getTime() >= nowMs && n.startTime.getTime() <= nowMs)
+                .filter(n => n.isDraft !== true && n.endTime.getTime() >= nowMs && n.startTime.getTime() <= nowMs)
                 .sort((a, b) => a.endTime.getTime() - b.endTime.getTime());
 
             callback(activeNotices);
@@ -199,7 +200,8 @@ export const autoArchiveExpiredNotices = async (options: AutoArchiveOptions): Pr
     if (snapshot.empty) return 0;
 
     let total = 0;
-    const docs = snapshot.docs;
+    const docs = snapshot.docs.filter((snap) => (snap.data() as FirestoreNotice).isDraft !== true);
+    if (docs.length === 0) return 0;
     const chunkSize = 400;
 
     for (let i = 0; i < docs.length; i += chunkSize) {
