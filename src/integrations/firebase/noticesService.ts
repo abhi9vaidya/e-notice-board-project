@@ -30,6 +30,7 @@ const toAppNotice = (id: string, data: FirestoreNotice): Notice => ({
     priority: data.priority,
     template: data.template,
     templatePlacement: data.templatePlacement,
+    customLayout: data.customLayout,
     facultyName: data.facultyName,
     facultyId: data.facultyId,
     imageUrl: data.imageUrl,

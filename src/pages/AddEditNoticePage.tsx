@@ -23,7 +23,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useNotices } from "@/hooks/useFirebaseNotices";
 import { CreateNoticeInput } from "@/integrations/firebase/noticesService";
-import { Category, Priority, Template, TemplatePlacement } from "@/integrations/firebase/types";
+import { Category, Priority, Template, TemplatePlacement, type CustomLayoutConfig } from "@/integrations/firebase/types";
 import { TVNoticePreview } from "@/components/TVNoticePreview";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
@@ -58,11 +58,23 @@ const TEMPLATES: { value: Template; label: string; description: string; icon: Re
     preview: (<div className="flex flex-col gap-1.5 p-2 h-full justify-center"><div className="h-2.5 bg-current rounded w-2/3 opacity-70 mx-auto" /><div className="h-1.5 bg-current rounded opacity-30 mx-auto w-5/6" /><div className="h-1.5 bg-current rounded opacity-30 mx-auto w-4/6" /></div>),
   },
   {
-    value: 'featured', label: 'Featured', description: 'Special styling for major highlights',
-    icon: <Sparkles className="h-4 w-4" />, hasPlacement: false,
-    preview: (<div className="flex flex-col gap-1 p-2 h-full"><div className="h-0.5 bg-current opacity-60 rounded mb-1" /><div className="h-3 bg-current rounded w-3/4 opacity-80" /><div className="h-1.5 bg-current rounded w-full opacity-30 mt-1" /><div className="h-1.5 bg-current rounded w-5/6 opacity-30" /><div className="h-0.5 bg-current opacity-60 rounded mt-1" /></div>),
+    value: 'custom', label: 'Custom', description: 'Freely place title, description, media and QR',
+    icon: <Monitor className="h-4 w-4" />, hasPlacement: false,
+    preview: (<div className="relative p-2 h-full"><div className="absolute left-[8%] top-[14%] w-[48%] h-[16%] bg-current rounded opacity-70" /><div className="absolute left-[8%] top-[36%] w-[48%] h-[38%] bg-current rounded opacity-30" /><div className="absolute right-[8%] top-[14%] w-[30%] h-[44%] bg-current rounded opacity-30" /><div className="absolute right-[14%] bottom-[12%] w-[18%] h-[22%] bg-current rounded opacity-80" /></div>),
   },
 ];
+
+const DEFAULT_CUSTOM_LAYOUT: CustomLayoutConfig = {
+  title: { x: 5, y: 7, w: 58, h: 20 },
+  description: { x: 5, y: 30, w: 58, h: 52 },
+  media: { x: 66, y: 7, w: 29, h: 56 },
+  qr: { x: 72, y: 66, w: 18, h: 26 },
+  titleSize: 62,
+  descriptionSize: 30,
+  showMedia: true,
+  showQr: true,
+};
+type LayoutSection = 'title' | 'description' | 'media' | 'qr';
 
 const toTimeInputValue = (date: Date) => format(date, "HH:mm");
 
@@ -114,6 +126,7 @@ const AddEditNoticePage: React.FC = () => {
     priority: "medium",
     template: "standard",
     templatePlacement: "left",
+    customLayout: DEFAULT_CUSTOM_LAYOUT,
     facultyName: faculty?.name || "Faculty",
     facultyId: faculty?.id || "unknown",
     startTime: new Date(),
@@ -165,6 +178,17 @@ const AddEditNoticePage: React.FC = () => {
   const [extractPreview, setExtractPreview] = useState<string>('');
   const [extractedLinks, setExtractedLinks] = useState<string[]>([]);
   const extractInputRef = useRef<HTMLInputElement>(null);
+  const layoutEditorRef = useRef<HTMLDivElement>(null);
+  const [selectedLayoutSection, setSelectedLayoutSection] = useState<LayoutSection>('title');
+  const [layoutDrag, setLayoutDrag] = useState<null | {
+    mode: 'move' | 'resize';
+    section: LayoutSection;
+    startX: number;
+    startY: number;
+    startBox: CustomLayoutConfig['title'];
+    editorWidth: number;
+    editorHeight: number;
+  }>(null);
 
   const handleExtract = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -207,6 +231,7 @@ const AddEditNoticePage: React.FC = () => {
           priority: notice.priority,
           template: notice.template,
           templatePlacement: notice.templatePlacement || "left",
+          customLayout: notice.customLayout || DEFAULT_CUSTOM_LAYOUT,
           facultyName: notice.facultyName,
           facultyId: notice.facultyId,
           startTime: new Date(notice.startTime),
@@ -236,6 +261,70 @@ const AddEditNoticePage: React.FC = () => {
     };
     if (map[preset]) setFormData(prev => ({ ...prev, endTime: map[preset] }));
   };
+
+  const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+  const setLayoutBox = (section: LayoutSection, nextBox: CustomLayoutConfig['title']) => {
+    setFormData(prev => {
+      const layout = prev.customLayout || DEFAULT_CUSTOM_LAYOUT;
+      const next = { ...nextBox };
+      next.w = clamp(next.w, 8, 100);
+      next.h = clamp(next.h, 8, 100);
+      next.x = clamp(next.x, 0, 100 - next.w);
+      next.y = clamp(next.y, 0, 100 - next.h);
+      return { ...prev, customLayout: { ...layout, [section]: next } };
+    });
+  };
+
+  const startLayoutInteraction = (
+    section: LayoutSection,
+    mode: 'move' | 'resize',
+    event: React.PointerEvent<HTMLDivElement>
+  ) => {
+    const editorEl = layoutEditorRef.current;
+    if (!editorEl) return;
+    const rect = editorEl.getBoundingClientRect();
+    const layout = formData.customLayout || DEFAULT_CUSTOM_LAYOUT;
+    setSelectedLayoutSection(section);
+    setLayoutDrag({
+      mode,
+      section,
+      startX: event.clientX,
+      startY: event.clientY,
+      startBox: { ...layout[section] },
+      editorWidth: rect.width,
+      editorHeight: rect.height,
+    });
+  };
+
+  useEffect(() => {
+    if (!layoutDrag) return;
+    const onMove = (event: PointerEvent) => {
+      const dxPct = ((event.clientX - layoutDrag.startX) / layoutDrag.editorWidth) * 100;
+      const dyPct = ((event.clientY - layoutDrag.startY) / layoutDrag.editorHeight) * 100;
+      const box = { ...layoutDrag.startBox };
+      if (layoutDrag.mode === 'move') {
+        setLayoutBox(layoutDrag.section, {
+          ...box,
+          x: box.x + dxPct,
+          y: box.y + dyPct,
+        });
+      } else {
+        setLayoutBox(layoutDrag.section, {
+          ...box,
+          w: box.w + dxPct,
+          h: box.h + dyPct,
+        });
+      }
+    };
+    const onUp = () => setLayoutDrag(null);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp, { once: true });
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+  }, [layoutDrag]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -729,6 +818,173 @@ const AddEditNoticePage: React.FC = () => {
                         checked={formData.showTextOverlay !== false}
                         onCheckedChange={(v) => setFormData(prev => ({ ...prev, showTextOverlay: v }))}
                       />
+                    </div>
+                  )}
+
+                  {formData.template === 'custom' && (
+                    <div className="space-y-3 p-4 rounded-xl bg-muted/30 border">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold">Custom Layout Editor</p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setFormData(prev => ({ ...prev, customLayout: DEFAULT_CUSTOM_LAYOUT }))}
+                        >
+                          Reset Layout
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Click an element to select it. Drag to move. Drag the corner handle to resize.</p>
+
+                      <div
+                        ref={layoutEditorRef}
+                        className="relative aspect-video rounded-xl border bg-background/60 overflow-hidden select-none"
+                      >
+                        {([
+                          { key: 'title', label: 'Title', color: 'border-blue-400 bg-blue-500/10', enabled: true },
+                          { key: 'description', label: 'Description', color: 'border-emerald-400 bg-emerald-500/10', enabled: true },
+                          { key: 'media', label: 'Media', color: 'border-fuchsia-400 bg-fuchsia-500/10', enabled: (formData.customLayout?.showMedia ?? true) },
+                          { key: 'qr', label: 'QR', color: 'border-amber-400 bg-amber-500/10', enabled: (formData.customLayout?.showQr ?? true) },
+                        ] as const).map(item => {
+                          if (!item.enabled) return null;
+                          const box = (formData.customLayout || DEFAULT_CUSTOM_LAYOUT)[item.key];
+                          const isSelected = selectedLayoutSection === item.key;
+                          return (
+                            <div
+                              key={item.key}
+                              onPointerDown={(e) => startLayoutInteraction(item.key, 'move', e)}
+                              className={cn(
+                                "absolute rounded-md border-2 cursor-move transition-shadow",
+                                item.color,
+                                isSelected ? 'ring-2 ring-primary shadow-lg' : 'ring-0'
+                              )}
+                              style={{
+                                left: `${box.x}%`,
+                                top: `${box.y}%`,
+                                width: `${box.w}%`,
+                                height: `${box.h}%`,
+                              }}
+                            >
+                              <div className="absolute left-1.5 top-1 rounded bg-background/80 px-1.5 py-0.5 text-[10px] font-semibold">
+                                {item.label}
+                              </div>
+                              {isSelected && (
+                                <div
+                                  onPointerDown={(e) => {
+                                    e.stopPropagation();
+                                    startLayoutInteraction(item.key, 'resize', e);
+                                  }}
+                                  className="absolute -right-1 -bottom-1 h-3.5 w-3.5 rounded-sm border border-primary bg-primary cursor-se-resize"
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="rounded-md border bg-background/60 px-3 py-2 flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Title Size</span>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2"
+                              onClick={() => setFormData(prev => ({
+                                ...prev,
+                                customLayout: {
+                                  ...(prev.customLayout || DEFAULT_CUSTOM_LAYOUT),
+                                  titleSize: clamp((prev.customLayout?.titleSize ?? DEFAULT_CUSTOM_LAYOUT.titleSize) - 2, 28, 110),
+                                }
+                              }))}
+                            >
+                              -
+                            </Button>
+                            <span className="text-xs min-w-12 text-center">{formData.customLayout?.titleSize ?? DEFAULT_CUSTOM_LAYOUT.titleSize}px</span>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2"
+                              onClick={() => setFormData(prev => ({
+                                ...prev,
+                                customLayout: {
+                                  ...(prev.customLayout || DEFAULT_CUSTOM_LAYOUT),
+                                  titleSize: clamp((prev.customLayout?.titleSize ?? DEFAULT_CUSTOM_LAYOUT.titleSize) + 2, 28, 110),
+                                }
+                              }))}
+                            >
+                              +
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="rounded-md border bg-background/60 px-3 py-2 flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Description Size</span>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2"
+                              onClick={() => setFormData(prev => ({
+                                ...prev,
+                                customLayout: {
+                                  ...(prev.customLayout || DEFAULT_CUSTOM_LAYOUT),
+                                  descriptionSize: clamp((prev.customLayout?.descriptionSize ?? DEFAULT_CUSTOM_LAYOUT.descriptionSize) - 1, 16, 54),
+                                }
+                              }))}
+                            >
+                              -
+                            </Button>
+                            <span className="text-xs min-w-12 text-center">{formData.customLayout?.descriptionSize ?? DEFAULT_CUSTOM_LAYOUT.descriptionSize}px</span>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2"
+                              onClick={() => setFormData(prev => ({
+                                ...prev,
+                                customLayout: {
+                                  ...(prev.customLayout || DEFAULT_CUSTOM_LAYOUT),
+                                  descriptionSize: clamp((prev.customLayout?.descriptionSize ?? DEFAULT_CUSTOM_LAYOUT.descriptionSize) + 1, 16, 54),
+                                }
+                              }))}
+                            >
+                              +
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="flex items-center justify-between rounded-md border bg-background/60 px-3 py-2">
+                          <span className="text-xs text-muted-foreground">Show media block</span>
+                          <Switch
+                            checked={(formData.customLayout?.showMedia ?? DEFAULT_CUSTOM_LAYOUT.showMedia)}
+                            onCheckedChange={(v) => setFormData(prev => ({
+                              ...prev,
+                              customLayout: {
+                                ...(prev.customLayout || DEFAULT_CUSTOM_LAYOUT),
+                                showMedia: v,
+                              }
+                            }))}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between rounded-md border bg-background/60 px-3 py-2">
+                          <span className="text-xs text-muted-foreground">Show QR block</span>
+                          <Switch
+                            checked={(formData.customLayout?.showQr ?? DEFAULT_CUSTOM_LAYOUT.showQr)}
+                            onCheckedChange={(v) => setFormData(prev => ({
+                              ...prev,
+                              customLayout: {
+                                ...(prev.customLayout || DEFAULT_CUSTOM_LAYOUT),
+                                showQr: v,
+                              }
+                            }))}
+                          />
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

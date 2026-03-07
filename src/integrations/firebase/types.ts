@@ -3,8 +3,26 @@ import { Timestamp } from 'firebase/firestore';
 // ── Enums ──────────────────────────────────────────────────────────────────────
 export type Category = 'academic' | 'examinations' | 'placements' | 'events' | 'announcements' | 'achievements' | 'other';
 export type Priority = 'high' | 'medium' | 'low';
-export type Template = 'standard' | 'split' | 'full-image' | 'text-only' | 'featured';
+export type Template = 'standard' | 'split' | 'full-image' | 'text-only' | 'featured' | 'custom';
 export type TemplatePlacement = 'left' | 'right';
+
+export interface LayoutBox {
+    x: number; // percentage from left (0-100)
+    y: number; // percentage from top (0-100)
+    w: number; // width percentage
+    h: number; // height percentage
+}
+
+export interface CustomLayoutConfig {
+    title: LayoutBox;
+    description: LayoutBox;
+    media: LayoutBox;
+    qr: LayoutBox;
+    titleSize: number;
+    descriptionSize: number;
+    showMedia: boolean;
+    showQr: boolean;
+}
 
 // ── Firestore document shapes ──────────────────────────────────────────────────
 
@@ -17,6 +35,7 @@ export interface FirestoreNotice {
     priority: Priority;
     template: Template;
     templatePlacement?: TemplatePlacement;
+    customLayout?: CustomLayoutConfig;
     facultyName: string;
     facultyId: string;
     imageUrl?: string;
@@ -58,6 +77,7 @@ export interface Notice {
     priority: Priority;
     template: Template;
     templatePlacement?: TemplatePlacement;
+    customLayout?: CustomLayoutConfig;
     facultyName: string;
     facultyId: string;
     imageUrl?: string;

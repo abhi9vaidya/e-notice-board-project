@@ -1,5 +1,5 @@
 import React from 'react';
-import { Notice, Template } from '@/integrations/firebase/types';
+import { Notice, Template, type CustomLayoutConfig, type LayoutBox } from '@/integrations/firebase/types';
 import { categoryConfig } from '@/config/categoryConfig';
 import {
     FileText,
@@ -145,11 +145,30 @@ interface TVNoticePreviewProps {
     isLight?: boolean;
 }
 
+const DEFAULT_CUSTOM_LAYOUT: CustomLayoutConfig = {
+    title: { x: 5, y: 7, w: 58, h: 20 },
+    description: { x: 5, y: 30, w: 58, h: 52 },
+    media: { x: 66, y: 7, w: 29, h: 56 },
+    qr: { x: 72, y: 66, w: 18, h: 26 },
+    titleSize: 62,
+    descriptionSize: 30,
+    showMedia: true,
+    showQr: true,
+};
+
+const boxStyle = (box: LayoutBox): React.CSSProperties => ({
+    left: `${box.x}%`,
+    top: `${box.y}%`,
+    width: `${box.w}%`,
+    height: `${box.h}%`,
+});
+
 export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero = true, isLight = false }) => {
     const category = notice.category || 'other';
     const config = categoryConfig[category] || categoryConfig.other;
     const CategoryIcon = config.icon;
-    const template = notice.template as Template || 'standard';
+    const rawTemplate = notice.template as Template || 'standard';
+    const template: Template = rawTemplate === 'featured' ? 'standard' : rawTemplate;
     const placement = notice.templatePlacement || 'left';
 
     // Adaptive title font size — shrinks for longer titles so description stays visible
@@ -420,6 +439,65 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                     </div>
                 </div>
             );
+
+        case 'custom': {
+            const layout = { ...DEFAULT_CUSTOM_LAYOUT, ...(notice.customLayout ?? {}) };
+            return (
+                <div className={containerClass}>
+                    <div className={`relative h-full w-full rounded-[2.5rem] border overflow-hidden ${isLight ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-[#0b111f]'}`}>
+                        <div className="absolute inset-0 pointer-events-none"
+                            style={{ background: isLight ? 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)' : 'linear-gradient(135deg, #0b1220 0%, #111a2b 100%)' }} />
+
+                        <div className="absolute" style={boxStyle(layout.title)}>
+                            <h1
+                                className={cn(`font-black leading-[1.02] tracking-tight h-full overflow-hidden ${isLight ? 'text-slate-900' : 'text-white'}`)}
+                                style={{ fontSize: `clamp(22px, ${layout.titleSize * 0.65}px, ${layout.titleSize}px)` }}
+                            >
+                                {notice.title || 'Notice Title'}
+                            </h1>
+                        </div>
+
+                        <div className="absolute overflow-hidden" style={{ ...boxStyle(layout.description), fontSize: `${Math.max(16, layout.descriptionSize)}px` }}>
+                            <AutoScrollText
+                                className={`${isLight ? 'text-slate-600' : 'text-slate-300'} leading-relaxed`}
+                                content={notice.description || 'Notice description goes here...'}
+                            />
+                        </div>
+
+                        {layout.showMedia && (notice.imageUrl || notice.documentUrl) && (
+                            <div className="absolute rounded-2xl overflow-hidden border border-white/10 shadow-xl" style={boxStyle(layout.media)}>
+                                <MediaPanel
+                                    imageUrl={notice.imageUrl}
+                                    documentUrl={notice.documentUrl}
+                                    className="w-full h-full"
+                                    fit="cover"
+                                />
+                            </div>
+                        )}
+
+                        {layout.showQr && regUrl && (
+                            <div className="absolute flex items-center justify-center" style={boxStyle(layout.qr)}>
+                                <div className="rounded-xl bg-white p-2.5 shadow-2xl w-full h-full flex items-center justify-center">
+                                    <QRCodeSVG value={regUrl} size={Math.max(90, Math.floor(140 * (layout.qr.w / 20)))} includeMargin={false} />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="absolute left-6 bottom-5 flex items-center gap-5">
+                            {notice.category && (
+                                <div className="px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest text-white"
+                                    style={{ backgroundColor: config.accent }}>
+                                    {notice.customCategory || config.label}
+                                </div>
+                            )}
+                            {notice.priority === 'high' && (
+                                <div className="px-3 py-1 rounded-full text-[11px] font-black border border-rose-500 text-rose-500">URGENT</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
 
         case 'featured':
             return (
