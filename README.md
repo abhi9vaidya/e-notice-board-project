@@ -188,6 +188,14 @@ firebase deploy --only hosting
 - TV display reads Firestore updates in real time.
 - If tab remains hidden for long periods, the display auto-refreshes when visible again.
 
+## Future Enhancements
+
+- Mobile app for students with push notifications
+- Advanced analytics dashboard (notice engagement, views)
+- Role-based category subscriptions for personalized notices
+- Offline TV caching for low-connectivity environments
+- Multi-language support for wider accessibility
+
 ## Contributors
 
 | Name | Focus |
