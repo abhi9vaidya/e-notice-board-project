@@ -16,7 +16,7 @@ import { QRCodeSVG } from 'qrcode.react';
 // ── URL helpers ────────────────────────────────────────────────────────────────
 
 /** True when the URL points to a PDF document. */
-const isPdfUrl = (url: string) => {
+export const isPdfUrl = (url: string) => {
     const u = url.toLowerCase();
     // Google Drive returns "uc?export=view&id=..." for images, but because we specify MIME types 
     // when uploading, Drive knows it's a PDF. We have to assume anything that's a direct Drive 
@@ -34,7 +34,7 @@ const isPdfUrl = (url: string) => {
  *  3. Google Drive URL  → use the thumbnail API (avoids virus-scan interstitial)
  *  4. Anything else     → use as-is
  */
-function toDisplayImageUrl(url: string): string {
+export function toDisplayImageUrl(url: string): string {
     // ── Cloudinary ──────────────────────────────────────────────────────────
     if (url.includes('res.cloudinary.com')) {
         if (isPdfUrl(url)) {
@@ -78,7 +78,7 @@ interface MediaPanelProps {
  * that breaks <img src="uc?export=view"> for larger files.
  * The thumbnail API also works for PDFs — it returns a PNG of the first page.
  */
-const MediaPanel: React.FC<MediaPanelProps> = ({ imageUrl, documentUrl, className = '', fit = 'cover' }) => {
+export const MediaPanel: React.FC<MediaPanelProps> = ({ imageUrl, documentUrl, className = '', fit = 'cover' }) => {
     // Prefer the explicit image; fall back to document (PDF first-page thumbnail)
     const effectiveUrl = imageUrl || documentUrl || null;
     if (!effectiveUrl) return null;

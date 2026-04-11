@@ -1,10 +1,11 @@
-﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useActiveNotices, useActiveAchievements } from '@/hooks/useFirebaseNotices';
+import { useActiveNotices } from '@/hooks/useFirebaseNotices';
+import { useArchive } from '@/hooks/useArchive';
 import { Sparkles, Trophy, CalendarDays, LayoutGrid, MonitorPlay, RefreshCw } from 'lucide-react';
 import { format, isToday, isTomorrow } from 'date-fns';
 import rbuLogo from '@/assets/rbu-logo.png';
-import { TVNoticePreview } from '@/components/TVNoticePreview';
+import { TVNoticePreview, toDisplayImageUrl } from '@/components/TVNoticePreview';
 import { AutoScrollText } from '@/components/AutoScrollText';
 import { TVMultiView } from '@/components/TVMultiView';
 import { getDailyQuote } from '@/data/spiritualQuotes';
@@ -17,13 +18,169 @@ type Slide =
   | { type: 'single'; notice: Notice }
   | { type: 'double'; notices: [Notice, Notice] };
 
+/* ────────────────────────────────────────────────────────────────────────────
+ * AchievementSpotlightCard
+ * Extracted from the existing Student Spotlight sidebar rendering so both
+ * the 1-card sidebar view AND the 3-card full-screen view use the EXACT
+ * same component — zero UI differences.
+ * ──────────────────────────────────────────────────────────────────────────── */
+const AchievementSpotlightCard: React.FC<{
+  achievement: Notice;
+  isLight: boolean;
+  titleClassName?: string;
+  imageAspectRatio?: string;
+  textClassName?: string;
+  scrollSpeed?: number;
+  className?: string;
+}> = ({
+  achievement,
+  isLight,
+  titleClassName,
+  imageAspectRatio,
+  textClassName,
+  scrollSpeed = 22,
+  className,
+}) => {
+    const [imgError, setImgError] = useState(false);
+    const [imgLoading, setImgLoading] = useState(true);
+
+    // Reset states when achievement changes
+    useEffect(() => {
+      setImgError(false);
+      setImgLoading(true);
+    }, [achievement.id]);
+
+    // Clean up object URLs if they exist (prevent memory leaks from blob URLs)
+    useEffect(() => {
+      return () => {
+        setImgError(false);
+        setImgLoading(true);
+      };
+    }, []);
+
+    return (
+      <div className={cn('flex flex-col gap-3 h-full', className)}>
+        <p
+          className={cn(
+            `font-black ${isLight ? 'text-slate-900' : 'text-white'} leading-snug shrink-0`,
+            titleClassName
+          )}
+        >
+          {achievement.title}
+        </p>
+
+        {/* ── Image container ── */}
+        {achievement.imageUrl && !imgError && (
+          <div
+            className={cn(
+              'w-full rounded-xl overflow-hidden shrink-0 border relative',
+              isLight ? 'border-yellow-300 bg-yellow-50' : 'border-yellow-400/10 bg-yellow-500/5'
+            )}
+            style={{ aspectRatio: imageAspectRatio ?? '4/3' }}
+          >
+            {/* Loading overlay */}
+            {imgLoading && (
+              <div className="absolute inset-0 flex items-center justify-center z-10">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-8 h-8 border-2 border-current border-t-transparent rounded-full animate-spin opacity-30" />
+                  <p className={cn("text-[10px] uppercase tracking-widest font-bold opacity-30",
+                    isLight ? 'text-yellow-600' : 'text-yellow-400'
+                  )}>
+                    Loading
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <img
+              src={toDisplayImageUrl(achievement.imageUrl)}
+              alt={achievement.title}
+              className={cn(
+                "w-full h-full object-cover transition-opacity duration-300 relative z-20",
+                imgLoading ? "opacity-0" : "opacity-100"
+              )}
+              loading="eager"
+              onLoad={() => setImgLoading(false)}
+              onError={(e) => {
+                const img = e.currentTarget;
+                if (img.src !== achievement.imageUrl) {
+                  img.src = achievement.imageUrl;
+                } else {
+                  console.warn(`[AchievementSpotlightCard] Image failed to load for: "${achievement.title}" — URL: ${achievement.imageUrl}`);
+                  setImgError(true);
+                  setImgLoading(false);
+                }
+              }}
+            />
+          </div>
+        )}
+
+        {/* ── Image: error / unavailable fallback ── */}
+        {achievement.imageUrl && imgError && (
+          <div
+            className={cn(
+              'w-full rounded-xl overflow-hidden shrink-0 border flex items-center justify-center',
+              isLight
+                ? 'border-yellow-300 bg-yellow-50/80'
+                : 'border-yellow-400/10 bg-yellow-500/5'
+            )}
+            style={{ aspectRatio: imageAspectRatio ?? '4/3' }}
+          >
+            <div className="text-center p-4">
+              <Trophy
+                className={cn(
+                  "h-10 w-10 mx-auto mb-2",
+                  isLight ? 'text-yellow-300' : 'text-yellow-500/40'
+                )}
+              />
+              <p
+                className={cn(
+                  "text-[11px] font-semibold uppercase tracking-wider",
+                  isLight ? 'text-yellow-500/70' : 'text-yellow-400/30'
+                )}
+              >
+                Image unavailable
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── No image at all — optional trophy icon placeholder ── */}
+        {!achievement.imageUrl && (
+          <div
+            className={cn(
+              'w-full rounded-xl overflow-hidden shrink-0 border flex items-center justify-center',
+              isLight
+                ? 'border-yellow-200 bg-yellow-50/50'
+                : 'border-yellow-400/5 bg-yellow-500/[0.02]'
+            )}
+            style={{ aspectRatio: imageAspectRatio ?? '4/3' }}
+          >
+            <div className="text-center p-4 opacity-20">
+              <Trophy className={cn("h-12 w-12 mx-auto", isLight ? 'text-yellow-500' : 'text-yellow-400')} />
+            </div>
+          </div>
+        )}
+
+        {achievement.description && (
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <AutoScrollText
+              content={achievement.description}
+              className={textClassName ?? (isLight ? 'text-yellow-800' : 'text-yellow-100/70')}
+              speed={scrollSpeed}
+            />
+          </div>
+        )}
+      </div>
+    );
+  };
+
 const TVDisplay: React.FC = () => {
   const { notices: activeNotices, loading: noticesLoading } = useActiveNotices();
-  const { achievements, loading: achievementsLoading } = useActiveAchievements();
+  const { archivedNotices } = useArchive();
   const { settings } = useTVDisplaySettings();
 
   // ─── Active display mode (single | multi) ─────────────────────────────────
-  // 'single' and 'auto' both begin in single-view; 'multi' begins in multi-view.
   const [activeMode, setActiveMode] = useState<'single' | 'multi'>(
     settings.displayMode === 'multi' ? 'multi' : 'single'
   );
@@ -32,23 +189,15 @@ const TVDisplay: React.FC = () => {
   const [autoCountdown, setAutoCountdown] = useState(0);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Sync activeMode ONLY when the user changes displayMode from the Settings page
-  // (cross-tab via the storage event). We track the previous value so the effect
-  // is a no-op on the first render — preventing it from overwriting the auto-switch
-  // timer that starts from the useState initializer above.
-
-
   const prevDisplayMode = useRef(settings.displayMode);
   useEffect(() => {
     if (prevDisplayMode.current === settings.displayMode) return;
     prevDisplayMode.current = settings.displayMode;
-    // When switching TO auto-mode always restart from single-view
     if (settings.displayMode === 'single') setActiveMode('single');
     else if (settings.displayMode === 'multi') setActiveMode('multi');
     else setActiveMode('single');
   }, [settings.displayMode]);
 
-  // Auto-switch orchestration: fires whenever activeMode or settings change (in auto mode)
   useEffect(() => {
     if (settings.displayMode !== 'auto') {
       setAutoCountdown(0);
@@ -61,7 +210,6 @@ const TVDisplay: React.FC = () => {
         ? settings.autoSingleDuration * 1000
         : settings.autoMultiDuration * 1000;
 
-    // Countdown tick
     setAutoCountdown(Math.round(switchAfterMs / 1000));
     if (countdownRef.current) clearInterval(countdownRef.current);
     countdownRef.current = setInterval(() => {
@@ -83,7 +231,7 @@ const TVDisplay: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [progressKey, setProgressKey] = useState(0);
 
-  // Main slide items: non-achievement notices only (achievements live exclusively in the sidebar spotlight)
+  // Main slide items: non-achievement notices only
   const displayItems = useMemo(() => {
     return [...(activeNotices ?? [])]
       .filter(n => n.category !== 'achievements')
@@ -93,6 +241,45 @@ const TVDisplay: React.FC = () => {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
   }, [activeNotices]);
+
+  // ─── Archived achievements (archive → achievements only) ───────────────────
+  const archivedAchievements = useMemo(() => {
+    return (archivedNotices ?? [])
+      .filter(n => n.category === 'achievements')
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [archivedNotices]);
+
+  // Sidebar spotlight: cycle through archived achievements (1 card at a time)
+  const [spotlightIdx, setSpotlightIdx] = useState(0);
+  useEffect(() => {
+    if (archivedAchievements.length <= 1) return;
+    const t = setInterval(() => setSpotlightIdx(i => (i + 1) % archivedAchievements.length), 20000);
+    return () => clearInterval(t);
+  }, [archivedAchievements]);
+  const spotlight =
+    archivedAchievements.length > 0 ? archivedAchievements[spotlightIdx % archivedAchievements.length] : null;
+
+  // ─── Full-screen 3-card pagination (when NO active notices) ───────────────
+  const CARDS_PER_PAGE = 3;
+  const [achPage, setAchPage] = useState(0);
+  const achTotalPages = Math.max(1, Math.ceil(archivedAchievements.length / CARDS_PER_PAGE));
+
+  // Reset page when notices reappear (so it starts fresh next time)
+  useEffect(() => {
+    if (displayItems.length > 0) setAchPage(0);
+  }, [displayItems.length]);
+
+  // Auto-loop through achievement pages
+  useEffect(() => {
+    if (displayItems.length > 0 || achTotalPages <= 1) return;
+    const t = setInterval(() => setAchPage(p => (p + 1) % achTotalPages), 12000);
+    return () => clearInterval(t);
+  }, [displayItems.length, achTotalPages]);
+
+  const currentAchPage = useMemo(() => {
+    const start = achPage * CARDS_PER_PAGE;
+    return archivedAchievements.slice(start, start + CARDS_PER_PAGE);
+  }, [archivedAchievements, achPage]);
 
   // Group portrait-PDF notices into double slides; everything else is a single slide
   const slides = useMemo<Slide[]>(() => {
@@ -125,39 +312,34 @@ const TVDisplay: React.FC = () => {
   }, [activeNotices]);
 
   const currentSlide = slides[currentIndex];
-  // Per-priority durations derived from settings (ms)
   const slideDurations: Record<string, number> = {
-    high:   settings.singleHighDuration   * 1000,
+    high: settings.singleHighDuration * 1000,
     medium: settings.singleMediumDuration * 1000,
-    low:    settings.singleNormalDuration * 1000,
+    low: settings.singleNormalDuration * 1000,
   };
   const slideDuration = (() => {
     if (!currentSlide) return 12000;
     if (currentSlide.type === 'single') return slideDurations[currentSlide.notice.priority] ?? 12000;
-    // Double slide: use the higher-priority notice's duration
     const p: Record<string, number> = { high: 0, medium: 1, low: 2 };
-    const top = currentSlide.notices.reduce((a, b) => p[a.priority] <= p[b.priority] ? a : b);
+    const top = currentSlide.notices.reduce((a, b) => (p[a.priority] <= p[b.priority] ? a : b));
     return slideDurations[top.priority] ?? 12000;
   })();
 
-  // Auto-advance slides — only when the single-view is active
+  // Auto-advance slides — only when the single-view is active AND notices exist
   useEffect(() => {
-    if (activeMode !== 'single') return;
+    if (activeMode !== 'single' || displayItems.length === 0) return;
     if (slides.length <= 1) return;
     const t = setTimeout(() => {
       setCurrentIndex(i => (i + 1) % slides.length);
       setProgressKey(k => k + 1);
     }, slideDuration);
     return () => clearTimeout(t);
-  }, [slides.length, currentIndex, slideDuration, activeMode]);
+  }, [slides.length, currentIndex, slideDuration, activeMode, displayItems.length]);
 
-  // Auto-refresh: if the tab regains visibility after being hidden >10 min
-  // (e.g., TV screensaver or power-save mode), reload so Firestore listeners
-  // re-establish and fresh notices are fetched — fulfils "persistent display
-  // behavior even after TV power off" per the project synopsis.
+  // Auto-refresh on tab visibility (persistent TV display)
   useEffect(() => {
     let hiddenAt: number | null = null;
-    const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
+    const STALE_THRESHOLD_MS = 10 * 60 * 1000;
 
     const onVisibilityChange = () => {
       if (document.hidden) {
@@ -186,20 +368,14 @@ const TVDisplay: React.FC = () => {
     return dash !== -1 ? [q.slice(0, dash), q.slice(dash + 3)] : [q, ''];
   }, []);
 
-  // Student spotlight cycles through achievements every 20s (independent of main slide)
-  const [spotlightIdx, setSpotlightIdx] = useState(0);
-  useEffect(() => {
-    if (!achievements || achievements.length <= 1) return;
-    const t = setInterval(() => setSpotlightIdx(i => (i + 1) % achievements.length), 20000);
-    return () => clearInterval(t);
-  }, [achievements]);
-  const spotlight = achievements && achievements.length > 0 ? achievements[spotlightIdx % achievements.length] : null;
-
   const isLight = settings.tvTheme === 'light';
-  const rootBg  = isLight ? 'bg-[#f0f3fa]' : 'bg-[#060810]';
+  const rootBg = isLight ? 'bg-[#f0f3fa]' : 'bg-[#060810]';
   const rootText = isLight ? 'text-slate-900' : 'text-white';
 
-  if (noticesLoading || achievementsLoading) {
+  // Whether we are in the "no notices → show achievements" branch
+  const showingAchievementsFull = displayItems.length === 0;
+
+  if (noticesLoading) {
     return (
       <div className={`h-screen ${rootBg} flex items-center justify-center`}>
         <div className="text-center">
@@ -212,9 +388,10 @@ const TVDisplay: React.FC = () => {
 
   return (
     <div className={`h-screen w-screen ${rootBg} ${rootText} flex flex-col overflow-hidden select-none`}>
-
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <header className={`shrink-0 h-[4.5rem] px-10 flex items-center justify-between border-b ${isLight ? "border-slate-200 bg-white/90 backdrop-blur-sm" : "border-white/5"} z-20 relative`}>
+      <header
+        className={`shrink-0 h-[4.5rem] px-10 flex items-center justify-between border-b ${isLight ? 'border-slate-200 bg-white/90 backdrop-blur-sm' : 'border-white/5'} z-20 relative`}
+      >
         <div className="flex items-center gap-4">
           <div className="h-10 w-10 bg-white/95 p-1 rounded-lg shrink-0">
             <img src={rbuLogo} className="h-full w-full object-contain" alt="RBU" />
@@ -227,59 +404,119 @@ const TVDisplay: React.FC = () => {
           </div>
         </div>
 
-        {/* Centre: slide dots (single mode only) or mode badge */}
+        {/* Centre: dots / mode badge / achievement dots */}
         <div className="flex flex-col items-center gap-1 absolute left-1/2 -translate-x-1/2">
-          {activeMode === 'single' && slides.length > 1 && (
-            <div className="flex items-center gap-1.5">
-              {slides.map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-full transition-all duration-500"
-                  style={{
-                    width: i === currentIndex ? 20 : 6,
-                    height: 6,
-                    backgroundColor:
-                      i === currentIndex ? 'hsl(var(--primary))' : (isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)'),
-                  }}
-                />
-              ))}
-            </div>
-          )}
-          {/* Auto-switch mode indicator */}
-          {settings.displayMode === 'auto' && (
-            <div className="flex items-center gap-2">
-              <div className={cn(
-                'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.55rem] font-black uppercase tracking-widest border',
-                activeMode === 'single'
-                  ? 'text-primary border-primary/30 bg-primary/10'
-                  : (isLight ? 'text-purple-700 border-purple-300 bg-purple-100' : 'text-purple-400 border-purple-500/30 bg-purple-500/10')
-              )}>
-                {activeMode === 'single'
-                  ? <><MonitorPlay className="h-3 w-3" /> Single View</>
-                  : <><LayoutGrid className="h-3 w-3" /> Overview</>
-                }
-              </div>
-              {autoCountdown > 0 && (
-                <div className="flex items-center gap-1 text-[0.52rem] font-bold text-slate-600">
-                  <RefreshCw className="h-2.5 w-2.5" />
-                  {autoCountdown}s
+          {showingAchievementsFull && archivedAchievements.length > 0 ? (
+            /* ── Achievement page indicator (no-notices mode) ── */
+            <>
+              {achTotalPages > 1 && (
+                <div className="flex items-center gap-1.5">
+                  {Array.from({ length: achTotalPages }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="rounded-full transition-all duration-500"
+                      style={{
+                        width: i === achPage ? 20 : 6,
+                        height: 6,
+                        backgroundColor:
+                          i === achPage
+                            ? '#facc15'
+                            : isLight
+                              ? 'rgba(0,0,0,0.15)'
+                              : 'rgba(255,255,255,0.12)',
+                      }}
+                    />
+                  ))}
                 </div>
               )}
-            </div>
-          )}
-          {/* Manual mode badge (non-auto) */}
-          {settings.displayMode !== 'auto' && (
-            <div className={cn(
-              'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.52rem] font-black uppercase tracking-widest border',
-              settings.displayMode === 'multi'
-                ? 'text-purple-400 border-purple-500/20 bg-purple-500/8'
-                : (isLight ? 'text-slate-600 border-slate-300 bg-slate-100' : 'text-slate-400 border-white/8 bg-white/3')
-            )}>
-              {settings.displayMode === 'multi'
-                ? <><LayoutGrid className="h-2.5 w-2.5" /> Overview Mode</>
-                : <><MonitorPlay className="h-2.5 w-2.5" /> Slideshow Mode</>
-              }
-            </div>
+              <div
+                className={cn(
+                  'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.55rem] font-black uppercase tracking-widest border',
+                  isLight
+                    ? 'text-yellow-700 border-yellow-300 bg-yellow-100'
+                    : 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10'
+                )}
+              >
+                <Trophy className="h-3 w-3" />
+                Student Achievements
+              </div>
+            </>
+          ) : (
+            /* ── Existing notice-mode indicators (unchanged) ── */
+            <>
+              {activeMode === 'single' && slides.length > 1 && (
+                <div className="flex items-center gap-1.5">
+                  {slides.map((_, i) => (
+                    <div
+                      key={i}
+                      className="rounded-full transition-all duration-500"
+                      style={{
+                        width: i === currentIndex ? 20 : 6,
+                        height: 6,
+                        backgroundColor:
+                          i === currentIndex
+                            ? 'hsl(var(--primary))'
+                            : isLight
+                              ? 'rgba(0,0,0,0.15)'
+                              : 'rgba(255,255,255,0.12)',
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+              {settings.displayMode === 'auto' && (
+                <div className="flex items-center gap-2">
+                  <div
+                    className={cn(
+                      'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.55rem] font-black uppercase tracking-widest border',
+                      activeMode === 'single'
+                        ? 'text-primary border-primary/30 bg-primary/10'
+                        : isLight
+                          ? 'text-purple-700 border-purple-300 bg-purple-100'
+                          : 'text-purple-400 border-purple-500/30 bg-purple-500/10'
+                    )}
+                  >
+                    {activeMode === 'single' ? (
+                      <>
+                        <MonitorPlay className="h-3 w-3" /> Single View
+                      </>
+                    ) : (
+                      <>
+                        <LayoutGrid className="h-3 w-3" /> Overview
+                      </>
+                    )}
+                  </div>
+                  {autoCountdown > 0 && (
+                    <div className="flex items-center gap-1 text-[0.52rem] font-bold text-slate-600">
+                      <RefreshCw className="h-2.5 w-2.5" />
+                      {autoCountdown}s
+                    </div>
+                  )}
+                </div>
+              )}
+              {settings.displayMode !== 'auto' && (
+                <div
+                  className={cn(
+                    'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.52rem] font-black uppercase tracking-widest border',
+                    settings.displayMode === 'multi'
+                      ? 'text-purple-400 border-purple-500/20 bg-purple-500/8'
+                      : isLight
+                        ? 'text-slate-600 border-slate-300 bg-slate-100'
+                        : 'text-slate-400 border-white/8 bg-white/3'
+                  )}
+                >
+                  {settings.displayMode === 'multi' ? (
+                    <>
+                      <LayoutGrid className="h-2.5 w-2.5" /> Overview Mode
+                    </>
+                  ) : (
+                    <>
+                      <MonitorPlay className="h-2.5 w-2.5" /> Slideshow Mode
+                    </>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -302,7 +539,78 @@ const TVDisplay: React.FC = () => {
 
       {/* ── Main content row ─────────────────────────────────────────────── */}
       <AnimatePresence mode="wait">
-        {activeMode === 'multi' ? (
+        {/* ── BRANCH 1: No active notices → full-screen achievement cards ── */}
+        {showingAchievementsFull && archivedAchievements.length > 0 ? (
+          <motion.div
+            key="achievements-full"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex-1 flex flex-col overflow-hidden min-h-0"
+          >
+            <div className="flex-1 flex items-center justify-center p-10 min-h-0">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={`ach-page-${achPage}`}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -16 }}
+                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                  className="flex items-stretch justify-center gap-6 w-full max-w-7xl h-full"
+                >
+                  {currentAchPage.map((ach, i) => (
+                    <div
+                      key={ach.id ?? i}
+                      className={cn(
+                        'flex-1 max-w-md rounded-2xl overflow-hidden border flex flex-col min-h-0',
+                        isLight
+                          ? 'bg-white border-yellow-200 shadow-lg p-6'
+                          : 'bg-white/[0.03] border-yellow-400/10 p-6'
+                      )}
+                    >
+                      <AchievementSpotlightCard
+                        achievement={ach}
+                        isLight={isLight}
+                        titleClassName="text-xl"
+                        imageAspectRatio="16/9"
+                        textClassName={`text-[0.82rem] ${isLight ? 'text-yellow-800' : 'text-yellow-100/70'}`}
+                        scrollSpeed={22}
+                        className="flex-1 min-h-0"
+                      />
+                    </div>
+                  ))}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        ) : showingAchievementsFull && archivedAchievements.length === 0 ? (
+          /* ── BRANCH 1b: No notices AND no achievements → fallback ── */
+          <motion.div
+            key="empty-fallback"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex-1 flex overflow-hidden min-h-0"
+          >
+            <div className="flex-1 flex items-center justify-center p-10">
+              <div className="text-center opacity-30 max-w-lg">
+                <Sparkles className="h-14 w-14 mx-auto mb-4" />
+                <p className="font-bold uppercase tracking-[0.4em] text-sm mb-4">No active announcements</p>
+                <p className={`text-lg italic ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
+                  &ldquo;{quoteText}&rdquo;
+                </p>
+                {quoteAuthor && (
+                  <p className={`text-sm mt-2 ${isLight ? 'text-slate-400' : 'text-slate-600'}`}>
+                    &mdash; {quoteAuthor}
+                  </p>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        ) : activeMode === 'multi' ? (
+          /* ── BRANCH 2: Multi-view (unchanged) ── */
           <motion.div
             key="multi"
             initial={{ opacity: 0 }}
@@ -313,7 +621,7 @@ const TVDisplay: React.FC = () => {
           >
             <TVMultiView
               notices={displayItems.filter(n => n.pdfOrientation !== 'portrait')}
-              achievements={achievements ?? []}
+              achievements={archivedAchievements}
               quoteText={quoteText}
               quoteAuthor={quoteAuthor}
               settings={settings}
@@ -321,6 +629,7 @@ const TVDisplay: React.FC = () => {
             />
           </motion.div>
         ) : (
+          /* ── BRANCH 3: Single-view (unchanged except sidebar data source) ── */
           <motion.div
             key="single"
             initial={{ opacity: 0 }}
@@ -329,7 +638,6 @@ const TVDisplay: React.FC = () => {
             transition={{ duration: 0.5 }}
             className="flex-1 flex overflow-hidden min-h-0"
           >
-            {/* ── Single-view layout ── */}
             <div className="flex-1 flex overflow-hidden min-h-0">
               {/* Main slide area */}
               <div className="flex-1 relative overflow-hidden p-6 pr-4 min-w-0">
@@ -341,7 +649,6 @@ const TVDisplay: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  // Render all slides in a stack — iframes stay mounted so PDFs never reload
                   <div className="h-full relative">
                     {slides.map((slide, i) => (
                       <motion.div
@@ -369,16 +676,19 @@ const TVDisplay: React.FC = () => {
                 )}
               </div>
 
-              {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-              <aside className={`w-96 shrink-0 border-l ${isLight ? "border-slate-200 bg-white/60" : "border-white/5"} flex flex-col overflow-hidden`}>
-
-                {/* Upcoming Events — only shown when there are events */}
+              {/* ── Sidebar ──────────────────────────────────────────────────── */}
+              <aside
+                className={`w-96 shrink-0 border-l ${isLight ? 'border-slate-200 bg-white/60' : 'border-white/5'} flex flex-col overflow-hidden`}
+              >
+                {/* Upcoming Events */}
                 {upcomingEvents.length > 0 && (
                   <>
                     <div className="flex-1 flex flex-col p-5 overflow-hidden min-h-0">
                       <div className="flex items-center gap-2 mb-4 shrink-0">
                         <CalendarDays className="h-3.5 w-3.5 text-purple-400" />
-                        <p className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-500">Upcoming Events</p>
+                        <p className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-500">
+                          Upcoming Events
+                        </p>
                       </div>
                       <div className="space-y-4 overflow-hidden">
                         {upcomingEvents.map((event, i) => {
@@ -386,40 +696,57 @@ const TVDisplay: React.FC = () => {
                           const tag = isToday(d) ? 'Today' : isTomorrow(d) ? 'Tomorrow' : null;
                           return (
                             <div key={event.id ?? i} className="flex items-center gap-3">
-                              {/* Date chip */}
                               <div className="shrink-0 w-10 text-center">
                                 {tag ? (
-                                  <div className="text-[0.6rem] font-black text-purple-400 uppercase leading-tight">{tag}</div>
+                                  <div className="text-[0.6rem] font-black text-purple-400 uppercase leading-tight">
+                                    {tag}
+                                  </div>
                                 ) : (
                                   <>
-                                    <div className="text-[0.55rem] font-black uppercase text-purple-400 leading-none">{format(d, 'MMM')}</div>
-                                    <div className={`text-lg font-black ${isLight ? "text-slate-800" : "text-white"} leading-none`}>{format(d, 'd')}</div>
+                                    <div className="text-[0.55rem] font-black uppercase text-purple-400 leading-none">
+                                      {format(d, 'MMM')}
+                                    </div>
+                                    <div
+                                      className={`text-lg font-black ${isLight ? 'text-slate-800' : 'text-white'} leading-none`}
+                                    >
+                                      {format(d, 'd')}
+                                    </div>
                                   </>
                                 )}
                               </div>
-                              <div className={`w-px h-8 ${isLight ? "bg-slate-200" : "bg-white/8"} shrink-0`} />
-                              <p className={`text-[0.78rem] ${isLight ? "text-slate-600" : "text-white/65"} leading-snug line-clamp-2 min-w-0`}>{event.title}</p>
+                              <div className={`w-px h-8 ${isLight ? 'bg-slate-200' : 'bg-white/8'} shrink-0`} />
+                              <p
+                                className={`text-[0.78rem] ${isLight ? 'text-slate-600' : 'text-white/65'} leading-snug line-clamp-2 min-w-0`}
+                              >
+                                {event.title}
+                              </p>
                             </div>
                           );
                         })}
                       </div>
                     </div>
-
-                    {/* Divider */}
-                    <div className={`h-px ${isLight ? "bg-slate-200" : "bg-white/5"} shrink-0`} />
+                    <div className={`h-px ${isLight ? 'bg-slate-200' : 'bg-white/5'} shrink-0`} />
                   </>
                 )}
 
-                {/* Student Spotlight — full height when no events, bottom half otherwise */}
+                {/* Student Spotlight — data from archived achievements */}
                 <div className="flex-1 flex flex-col p-5 overflow-hidden min-h-0">
                   <div className="flex items-center gap-2 mb-4 shrink-0">
-                    <Trophy className={cn("h-3.5 w-3.5 text-yellow-400", upcomingEvents.length === 0 && "h-4 w-4")} />
-                    <p className={cn(
-                      "font-black uppercase tracking-[0.3em] text-slate-500",
-                      upcomingEvents.length === 0 ? "text-[0.65rem]" : "text-[0.6rem]"
-                    )}>Student Spotlight</p>
+                    <Trophy
+                      className={cn('h-3.5 w-3.5 text-yellow-400', upcomingEvents.length === 0 && 'h-4 w-4')}
+                    />
+                    <p
+                      className={cn(
+                        'font-black uppercase tracking-[0.3em] text-slate-500',
+                        upcomingEvents.length === 0 ? 'text-[0.65rem]' : 'text-[0.6rem]'
+                      )}
+                    >
+                      Student Spotlight
+                    </p>
                     {upcomingEvents.length === 0 && (
-                      <span className="ml-auto text-[0.5rem] font-black uppercase tracking-widest text-yellow-500/50">Achievements</span>
+                      <span className="ml-auto text-[0.5rem] font-black uppercase tracking-widest text-yellow-500/50">
+                        Achievements
+                      </span>
                     )}
                   </div>
                   <AnimatePresence mode="wait">
@@ -430,38 +757,18 @@ const TVDisplay: React.FC = () => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -8 }}
                         transition={{ duration: 0.4 }}
-                        className="flex-1 flex flex-col min-h-0 gap-3"
+                        className="flex-1 flex flex-col min-h-0"
                       >
-                        {/* 1. Title — always first */}
-                        <p className={cn(
-                          `font-black ${isLight ? "text-slate-900" : "text-white"} leading-snug shrink-0`,
-                          upcomingEvents.length === 0 ? "text-xl" : "text-base line-clamp-2"
-                        )}>
-                          {spotlight.title}
-                        </p>
-
-                        {/* 2. Image */}
-                        {spotlight.imageUrl && (
-                          <div className={`w-full rounded-xl overflow-hidden shrink-0 border ${isLight ? "border-yellow-300" : "border-yellow-400/10"}`}
-                            style={{ aspectRatio: upcomingEvents.length === 0 ? '4/3' : '16/9' }}>
-                            <img
-                              src={spotlight.imageUrl}
-                              alt={spotlight.title}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        )}
-
-                        {/* 3. Description — auto-scrolling markdown */}
-                        {spotlight.description && (
-                          <div className="flex-1 min-h-0 overflow-hidden">
-                            <AutoScrollText
-                              content={spotlight.description}
-                              className={upcomingEvents.length === 0 ? `text-[0.82rem] ${isLight ? "text-yellow-800" : "text-yellow-100/70"}` : `text-[0.75rem] ${isLight ? "text-yellow-800" : "text-yellow-100/70"}`}
-                              speed={upcomingEvents.length === 0 ? 22 : 18}
-                            />
-                          </div>
-                        )}
+                        <AchievementSpotlightCard
+                          achievement={spotlight}
+                          isLight={isLight}
+                          titleClassName={upcomingEvents.length === 0 ? 'text-xl' : 'text-base line-clamp-2'}
+                          imageAspectRatio={upcomingEvents.length === 0 ? '4/3' : '16/9'}
+                          textClassName={`${upcomingEvents.length === 0 ? 'text-[0.82rem]' : 'text-[0.75rem]'
+                            } ${isLight ? 'text-yellow-800' : 'text-yellow-100/70'}`}
+                          scrollSpeed={upcomingEvents.length === 0 ? 22 : 18}
+                          className="flex-1 min-h-0"
+                        />
                       </motion.div>
                     ) : (
                       <motion.div
@@ -470,20 +777,25 @@ const TVDisplay: React.FC = () => {
                         animate={{ opacity: 1 }}
                         className="flex-1 flex flex-col justify-center min-h-0"
                       >
-                        <p className={cn(
-                          `${isLight ? "text-slate-500" : "text-slate-400"} leading-relaxed italic`,
-                          upcomingEvents.length === 0 ? "text-[0.9rem]" : "text-[0.78rem]"
-                        )}>
+                        <p
+                          className={cn(
+                            `${isLight ? 'text-slate-500' : 'text-slate-400'} leading-relaxed italic`,
+                            upcomingEvents.length === 0 ? 'text-[0.9rem]' : 'text-[0.78rem]'
+                          )}
+                        >
                           &ldquo;{quoteText}&rdquo;
                         </p>
                         {quoteAuthor && (
-                          <p className={`text-[0.65rem] ${isLight ? "text-slate-400" : "text-slate-500"} font-bold mt-2`}>&mdash; {quoteAuthor}</p>
+                          <p
+                            className={`text-[0.65rem] ${isLight ? 'text-slate-400' : 'text-slate-500'} font-bold mt-2`}
+                          >
+                            &mdash; {quoteAuthor}
+                          </p>
                         )}
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
-
               </aside>
             </div>
           </motion.div>
@@ -491,8 +803,10 @@ const TVDisplay: React.FC = () => {
       </AnimatePresence>
 
       {/* ── Progress bar — single-view only (above ticker) ───────────────── */}
-      {activeMode === 'single' && (
-        <div className={`h-[3px] ${isLight ? "bg-slate-200" : "bg-white/5"} shrink-0 relative overflow-hidden`}>
+      {activeMode === 'single' && !showingAchievementsFull && (
+        <div
+          className={`h-[3px] ${isLight ? 'bg-slate-200' : 'bg-white/5'} shrink-0 relative overflow-hidden`}
+        >
           <motion.div
             key={`${progressKey}-${currentIndex}`}
             className="absolute inset-y-0 left-0 bg-primary"
@@ -503,53 +817,72 @@ const TVDisplay: React.FC = () => {
         </div>
       )}
 
+      {/* ── Achievement auto-loop progress bar (no-notices mode) ────────── */}
+      {showingAchievementsFull && archivedAchievements.length > 0 && achTotalPages > 1 && (
+        <div
+          className={`h-[3px] ${isLight ? 'bg-slate-200' : 'bg-white/5'} shrink-0 relative overflow-hidden`}
+        >
+          <motion.div
+            key={`ach-prog-${achPage}`}
+            className="absolute inset-y-0 left-0 bg-yellow-400"
+            initial={{ width: '100%' }}
+            animate={{ width: '0%' }}
+            transition={{ duration: 12, ease: 'linear' }}
+          />
+        </div>
+      )}
+
       {/* ── Auto-switch progress bar (mode-level, shown in auto mode) ────── */}
-      {settings.displayMode === 'auto' && (
-        <div className={`h-[2px] ${isLight ? "bg-slate-200" : "bg-white/5"} shrink-0 relative overflow-hidden`}>
+      {settings.displayMode === 'auto' && !showingAchievementsFull && (
+        <div
+          className={`h-[2px] ${isLight ? 'bg-slate-200' : 'bg-white/5'} shrink-0 relative overflow-hidden`}
+        >
           <motion.div
             key={`auto-${activeMode}`}
-            className={cn("absolute inset-y-0 left-0",
+            className={cn(
+              'absolute inset-y-0 left-0',
               activeMode === 'single' ? 'bg-primary/50' : 'bg-purple-500/50'
             )}
             initial={{ width: '100%' }}
             animate={{ width: '0%' }}
             transition={{
-              duration: activeMode === 'single' ? settings.autoSingleDuration : settings.autoMultiDuration,
+              duration:
+                activeMode === 'single'
+                  ? settings.autoSingleDuration
+                  : settings.autoMultiDuration,
               ease: 'linear',
             }}
           />
         </div>
       )}
 
-      {/* ── Ticker ──────────────────────────────────────────────────────── */}
-      {displayItems.length > 0 && (
-        <footer className={`shrink-0 h-9 flex items-center overflow-hidden ${isLight ? "bg-slate-100 border-t border-slate-200" : "bg-black/20"}`}>
-          <div className="shrink-0 h-full px-5 flex items-center bg-primary text-white font-black uppercase tracking-widest text-[0.6rem]">
-            Notice Board
-          </div>
-          <div className="flex-1 overflow-hidden relative">
-            <motion.div
-              className="flex items-center whitespace-nowrap"
-              animate={{ x: ['0%', '-50%'] }}
-              transition={{ duration: 80, repeat: Infinity, ease: 'linear' }}
-            >
-              {[...displayItems, ...displayItems].map((item, i) => {
-                const cfg = categoryConfig[item.category] ?? categoryConfig.other;
-                return (
-                  <span key={i} className="inline-flex items-center gap-2 px-7">
-                    <span
-                      className="w-1.5 h-1.5 rounded-full shrink-0"
-                      style={{ backgroundColor: cfg.accent }}
-                    />
-                    <span className={`text-[0.78rem] font-medium ${isLight ? "text-slate-600" : "text-white/50"}`}>{item.title}</span>
-                  </span>
-                );
-              })}
-            </motion.div>
-          </div>
-        </footer>
-      )}
-
+      {/* ── Ticker — Always shows "Thought of the Day" ──────────────────── */}
+      <footer
+        className={`shrink-0 h-9 flex items-center overflow-hidden ${isLight ? 'bg-slate-100 border-t border-slate-200' : 'bg-black/20'}`}
+      >
+        <div className="shrink-0 h-full px-5 flex items-center bg-primary text-white font-black uppercase tracking-widest text-[0.6rem]">
+          Thought of the Day
+        </div>
+        <div className="flex-1 overflow-hidden relative">
+          <motion.div
+            className="flex items-center whitespace-nowrap"
+            animate={{ x: ['0%', '-50%'] }}
+            transition={{ duration: 80, repeat: Infinity, ease: 'linear' }}
+          >
+            {[0, 1].map((dup) => (
+              <span key={dup} className="inline-flex items-center gap-3 px-7">
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: '#facc15' }}
+                />
+                <span className={`text-[0.78rem] font-medium ${isLight ? 'text-slate-600' : 'text-white/50'}`}>
+                  &ldquo;{quoteText}&rdquo;{quoteAuthor ? ` — ${quoteAuthor}` : ''}
+                </span>
+              </span>
+            ))}
+          </motion.div>
+        </div>
+      </footer>
     </div>
   );
 };
