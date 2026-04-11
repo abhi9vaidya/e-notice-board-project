@@ -206,4 +206,4 @@ firebase deploy --only hosting
 | Kartik Suchak | Testing and documentation |
 
 Institution: Shri Ramdeobaba College of Engineering and Management, Nagpur  
-Course: B.Tech CSE, 6th Semester Project (2026)
+Course: B.Tech CSE, 6th Semester Project (2026).
