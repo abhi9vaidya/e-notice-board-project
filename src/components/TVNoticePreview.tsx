@@ -18,11 +18,13 @@ import { QRCodeSVG } from 'qrcode.react';
 /** True when the URL points to a PDF document. */
 export const isPdfUrl = (url: string) => {
     const u = url.toLowerCase();
-    // Google Drive returns "uc?export=view&id=..." for images, but because we specify MIME types 
-    // when uploading, Drive knows it's a PDF. We have to assume anything that's a direct Drive 
-    // link could be a PDF if it doesn't explicitly look like a known image.
-    // To be safe, any Drive link will trigger the thumbnail API anyway, which handles both safely.
-    return u.includes('.pdf') || u.includes('export=download') || u.includes('export=view');
+    return (
+        u.includes('.pdf') ||
+        u.includes('/raw/upload/') ||
+        u.includes('mime=application/pdf') ||
+        u.includes('content-type=application/pdf') ||
+        u.includes('export=download')
+    );
 };
 
 /**
@@ -146,10 +148,10 @@ interface TVNoticePreviewProps {
 }
 
 const DEFAULT_CUSTOM_LAYOUT: CustomLayoutConfig = {
-    title: { x: 5, y: 7, w: 58, h: 20 },
-    description: { x: 5, y: 30, w: 58, h: 52 },
-    media: { x: 66, y: 7, w: 29, h: 56 },
-    qr: { x: 72, y: 66, w: 18, h: 26 },
+    title: { x: 5, y: 7, w: 54, h: 18 },
+    description: { x: 5, y: 29, w: 54, h: 54 },
+    media: { x: 63, y: 10, w: 30, h: 46 },
+    qr: { x: 74, y: 62, w: 14, h: 20 },
     titleSize: 62,
     descriptionSize: 30,
     showMedia: true,
@@ -171,26 +173,37 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
     const template: Template = rawTemplate === 'featured' ? 'standard' : rawTemplate;
     const placement = notice.templatePlacement || 'left';
 
-    // Adaptive title font size — shrinks for longer titles so description stays visible
-    const titleLen = (notice.title || '').length;
-    const titleSize =
-        titleLen > 100 ? 'text-[2.6rem]' :
-            titleLen > 70 ? 'text-[3.2rem]' :
-                titleLen > 45 ? 'text-[4rem]' :
-                    'text-[5.5rem]';
+    // Per-notice text scale factor (0.8 - 1.5, default 1.0)
+    const scale = notice.textScale ?? 1.0;
 
-    const header = (
-        <div className="flex items-center gap-6 mb-8 shrink-0">
+    // ── Adaptive title font size ────────────────────────────────────────
+    const titleLen = (notice.title || '').length;
+    const baseTitleRem =
+        titleLen > 100 ? 2.4 :
+            titleLen > 70 ? 2.8 :
+                titleLen > 45 ? 3.4 :
+                    4.2;
+    const scaledTitle = baseTitleRem * scale;
+    const titleStyle: React.CSSProperties = { fontSize: `clamp(1rem, ${(scaledTitle / 19.2).toFixed(2)}vw, ${scaledTitle.toFixed(2)}rem)` };
+
+    // ── Description font size ───────────────────────────────────────────
+    const baseDescRem = 1.35;
+    const scaledDesc = baseDescRem * scale;
+    const descStyle: React.CSSProperties = { fontSize: `clamp(0.75rem, ${(scaledDesc / 19.2).toFixed(2)}vw, ${scaledDesc.toFixed(2)}rem)` };
+
+    // Badges moved to footer
+    const badges = (
+        <div className="flex items-center gap-2 xl:gap-3 shrink-0">
             <div
-                className="flex items-center gap-3 px-6 py-2 rounded-full text-white font-bold text-lg"
+                className="flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-full text-white font-bold text-xs sm:text-sm"
                 style={{ backgroundColor: config.accent }}
             >
-                <CategoryIcon className="h-6 w-6" />
+                <CategoryIcon className="h-3.5 w-3.5 xl:h-5 xl:w-5" />
                 {notice.customCategory || config.label}
             </div>
             {notice.priority === 'high' && (
-                <div className="flex items-center gap-2 px-6 py-2 rounded-full font-black text-rose-500 border-2 border-rose-500">
-                    <Zap className="h-6 w-6 fill-rose-500" />
+                <div className="flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-full font-black text-rose-500 border-2 border-rose-500 text-xs sm:text-sm">
+                    <Zap className="h-3.5 w-3.5 xl:h-5 xl:w-5 fill-rose-500" />
                     URGENT
                 </div>
             )}
@@ -202,40 +215,34 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
     const hasFooter = showIssuedBy || showValidTill;
     const regUrl = notice.registrationUrl;
 
-    const qrBlock = regUrl ? (
-        <div className="flex flex-col items-center gap-2 shrink-0">
-            <div className="rounded-xl bg-white p-3 shadow-2xl">
-                <QRCodeSVG value={regUrl} size={160} includeMargin={false} />
+    // Always render footer now since it holds badges
+    const footer = (
+        <div className={`mt-auto pt-3 sm:pt-4 xl:pt-6 border-t ${isLight ? 'border-slate-200' : 'border-white/5'} flex flex-col sm:flex-row sm:items-center justify-between shrink-0 gap-3 sm:gap-0`}>
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6 xl:gap-8">
+                {showIssuedBy && (
+                    <div className="flex items-center gap-2 sm:gap-3 xl:gap-4">
+                        <div className={`w-8 h-8 sm:w-10 sm:h-10 xl:w-12 xl:h-12 rounded-full ${isLight ? 'bg-slate-100' : 'bg-white/5'} flex items-center justify-center`}>
+                            <User className="h-4 w-4 sm:h-5 sm:w-5 xl:h-6 xl:w-6 text-slate-400" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] sm:text-xs uppercase tracking-[0.2em] font-bold text-slate-500">Issued By</p>
+                            <p className={`text-sm sm:text-base xl:text-xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>{notice.facultyName || 'Faculty Name'}</p>
+                        </div>
+                    </div>
+                )}
+                <div className={showIssuedBy ? "hidden sm:block w-px h-8 bg-white/10" : "hidden"} />
+                {badges}
             </div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">
-                Scan to Register
-            </p>
-        </div>
-    ) : null;
-
-    const footer = hasFooter ? (
-        <div className={`mt-auto pt-8 border-t ${isLight ? 'border-slate-200' : 'border-white/5'} flex items-center justify-between shrink-0`}>
-            {showIssuedBy ? (
-                <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-full ${isLight ? 'bg-slate-100' : 'bg-white/5'} flex items-center justify-center`}>
-                        <User className="h-6 w-6 text-slate-400" />
-                    </div>
-                    <div>
-                        <p className="text-xs uppercase tracking-[0.2em] font-bold text-slate-500">Issued By</p>
-                        <p className={`text-xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>{notice.facultyName || 'Faculty Name'}</p>
-                    </div>
-                </div>
-            ) : <div />}
-            {showValidTill ? (
-                <div className="text-right">
-                    <p className="text-xs uppercase tracking-[0.2em] font-bold text-slate-500">Valid Till</p>
-                    <p className={`text-xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>
-                        {notice.endTime ? format(new Date(notice.endTime), 'dd MMM yyyy') : 'DD MMM YYYY'}
+            {showValidTill && notice.endTime ? (
+                <div className="text-left sm:text-right">
+                    <p className="text-[10px] sm:text-xs uppercase tracking-[0.2em] font-bold text-slate-500">Valid Till</p>
+                    <p className={`text-sm sm:text-base xl:text-xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>
+                        {format(new Date(notice.endTime), 'dd MMM yyyy')}
                     </p>
                 </div>
             ) : <div />}
         </div>
-    ) : null;
+    );
 
     const containerClass = cn(
         "h-full w-full font-sans",
@@ -247,61 +254,76 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
     if (category === 'achievements') {
         return (
             <div className={containerClass}>
-                <div className="h-full rounded-[2.5rem] relative overflow-hidden border border-yellow-400/20"
+                <div className="h-full rounded-xl sm:rounded-2xl xl:rounded-[2.5rem] relative overflow-hidden border border-yellow-400/20"
                     style={{ background: 'linear-gradient(135deg, #1a1200 0%, #0f0a00 60%, #12100a 100%)' }}>
                     {/* Radial glow top-center */}
                     <div className="absolute inset-0 pointer-events-none"
                         style={{ background: 'radial-gradient(ellipse 70% 55% at 40% 40%, rgba(250,204,21,0.1) 0%, transparent 70%)' }} />
                     {/* Trophy watermark — centered right half */}
-                    <Trophy className="absolute right-20 top-1/2 -translate-y-1/2 h-[26rem] w-[26rem] text-yellow-400/[0.07] pointer-events-none select-none" />
-                    <div className="relative z-10 h-full flex flex-col p-10">
+                    <Trophy className="absolute right-4 sm:right-10 xl:right-20 top-1/2 -translate-y-1/2 h-32 sm:h-52 xl:h-[26rem] w-32 sm:w-52 xl:w-[26rem] text-yellow-400/[0.07] pointer-events-none select-none" />
+                    <div className="relative z-10 h-full flex flex-col p-4 sm:p-6 xl:p-10">
                         {/* Top badge */}
-                        <div className="flex items-center gap-4 shrink-0 mb-10">
-                            <div className="flex items-center gap-2.5 px-5 py-2 rounded-full border border-yellow-400/30 bg-yellow-400/10">
-                                <Trophy className="h-5 w-5 text-yellow-400" />
-                                <span className="text-yellow-400 font-black uppercase tracking-widest text-sm">Achievement</span>
+                        <div className="flex items-center gap-2 sm:gap-3 xl:gap-4 shrink-0 mb-4 sm:mb-6 xl:mb-10">
+                            <div className="flex items-center gap-1.5 sm:gap-2 xl:gap-2.5 px-3 sm:px-4 xl:px-5 py-1 sm:py-1.5 xl:py-2 rounded-full border border-yellow-400/30 bg-yellow-400/10">
+                                <Trophy className="h-3.5 w-3.5 sm:h-4 sm:w-4 xl:h-5 xl:w-5 text-yellow-400" />
+                                <span className="text-yellow-400 font-black uppercase tracking-widest text-[10px] sm:text-xs xl:text-sm">Achievement</span>
                             </div>
                         </div>
                         {/* Main content — takes remaining space */}
-                        <div className="flex-1 flex flex-col justify-center min-h-0">
-                            <h1 className="text-[5.5rem] font-black text-white leading-[1.0] tracking-tight mb-5"
-                                style={{ textShadow: '0 0 80px rgba(250,204,21,0.2)' }}>
+                        <div className="flex-1 flex min-h-0 flex-col gap-4 xl:flex-row xl:items-center xl:gap-8">
+                            <div className="flex-1 flex flex-col justify-center min-h-0">
+                            <h1 className="font-black text-white leading-[1.0] tracking-tight mb-2 sm:mb-3 xl:mb-5"
+                                style={{ ...titleStyle, textShadow: '0 0 80px rgba(250,204,21,0.2)' }}>
                                 {notice.title || 'Achievement'}
                             </h1>
-                            <div className="w-20 h-[3px] rounded-full bg-yellow-400/60 mb-6" />
+                            <div className="w-10 sm:w-14 xl:w-20 h-[2px] xl:h-[3px] rounded-full bg-yellow-400/60 mb-3 sm:mb-4 xl:mb-6" />
                             {notice.description && (
-                                <div className="overflow-hidden max-h-40 relative">
+                                <div className="overflow-hidden max-h-20 sm:max-h-28 xl:max-h-40 relative">
                                     <AutoScrollText
-                                        className="text-[1.6rem] text-yellow-100/80 leading-relaxed font-medium"
+                                        className="text-yellow-100/80 leading-relaxed font-medium"
                                         content={notice.description}
+                                        style={descStyle}
+                                    />
+                                </div>
+                            )}
+                            </div>
+                            {notice.imageUrl && (
+                                <div className="w-full shrink-0 overflow-hidden rounded-[1.75rem] border border-yellow-400/20 shadow-[0_20px_60px_rgba(0,0,0,0.28)] xl:w-[34%]"
+                                    style={{ aspectRatio: '4 / 5' }}>
+                                    <MediaPanel
+                                        imageUrl={notice.imageUrl}
+                                        className="h-full w-full bg-[#120c02]"
+                                        fit="cover"
                                     />
                                 </div>
                             )}
                         </div>
                         {/* Footer */}
-                        <div className="flex items-center justify-between shrink-0 pt-6 border-t border-yellow-400/10">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-yellow-400/10 flex items-center justify-center">
-                                    <User className="h-5 w-5 text-yellow-400/60" />
+                        <div className="flex items-end justify-between gap-4 shrink-0 pt-3 sm:pt-4 xl:pt-6 border-t border-yellow-400/10">
+                            <div className="flex items-center gap-2 sm:gap-2.5 xl:gap-3 min-w-0">
+                                <div className="w-7 h-7 sm:w-8 sm:h-8 xl:w-10 xl:h-10 rounded-full bg-yellow-400/10 flex items-center justify-center">
+                                    <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 xl:h-5 xl:w-5 text-yellow-400/60" />
                                 </div>
-                                <div>
-                                    <p className="text-xs uppercase tracking-widest font-bold text-yellow-400/40">Issued By</p>
-                                    <p className="text-lg font-bold text-white/80">{notice.facultyName || 'Faculty'}</p>
+                                <div className="min-w-0">
+                                    <p className="text-[9px] sm:text-[10px] xl:text-xs uppercase tracking-widest font-bold text-yellow-400/40">Issued By</p>
+                                    <p className="text-sm sm:text-base xl:text-lg font-bold text-white/80 truncate">{notice.facultyName || 'Faculty'}</p>
                                 </div>
                             </div>
-                            {regUrl && (
-                                <div className="flex flex-col items-center gap-1">
-                                    <div className="rounded-lg bg-white p-2 shadow-2xl">
-                                        <QRCodeSVG value={regUrl} size={100} includeMargin={false} />
+                            <div className="flex items-end gap-4">
+                                {notice.endTime && (
+                                    <p className="text-xs sm:text-sm font-bold text-yellow-400/40 uppercase tracking-widest whitespace-nowrap">
+                                        {format(new Date(notice.endTime), 'dd MMM yyyy')}
+                                    </p>
+                                )}
+                                {regUrl && (
+                                    <div className="flex flex-col items-center gap-1 shrink-0">
+                                        <div className="rounded-lg bg-white p-1.5 sm:p-2 shadow-2xl">
+                                            <QRCodeSVG value={regUrl} size={100} includeMargin={false} />
+                                        </div>
+                                        <p className="text-[8px] sm:text-[9px] xl:text-[10px] font-black uppercase tracking-wider text-yellow-400/60">Scan to Register</p>
                                     </div>
-                                    <p className="text-[10px] font-black uppercase tracking-wider text-yellow-400/60">Scan to Register</p>
-                                </div>
-                            )}
-                            {notice.endTime && (
-                                <p className="text-sm font-bold text-yellow-400/40 uppercase tracking-widest">
-                                    {format(new Date(notice.endTime), 'dd MMM yyyy')}
-                                </p>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -319,14 +341,16 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                     <div className="h-full flex gap-8">
                         {/* Text side — takes remaining width */}
                         <div className={cn("flex-1 flex flex-col h-full py-6 min-h-0", isRight && "order-2")}>
-                            {header}
-                            <h1 className={cn(`font-bold ${isLight ? 'text-slate-900' : 'text-white'} leading-[1] tracking-tight mb-8 shrink-0 line-clamp-3`, titleSize)}>
+
+                            <h1 className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'} leading-[1] tracking-tight mb-3 xl:mb-5 shrink-0 line-clamp-3`}
+                                style={titleStyle}>
                                 {notice.title || 'Notice Title'}
                             </h1>
                             <div className="flex-1 overflow-hidden min-h-0 relative">
                                 <AutoScrollText
-                                    className={`text-3xl ${isLight ? 'text-slate-600' : 'text-slate-400'} leading-relaxed`}
+                                    className={`${isLight ? 'text-slate-600' : 'text-slate-400'} leading-relaxed`}
                                     content={notice.description || 'Notice description goes here.'}
+                                    style={descStyle}
                                 />
                             </div>
                             {footer}
@@ -368,36 +392,38 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                         {notice.showTextOverlay !== false && (
                             <>
                                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-                                <div className="absolute inset-x-0 bottom-0 p-14 flex flex-col items-start">
-                                    <div className="px-6 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white font-bold mb-8">
+                                <div className="absolute inset-x-0 bottom-0 p-4 sm:p-8 xl:p-14 flex flex-col items-start">
+                                    <div className="px-3 sm:px-4 xl:px-6 py-1 sm:py-1.5 xl:py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white font-bold text-xs sm:text-sm xl:text-base mb-3 sm:mb-5 xl:mb-8">
                                         {notice.customCategory || config.label}
                                     </div>
-                                    <h1 className={cn('font-bold text-white leading-tight mb-6 drop-shadow-xl line-clamp-3', titleSize)}>
+                                    <h1 className={`font-bold text-white leading-tight mb-2 xl:mb-4 drop-shadow-xl line-clamp-3`}
+                                        style={titleStyle}>
                                         {notice.title || 'Notice Title'}
                                     </h1>
-                                    <div className="max-h-48 overflow-hidden w-full relative">
+                                    <div className="max-h-20 sm:max-h-32 xl:max-h-48 overflow-hidden w-full relative">
                                         <AutoScrollText
-                                            className="text-3xl text-slate-200 leading-relaxed max-w-4xl drop-shadow-lg"
+                                            className="text-slate-200 leading-relaxed max-w-4xl drop-shadow-lg"
                                             content={notice.description || 'Notice description goes here...'}
+                                            style={descStyle}
                                         />
                                     </div>
-                                    <div className="mt-12 flex items-center gap-10 w-full justify-between">
-                                        <div className="flex items-center gap-10">
-                                            <div className="flex items-center gap-3">
-                                                <User className="h-6 w-6 text-white/60" />
-                                                <span className="text-2xl font-bold text-white">{notice.facultyName || 'Faculty Name'}</span>
+                                    <div className="mt-4 sm:mt-8 xl:mt-12 flex items-center gap-4 sm:gap-6 xl:gap-10 w-full justify-between">
+                                        <div className="flex items-center gap-3 sm:gap-6 xl:gap-10">
+                                            <div className="flex items-center gap-2 sm:gap-2.5 xl:gap-3">
+                                                <User className="h-4 w-4 sm:h-5 sm:w-5 xl:h-6 xl:w-6 text-white/60" />
+                                                <span className="text-sm sm:text-lg xl:text-2xl font-bold text-white">{notice.facultyName || 'Faculty Name'}</span>
                                             </div>
-                                            <div className="w-2 h-2 rounded-full bg-white/20" />
-                                            <span className="text-2xl font-bold text-white/80">
+                                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white/20" />
+                                            <span className="text-sm sm:text-lg xl:text-2xl font-bold text-white/80">
                                                 {notice.endTime ? format(new Date(notice.endTime), 'dd MMMM') : 'DD MMMM'}
                                             </span>
                                         </div>
                                         {regUrl && (
                                             <div className="flex flex-col items-center gap-1">
-                                                <div className="rounded-lg bg-white p-2 shadow-2xl">
+                                                <div className="rounded-lg bg-white p-1.5 sm:p-2 shadow-2xl">
                                                     <QRCodeSVG value={regUrl} size={110} includeMargin={false} />
                                                 </div>
-                                                <p className="text-[11px] font-black uppercase tracking-wider text-white/70">Scan to Register</p>
+                                                <p className="text-[9px] sm:text-[10px] xl:text-[11px] font-black uppercase tracking-wider text-white/70">Scan to Register</p>
                                             </div>
                                         )}
                                     </div>
@@ -411,29 +437,31 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
         case 'text-only':
             return (
                 <div className={containerClass}>
-                    <div className="h-full flex flex-col items-center justify-center text-center max-w-6xl mx-auto py-10">
-                        {header}
-                        <h1 className={cn(`font-bold ${isLight ? 'text-slate-900' : 'text-white'} leading-[1] tracking-tight mb-10 shrink-0 line-clamp-3`, titleSize)}>
+                    <div className="h-full flex flex-col items-center justify-center text-center max-w-6xl mx-auto py-4 sm:py-6 xl:py-10">
+
+                        <h1 className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'} leading-[1] tracking-tight mb-4 sm:mb-6 xl:mb-10 shrink-0 line-clamp-3`}
+                            style={titleStyle}>
                             {notice.title || 'Notice Title'}
                         </h1>
-                        <div className="w-32 h-1 mb-12 shrink-0" style={{ backgroundColor: config.accent }} />
+                        <div className="w-16 sm:w-24 xl:w-32 h-0.5 xl:h-1 mb-4 sm:mb-8 xl:mb-12 shrink-0" style={{ backgroundColor: config.accent }} />
                         <div className="w-full flex-1 min-h-0 max-w-5xl overflow-hidden relative">
                             <AutoScrollText
-                                className={`text-[2.25rem] ${isLight ? 'text-slate-600' : 'text-slate-400'} leading-[1.4] mx-auto text-center`}
+                                className={`${isLight ? 'text-slate-600' : 'text-slate-400'} leading-[1.4] mx-auto text-center`}
                                 content={notice.description || 'Notice description goes here in large text...'}
+                                style={descStyle}
                             />
                         </div>
-                        <div className={`mt-20 flex items-center gap-16 ${isLight ? 'text-slate-500' : 'text-slate-500'} font-bold uppercase tracking-[0.2em] text-lg shrink-0`}>
+                        <div className={`mt-6 sm:mt-10 xl:mt-20 flex items-center gap-4 sm:gap-8 xl:gap-16 ${isLight ? 'text-slate-500' : 'text-slate-500'} font-bold uppercase tracking-[0.2em] text-xs sm:text-sm xl:text-lg shrink-0`}>
                             <span>{notice.facultyName || 'Faculty Name'}</span>
-                            <div className={`w-2 h-2 rounded-full ${isLight ? 'bg-slate-300' : 'bg-white/10'}`} />
+                            <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isLight ? 'bg-slate-300' : 'bg-white/10'}`} />
                             <span>{notice.endTime ? format(new Date(notice.endTime), 'dd MMM yyyy') : 'DD MMM YYYY'}</span>
                         </div>
                         {regUrl && (
-                            <div className="mt-8 flex flex-col items-center gap-2 shrink-0">
-                                <div className="rounded-xl bg-white p-3 shadow-2xl">
+                            <div className="mt-4 sm:mt-6 xl:mt-8 flex flex-col items-center gap-1.5 sm:gap-2 shrink-0">
+                                <div className="rounded-xl bg-white p-2 sm:p-3 shadow-2xl">
                                     <QRCodeSVG value={regUrl} size={140} includeMargin={false} />
                                 </div>
-                                <p className="text-sm font-black uppercase tracking-[0.2em] text-primary">Scan to Register</p>
+                                <p className="text-xs sm:text-sm font-black uppercase tracking-[0.2em] text-primary">Scan to Register</p>
                             </div>
                         )}
                     </div>
@@ -502,37 +530,39 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
         case 'featured':
             return (
                 <div className={containerClass}>
-                    <div className={`h-full ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-white/5 border-white/10'} rounded-[3rem] border p-14 relative overflow-hidden text-left`}>
-                        <div className="absolute top-0 right-0 p-10">
-                            <Trophy className="h-40 w-40 text-white/5 -rotate-12" />
+                    <div className={`h-full ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-white/5 border-white/10'} rounded-xl sm:rounded-2xl xl:rounded-[3rem] border p-4 sm:p-8 xl:p-14 relative overflow-hidden text-left`}>
+                        <div className="absolute top-0 right-0 p-4 sm:p-6 xl:p-10">
+                            <Trophy className="h-20 w-20 sm:h-28 sm:w-28 xl:h-40 xl:w-40 text-white/5 -rotate-12" />
                         </div>
                         <div className="relative z-10 h-full flex flex-col">
-                            <div className="text-primary font-black uppercase tracking-[0.4em] mb-4 shrink-0">Featured Update</div>
-                            <h1 className={cn(`font-bold ${isLight ? 'text-slate-900' : 'text-white'} mb-10 leading-tight shrink-0 line-clamp-3`, titleSize)}>
+                            <div className="text-primary font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-xs sm:text-sm xl:text-base mb-2 sm:mb-3 xl:mb-4 shrink-0">Featured Update</div>
+                            <h1 className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'} mb-4 sm:mb-6 xl:mb-10 leading-tight shrink-0 line-clamp-3`}
+                                style={titleStyle}>
                                 {notice.title || 'Notice Title'}
                             </h1>
-                            <div className="flex-1 overflow-hidden pr-10 min-h-0 relative">
+                            <div className="flex-1 overflow-hidden pr-2 sm:pr-5 xl:pr-10 min-h-0 relative">
                                 <AutoScrollText
-                                    className={`text-4xl ${isLight ? 'text-slate-600' : 'text-slate-300'} leading-relaxed`}
+                                    className={`${isLight ? 'text-slate-600' : 'text-slate-300'} leading-relaxed`}
                                     content={notice.description || 'Notice description goes here...'}
+                                    style={descStyle}
                                 />
                             </div>
-                            <div className="mt-12 flex items-center gap-10">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg text-black">
-                                        <User className="h-8 w-8" />
+                            <div className="mt-4 sm:mt-8 xl:mt-12 flex items-center gap-4 sm:gap-6 xl:gap-10">
+                                <div className="flex items-center gap-2 sm:gap-3 xl:gap-4">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 xl:w-14 xl:h-14 rounded-xl xl:rounded-2xl bg-primary flex items-center justify-center shadow-lg text-black">
+                                        <User className="h-4 w-4 sm:h-5 sm:w-5 xl:h-8 xl:w-8" />
                                     </div>
                                     <div>
-                                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Authorized By</p>
-                                        <p className={`text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>{notice.facultyName || 'Faculty Name'}</p>
+                                        <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest">Authorized By</p>
+                                        <p className={`text-sm sm:text-lg xl:text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>{notice.facultyName || 'Faculty Name'}</p>
                                     </div>
                                 </div>
                                 {regUrl && (
                                     <div className="ml-auto flex flex-col items-center gap-1">
-                                        <div className="rounded-xl bg-white p-2.5 shadow-2xl">
+                                        <div className="rounded-xl bg-white p-1.5 sm:p-2 xl:p-2.5 shadow-2xl">
                                             <QRCodeSVG value={regUrl} size={120} includeMargin={false} />
                                         </div>
-                                        <p className="text-[11px] font-black uppercase tracking-wider text-primary">Scan to Register</p>
+                                        <p className="text-[9px] sm:text-[10px] xl:text-[11px] font-black uppercase tracking-wider text-primary">Scan to Register</p>
                                     </div>
                                 )}
                             </div>
@@ -544,8 +574,6 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
         default: {
             const isStandardRight = placement === 'right';
             const hasMedia = !!(notice.imageUrl || notice.documentUrl);
-            // When a QR exists and no media: right panel is the QR block.
-            // When both exist: show media on right, QR tucked below it.
             const rightPanel = regUrl ? (
                 <div className={cn(
                     'shrink-0 self-stretch flex flex-col items-center justify-center gap-5 py-8 px-6',
@@ -578,16 +606,18 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
             return (
                 <div className={containerClass}>
                     <div className="h-full flex flex-col py-6 text-left">
-                        {header}
+
                         <div className={cn('flex-1 min-h-0 flex items-start gap-12', isStandardRight && 'flex-row-reverse')}>
                             <div className="flex-1 flex flex-col min-h-0 h-full justify-center">
-                                <h1 className={cn(`font-bold ${isLight ? 'text-slate-900' : 'text-white'} leading-[1] tracking-tight mb-8 shrink-0 line-clamp-3`, titleSize)}>
+                                <h1 className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'} leading-[1] tracking-tight mb-3 xl:mb-5 shrink-0 line-clamp-3`}
+                                    style={titleStyle}>
                                     {notice.title || 'Notice Title'}
                                 </h1>
                                 <div className="flex-1 min-h-0 overflow-hidden relative">
                                     <AutoScrollText
-                                        className={`text-3xl ${isLight ? 'text-slate-600' : 'text-slate-400'} leading-relaxed`}
+                                        className={`${isLight ? 'text-slate-600' : 'text-slate-400'} leading-relaxed`}
                                         content={notice.description || 'Notice description goes here...'}
+                                        style={descStyle}
                                     />
                                 </div>
                             </div>

@@ -154,6 +154,7 @@ const ManageNoticesPage: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/20">
@@ -164,9 +165,9 @@ const ManageNoticesPage: React.FC = () => {
                     </div>
                   </TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead>Start Date</TableHead>
-                  <TableHead>Expiry Date</TableHead>
-                  <TableHead>Priority</TableHead>
+                  <TableHead className="hidden md:table-cell">Start Date</TableHead>
+                  <TableHead className="hidden md:table-cell">Expiry Date</TableHead>
+                  <TableHead className="hidden sm:table-cell">Priority</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -199,13 +200,13 @@ const ManageNoticesPage: React.FC = () => {
                         </div>
                       </TableCell>
                       <TableCell>{getCategoryBadge(notice.category)}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
                         {format(new Date(notice.startTime), "MMM dd, yyyy")}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
                         {format(new Date(notice.endTime), "MMM dd, yyyy")}
                       </TableCell>
-                      <TableCell>{getPriorityBadge(notice.priority)}</TableCell>
+                      <TableCell className="hidden sm:table-cell">{getPriorityBadge(notice.priority)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Button
@@ -252,6 +253,7 @@ const ManageNoticesPage: React.FC = () => {
                 )}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       </div>

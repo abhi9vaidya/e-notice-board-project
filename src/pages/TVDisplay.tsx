@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useActiveNotices } from '@/hooks/useFirebaseNotices';
 import { useArchive } from '@/hooks/useArchive';
@@ -11,12 +11,18 @@ import { TVMultiView } from '@/components/TVMultiView';
 import { getDailyQuote } from '@/data/spiritualQuotes';
 import { categoryConfig } from '@/config/categoryConfig';
 import { cn } from '@/lib/utils';
-import { useTVDisplaySettings } from '@/hooks/useTVDisplaySettings';
+import { useTVDisplaySettings, type TVDisplayMode } from '@/hooks/useTVDisplaySettings';
 import type { Notice } from '@/integrations/firebase/types';
 
 type Slide =
   | { type: 'single'; notice: Notice }
   | { type: 'double'; notices: [Notice, Notice] };
+
+const resolveTVMode = (displayMode: TVDisplayMode, autoStartMode: 'single' | 'multi') => {
+  if (displayMode === 'multi') return 'multi';
+  if (displayMode === 'auto') return autoStartMode;
+  return 'single';
+};
 
 /* ────────────────────────────────────────────────────────────────────────────
  * AchievementSpotlightCard
@@ -179,10 +185,9 @@ const TVDisplay: React.FC = () => {
   const { notices: activeNotices, loading: noticesLoading } = useActiveNotices();
   const { archivedNotices } = useArchive();
   const { settings } = useTVDisplaySettings();
-
   // ─── Active display mode (single | multi) ─────────────────────────────────
   const [activeMode, setActiveMode] = useState<'single' | 'multi'>(
-    settings.displayMode === 'multi' ? 'multi' : 'single'
+    resolveTVMode(settings.displayMode, settings.autoStartMode)
   );
 
   // Countdown seconds remaining until next auto-switch (only used in 'auto' mode)
@@ -190,13 +195,15 @@ const TVDisplay: React.FC = () => {
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const prevDisplayMode = useRef(settings.displayMode);
+  const prevAutoStartMode = useRef(settings.autoStartMode);
   useEffect(() => {
-    if (prevDisplayMode.current === settings.displayMode) return;
+    const displayModeChanged = prevDisplayMode.current !== settings.displayMode;
+    const autoStartModeChanged = prevAutoStartMode.current !== settings.autoStartMode;
     prevDisplayMode.current = settings.displayMode;
-    if (settings.displayMode === 'single') setActiveMode('single');
-    else if (settings.displayMode === 'multi') setActiveMode('multi');
-    else setActiveMode('single');
-  }, [settings.displayMode]);
+    prevAutoStartMode.current = settings.autoStartMode;
+    if (!displayModeChanged && !autoStartModeChanged) return;
+    setActiveMode(resolveTVMode(settings.displayMode, settings.autoStartMode));
+  }, [settings.autoStartMode, settings.displayMode]);
 
   useEffect(() => {
     if (settings.displayMode !== 'auto') {
@@ -369,43 +376,96 @@ const TVDisplay: React.FC = () => {
   }, []);
 
   const isLight = settings.tvTheme === 'light';
-  const rootBg = isLight ? 'bg-[#f0f3fa]' : 'bg-[#060810]';
+  const rootBg = isLight ? 'bg-white/72' : 'bg-[#060810]/92';
   const rootText = isLight ? 'text-slate-900' : 'text-white';
+  const canvasStyle: React.CSSProperties = {
+    width: '100vw',
+    height: '100vh',
+  };
+  const safeAreaStyle: React.CSSProperties = {
+    inset: `${settings.tvSafeAreaPercent}%`,
+    fontSize: `calc(16px * ${settings.tvUiScalePercent / 100})`,
+    position: 'absolute',
+  };
+  const outerBackgroundStyle: React.CSSProperties = {
+    background: isLight
+      ? 'radial-gradient(circle at top left, rgba(255,255,255,0.95) 0%, rgba(244,247,252,0.98) 38%, rgba(220,229,241,1) 100%)'
+      : 'radial-gradient(circle at top left, rgba(20,30,56,0.95) 0%, rgba(8,12,22,1) 48%, rgba(2,6,15,1) 100%)',
+  };
+  const frameGlowStyle: React.CSSProperties = {
+    background: isLight
+      ? 'radial-gradient(circle at 18% 12%, rgba(243,111,39,0.22), transparent 28%), radial-gradient(circle at 88% 10%, rgba(14,116,144,0.18), transparent 24%), radial-gradient(circle at 50% 100%, rgba(251,191,36,0.18), transparent 30%)'
+      : 'radial-gradient(circle at 18% 12%, rgba(243,111,39,0.14), transparent 28%), radial-gradient(circle at 82% 10%, rgba(56,189,248,0.14), transparent 22%)',
+  };
+  const shellClassName = isLight
+    ? 'border border-slate-300/70 shadow-[0_30px_80px_rgba(148,163,184,0.28)] backdrop-blur-2xl'
+    : 'border border-white/10 shadow-[0_24px_70px_rgba(0,0,0,0.55)] backdrop-blur-xl';
+  const headerClassName = isLight
+    ? 'border-slate-300/80 bg-white/82 shadow-[0_10px_30px_rgba(148,163,184,0.14)] backdrop-blur-xl'
+    : 'border-white/5 bg-black/10';
+  const sidebarClassName = isLight
+    ? 'border-slate-300/70 bg-white/66 backdrop-blur-xl'
+    : 'border-white/5 bg-white/[0.02]';
+  const footerClassName = isLight
+    ? 'bg-white/82 border-t border-slate-300/80 backdrop-blur-xl'
+    : 'bg-black/20';
+  const progressTrackClassName = isLight ? 'bg-slate-300/55' : 'bg-white/5';
 
   // Whether we are in the "no notices → show achievements" branch
   const showingAchievementsFull = displayItems.length === 0;
 
   if (noticesLoading) {
     return (
-      <div className={`h-screen ${rootBg} flex items-center justify-center`}>
-        <div className="text-center">
-          <div className="w-12 h-12 border-2 border-black/10 border-t-primary rounded-full animate-spin mb-5 mx-auto" />
-          <p className="text-slate-500 font-bold tracking-[0.3em] uppercase text-xs">Updating Board</p>
+      <div className="h-screen w-screen overflow-hidden bg-black">
+        <div className="relative h-full w-full" style={outerBackgroundStyle}>
+          <div
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[clamp(18px,1.6vw,36px)] overflow-hidden"
+            style={canvasStyle}
+          >
+            <div className="absolute inset-0" style={frameGlowStyle} />
+            <div
+              className={`absolute ${rootBg} ${rootText} ${shellClassName} flex items-center justify-center rounded-[clamp(18px,1.4vw,30px)]`}
+              style={{ inset: `${settings.tvSafeAreaPercent}%` }}
+            >
+              <div className="text-center">
+                <div className="w-12 h-12 border-2 border-black/10 border-t-primary rounded-full animate-spin mb-5 mx-auto" />
+                <p className="text-slate-500 font-bold tracking-[0.3em] uppercase text-xs">Updating Board</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`h-screen w-screen ${rootBg} ${rootText} flex flex-col overflow-hidden select-none`}>
+    <div className="h-screen w-screen overflow-hidden bg-black select-none">
+      <div className="relative h-full w-full" style={outerBackgroundStyle}>
+        <div
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[clamp(18px,1.6vw,36px)] overflow-hidden flex flex-col"
+          style={canvasStyle}
+        >
+          <div className="absolute inset-0" style={frameGlowStyle} />
+          <div className="absolute flex flex-col" style={safeAreaStyle}>
+            <div className={`h-full w-full ${rootBg} ${rootText} ${shellClassName} flex flex-col overflow-hidden rounded-[clamp(18px,1.4vw,30px)]`}>
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <header
-        className={`shrink-0 h-[4.5rem] px-10 flex items-center justify-between border-b ${isLight ? 'border-slate-200 bg-white/90 backdrop-blur-sm' : 'border-white/5'} z-20 relative`}
+        className={`shrink-0 h-12 sm:h-14 xl:h-[4.5rem] px-3 sm:px-6 xl:px-10 flex items-center justify-between border-b ${headerClassName} z-20 relative`}
       >
         <div className="flex items-center gap-4">
-          <div className="h-10 w-10 bg-white/95 p-1 rounded-lg shrink-0">
+          <div className="h-7 w-7 sm:h-8 sm:w-8 xl:h-10 xl:w-10 bg-white/95 p-0.5 sm:p-1 rounded-lg shrink-0">
             <img src={rbuLogo} className="h-full w-full object-contain" alt="RBU" />
           </div>
           <div>
-            <h1 className="text-xl font-black tracking-tight leading-none">Ramdeobaba University</h1>
-            <p className="text-[0.65rem] font-bold tracking-[0.35em] text-slate-500 uppercase mt-0.5">
+            <h1 className="text-sm sm:text-base xl:text-xl font-black tracking-tight leading-none">Ramdeobaba University</h1>
+            <p className="text-[0.5rem] sm:text-[0.55rem] xl:text-[0.65rem] font-bold tracking-[0.35em] text-slate-500 uppercase mt-0.5">
               Nagpur &middot; Digital Notice Board
             </p>
           </div>
         </div>
 
         {/* Centre: dots / mode badge / achievement dots */}
-        <div className="flex flex-col items-center gap-1 absolute left-1/2 -translate-x-1/2">
+        <div className="hidden sm:flex flex-col items-center gap-1 absolute left-1/2 -translate-x-1/2">
           {showingAchievementsFull && archivedAchievements.length > 0 ? (
             /* ── Achievement page indicator (no-notices mode) ── */
             <>
@@ -521,12 +581,12 @@ const TVDisplay: React.FC = () => {
         </div>
 
         {/* Clock */}
-        <div className="flex items-center gap-5 text-right">
+        <div className="flex items-center gap-3 sm:gap-4 xl:gap-5 text-right">
           <div>
-            <div className="text-2xl font-bold tabular-nums tracking-tight leading-none">
+            <div className="text-base sm:text-lg xl:text-2xl font-bold tabular-nums tracking-tight leading-none">
               {format(currentTime, 'HH:mm:ss')}
             </div>
-            <div className="text-[0.65rem] font-bold text-slate-500 uppercase tracking-widest mt-0.5">
+            <div className="text-[0.5rem] sm:text-[0.55rem] xl:text-[0.65rem] font-bold text-slate-500 uppercase tracking-widest mt-0.5">
               {format(currentTime, 'EEEE, MMMM d')}
             </div>
           </div>
@@ -661,14 +721,14 @@ const TVDisplay: React.FC = () => {
                         {slide.type === 'double' ? (
                           <div className="h-full flex gap-4">
                             <div className="flex-1 h-full">
-                              <TVNoticePreview notice={slide.notices[0]} />
+                              <TVNoticePreview notice={slide.notices[0]} isLight={isLight} />
                             </div>
                             <div className="flex-1 h-full">
-                              <TVNoticePreview notice={slide.notices[1]} />
+                              <TVNoticePreview notice={slide.notices[1]} isLight={isLight} />
                             </div>
                           </div>
                         ) : (
-                          <TVNoticePreview notice={slide.notice} />
+                          <TVNoticePreview notice={slide.notice} isLight={isLight} />
                         )}
                       </motion.div>
                     ))}
@@ -676,9 +736,9 @@ const TVDisplay: React.FC = () => {
                 )}
               </div>
 
-              {/* ── Sidebar ──────────────────────────────────────────────────── */}
+              {/* ── Sidebar ───────────────────────────────────────────────────── */}
               <aside
-                className={`w-96 shrink-0 border-l ${isLight ? 'border-slate-200 bg-white/60' : 'border-white/5'} flex flex-col overflow-hidden`}
+                className={`hidden lg:flex w-72 xl:w-96 shrink-0 border-l ${sidebarClassName} flex-col overflow-hidden`}
               >
                 {/* Upcoming Events */}
                 {upcomingEvents.length > 0 && (
@@ -805,7 +865,7 @@ const TVDisplay: React.FC = () => {
       {/* ── Progress bar — single-view only (above ticker) ───────────────── */}
       {activeMode === 'single' && !showingAchievementsFull && (
         <div
-          className={`h-[3px] ${isLight ? 'bg-slate-200' : 'bg-white/5'} shrink-0 relative overflow-hidden`}
+          className={`h-[3px] ${progressTrackClassName} shrink-0 relative overflow-hidden`}
         >
           <motion.div
             key={`${progressKey}-${currentIndex}`}
@@ -820,7 +880,7 @@ const TVDisplay: React.FC = () => {
       {/* ── Achievement auto-loop progress bar (no-notices mode) ────────── */}
       {showingAchievementsFull && archivedAchievements.length > 0 && achTotalPages > 1 && (
         <div
-          className={`h-[3px] ${isLight ? 'bg-slate-200' : 'bg-white/5'} shrink-0 relative overflow-hidden`}
+          className={`h-[3px] ${progressTrackClassName} shrink-0 relative overflow-hidden`}
         >
           <motion.div
             key={`ach-prog-${achPage}`}
@@ -835,7 +895,7 @@ const TVDisplay: React.FC = () => {
       {/* ── Auto-switch progress bar (mode-level, shown in auto mode) ────── */}
       {settings.displayMode === 'auto' && !showingAchievementsFull && (
         <div
-          className={`h-[2px] ${isLight ? 'bg-slate-200' : 'bg-white/5'} shrink-0 relative overflow-hidden`}
+          className={`h-[2px] ${progressTrackClassName} shrink-0 relative overflow-hidden`}
         >
           <motion.div
             key={`auto-${activeMode}`}
@@ -858,9 +918,9 @@ const TVDisplay: React.FC = () => {
 
       {/* ── Ticker — Always shows "Thought of the Day" ──────────────────── */}
       <footer
-        className={`shrink-0 h-9 flex items-center overflow-hidden ${isLight ? 'bg-slate-100 border-t border-slate-200' : 'bg-black/20'}`}
+        className={`shrink-0 h-7 sm:h-8 xl:h-9 flex items-center overflow-hidden ${footerClassName}`}
       >
-        <div className="shrink-0 h-full px-5 flex items-center bg-primary text-white font-black uppercase tracking-widest text-[0.6rem]">
+        <div className="shrink-0 h-full px-3 sm:px-4 xl:px-5 flex items-center bg-primary text-white font-black uppercase tracking-widest text-[0.45rem] sm:text-[0.5rem] xl:text-[0.6rem]">
           Thought of the Day
         </div>
         <div className="flex-1 overflow-hidden relative">
@@ -870,12 +930,12 @@ const TVDisplay: React.FC = () => {
             transition={{ duration: 80, repeat: Infinity, ease: 'linear' }}
           >
             {[0, 1].map((dup) => (
-              <span key={dup} className="inline-flex items-center gap-3 px-7">
+              <span key={dup} className="inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-5 xl:px-7">
                 <span
-                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full shrink-0"
                   style={{ backgroundColor: '#facc15' }}
                 />
-                <span className={`text-[0.78rem] font-medium ${isLight ? 'text-slate-600' : 'text-white/50'}`}>
+                <span className={`text-[0.65rem] sm:text-[0.7rem] xl:text-[0.78rem] font-medium ${isLight ? 'text-slate-600' : 'text-white/50'}`}>
                   &ldquo;{quoteText}&rdquo;{quoteAuthor ? ` — ${quoteAuthor}` : ''}
                 </span>
               </span>
@@ -883,6 +943,10 @@ const TVDisplay: React.FC = () => {
           </motion.div>
         </div>
       </footer>
+    </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

@@ -32,7 +32,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Zap, User, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
-import { TVNoticePreview } from '@/components/TVNoticePreview';
+import { MediaPanel, TVNoticePreview } from '@/components/TVNoticePreview';
 import { AutoScrollText } from '@/components/AutoScrollText';
 import { categoryConfig } from '@/config/categoryConfig';
 import { cn } from '@/lib/utils';
@@ -89,7 +89,7 @@ const CompactCard: React.FC<{ notice: Notice }> = ({ notice }) => {
       <h3 className={`text-[0.9rem] font-black ${isLight ? "text-slate-900" : "text-white"} leading-snug line-clamp-2 shrink-0`}>{notice.title}</h3>
       {notice.imageUrl ? (
         <div className={`flex-1 min-h-0 rounded-xl overflow-hidden border ${isLight ? "border-slate-200" : "border-white/8"}`}>
-          <img src={notice.imageUrl} alt="" className="w-full h-full object-cover" />
+          <MediaPanel imageUrl={notice.imageUrl} className="w-full h-full" fit="cover" />
         </div>
       ) : notice.description ? (
         <p className={`flex-1 text-[0.72rem] ${isLight ? "text-slate-500" : "text-slate-400"} leading-relaxed line-clamp-4 min-h-0`}>
@@ -142,7 +142,7 @@ const LargeNoticeCard: React.FC<{ notice: Notice }> = ({ notice }) => {
       {notice.imageUrl ? (
         <div className="flex-1 min-h-0 flex gap-4">
           <div className={`w-[45%] shrink-0 rounded-xl overflow-hidden border ${isLight ? "border-slate-200" : "border-white/8"}`}>
-            <img src={notice.imageUrl} alt="" className="w-full h-full object-cover" />
+            <MediaPanel imageUrl={notice.imageUrl} className="w-full h-full" fit="cover" />
           </div>
           {notice.description && (
             <div className="flex-1 min-h-0 overflow-hidden">
@@ -200,7 +200,7 @@ const AchievementCard: React.FC<{ achievement: Notice; idx: number; total: numbe
     {achievement.imageUrl && (
       <div className={`w-full rounded-xl overflow-hidden shrink-0 border ${isLight ? "border-yellow-300" : "border-yellow-400/10"}`}
         style={{ aspectRatio: '16/9' }}>
-        <img src={achievement.imageUrl} alt={achievement.title} className="w-full h-full object-cover" />
+        <MediaPanel imageUrl={achievement.imageUrl} className="w-full h-full" fit="cover" />
       </div>
     )}
 
@@ -255,7 +255,7 @@ const Spotlight: React.FC<SpotlightProps> = ({ achievement, quoteText, quoteAuth
         <p className={`text-xl font-black ${isLight ? "text-slate-900" : "text-white"} leading-snug shrink-0`}>{achievement.title}</p>
         {achievement.imageUrl && (
           <div className={`w-full rounded-xl overflow-hidden shrink-0 border ${isLight ? "border-yellow-300" : "border-yellow-400/10"}`} style={{ aspectRatio: '4/3' }}>
-            <img src={achievement.imageUrl} alt={achievement.title} className="w-full h-full object-cover" />
+            <MediaPanel imageUrl={achievement.imageUrl} className="w-full h-full" fit="cover" />
           </div>
         )}
         {achievement.description && (
@@ -341,7 +341,7 @@ const MultiAchievementSidebar: React.FC<{
                     {ach.imageUrl && (
                       <div className={`w-24 rounded-xl overflow-hidden shrink-0 border ${isLight ? "border-yellow-300" : "border-yellow-400/10"}`}
                         style={{ aspectRatio: '4/3' }}>
-                        <img src={ach.imageUrl} alt={ach.title} className="w-full h-full object-cover" />
+                        <MediaPanel imageUrl={ach.imageUrl} className="w-full h-full" fit="cover" />
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
@@ -685,7 +685,7 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
                   <div className={`h-full rounded-2xl border ${isLight ? "border-slate-300 bg-white/50" : "border-white/8 bg-white/[0.02]"} overflow-hidden`}
                     style={{ containerType: 'size' }}>
                     <div className="h-full" style={{ transform: 'scale(0.55)', transformOrigin: 'top left', width: '181.8%', height: '181.8%' }}>
-                      <TVNoticePreview notice={heroNotice} />
+                      <TVNoticePreview notice={heroNotice} isLight={isLight} />
                     </div>
                   </div>
                 </motion.div>

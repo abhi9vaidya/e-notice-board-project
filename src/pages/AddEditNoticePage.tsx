@@ -65,10 +65,10 @@ const TEMPLATES: { value: Template; label: string; description: string; icon: Re
 ];
 
 const DEFAULT_CUSTOM_LAYOUT: CustomLayoutConfig = {
-  title: { x: 5, y: 7, w: 58, h: 20 },
-  description: { x: 5, y: 30, w: 58, h: 52 },
-  media: { x: 66, y: 7, w: 29, h: 56 },
-  qr: { x: 72, y: 66, w: 18, h: 26 },
+  title: { x: 5, y: 7, w: 54, h: 18 },
+  description: { x: 5, y: 29, w: 54, h: 54 },
+  media: { x: 63, y: 10, w: 30, h: 46 },
+  qr: { x: 74, y: 62, w: 14, h: 20 },
   titleSize: 62,
   descriptionSize: 30,
   showMedia: true,
@@ -135,6 +135,7 @@ const AddEditNoticePage: React.FC = () => {
     showIssuedBy: true,
     showValidTill: true,
     showTextOverlay: true,
+    textScale: 1.0,
     registrationUrl: "",
   });
   const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Local Time';
@@ -162,6 +163,9 @@ const AddEditNoticePage: React.FC = () => {
     if (uploadedFile) {
       return uploadedFile.type === 'application/pdf' || uploadedFile.name.toLowerCase().endsWith('.pdf');
     }
+    if (formData.documentUrl) {
+      return true;
+    }
     if (formData.pdfOrientation) {
       return true;
     }
@@ -170,7 +174,7 @@ const AddEditNoticePage: React.FC = () => {
       return url.includes('.pdf') || url.includes('export=download');
     }
     return false;
-  }, [uploadedFile, formData.imageUrl, formData.pdfOrientation, editId]);
+  }, [uploadedFile, formData.documentUrl, formData.imageUrl, formData.pdfOrientation, editId]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [descTab, setDescTab] = useState<'type' | 'extract'>('type');
@@ -178,7 +182,9 @@ const AddEditNoticePage: React.FC = () => {
   const [extractPreview, setExtractPreview] = useState<string>('');
   const [extractedLinks, setExtractedLinks] = useState<string[]>([]);
   const extractInputRef = useRef<HTMLInputElement>(null);
+  const mediaInputRef = useRef<HTMLInputElement>(null);
   const layoutEditorRef = useRef<HTMLDivElement>(null);
+  const [previewAssetUrl, setPreviewAssetUrl] = useState('');
   const [selectedLayoutSection, setSelectedLayoutSection] = useState<LayoutSection>('title');
   const [layoutDrag, setLayoutDrag] = useState<null | {
     mode: 'move' | 'resize';
@@ -193,14 +199,28 @@ const AddEditNoticePage: React.FC = () => {
   const handleExtract = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const isSupportedImage =
+      file.type === 'image/png' ||
+      file.type === 'image/jpeg' ||
+      file.name.toLowerCase().endsWith('.png') ||
+      file.name.toLowerCase().endsWith('.jpg') ||
+      file.name.toLowerCase().endsWith('.jpeg');
+    if (!isSupportedImage) {
+      toast({
+        title: 'Unsupported extraction file',
+        description: 'Text extraction only supports PNG and JPG images.',
+        variant: 'destructive',
+      });
+      e.target.value = '';
+      return;
+    }
     const reader = new FileReader();
     reader.onloadend = async () => {
       const base64 = reader.result as string;
       setExtractPreview(base64);
       setIsExtracting(true);
       try {
-        const type = file.type === 'application/pdf' ? 'pdf' : 'image';
-        const { title, description, links } = await extractTextFromFile(base64, type);
+        const { title, description, links } = await extractTextFromFile(base64, 'image');
         setFormData(prev => ({
           ...prev,
           description,
@@ -221,6 +241,15 @@ const AddEditNoticePage: React.FC = () => {
   };
 
   useEffect(() => {
+    if (uploadedFile) {
+      const objectUrl = URL.createObjectURL(uploadedFile);
+      setPreviewAssetUrl(objectUrl);
+      return () => URL.revokeObjectURL(objectUrl);
+    }
+    setPreviewAssetUrl(formData.documentUrl || formData.imageUrl || "");
+  }, [uploadedFile, formData.documentUrl, formData.imageUrl]);
+
+  useEffect(() => {
     if (editId) {
       const notice = notices.find((n) => n.id === editId);
       if (notice) {
@@ -237,11 +266,14 @@ const AddEditNoticePage: React.FC = () => {
           startTime: new Date(notice.startTime),
           endTime: new Date(notice.endTime),
           imageUrl: notice.imageUrl,
+          documentUrl: notice.documentUrl,
+          registrationUrl: notice.registrationUrl,
           customCategory: notice.customCategory,
           isArchived: notice.isArchived,
           showIssuedBy: notice.showIssuedBy !== false,
           showValidTill: notice.showValidTill !== false,
           showTextOverlay: notice.showTextOverlay !== false,
+          textScale: notice.textScale || 1.0,
         });
         setIsHighPriority(notice.priority === "high");
         setFormData(prev => ({ ...prev, priority: notice.priority, pdfOrientation: notice.pdfOrientation }));
@@ -264,7 +296,7 @@ const AddEditNoticePage: React.FC = () => {
 
   const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-  const setLayoutBox = (section: LayoutSection, nextBox: CustomLayoutConfig['title']) => {
+  const setLayoutBox = React.useCallback((section: LayoutSection, nextBox: CustomLayoutConfig['title']) => {
     setFormData(prev => {
       const layout = prev.customLayout || DEFAULT_CUSTOM_LAYOUT;
       const next = { ...nextBox };
@@ -274,7 +306,7 @@ const AddEditNoticePage: React.FC = () => {
       next.y = clamp(next.y, 0, 100 - next.h);
       return { ...prev, customLayout: { ...layout, [section]: next } };
     });
-  };
+  }, []);
 
   const startLayoutInteraction = (
     section: LayoutSection,
@@ -324,7 +356,7 @@ const AddEditNoticePage: React.FC = () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
     };
-  }, [layoutDrag]);
+  }, [layoutDrag, setLayoutBox]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -393,6 +425,7 @@ const AddEditNoticePage: React.FC = () => {
 
     try {
       let finalImageUrl = formData.imageUrl;
+      let finalDocumentUrl = formData.documentUrl;
       const pdfFallbackTime = format(new Date(), "dd MMM yyyy, hh:mm a");
       const normalizedTitle = hasPdf
         ? (formData.title.trim() || `PDF Notice (${pdfFallbackTime})`)
@@ -416,6 +449,15 @@ const AddEditNoticePage: React.FC = () => {
           startTime: computedStartTime,
           endTime: computedEndTime,
         });
+        if (uploadedFile.type === 'application/pdf' || uploadedFile.name.toLowerCase().endsWith('.pdf')) {
+          finalDocumentUrl = finalImageUrl;
+          finalImageUrl = "";
+        } else {
+          finalDocumentUrl = "";
+        }
+      } else if (!finalDocumentUrl && formData.pdfOrientation && finalImageUrl) {
+        finalDocumentUrl = finalImageUrl;
+        finalImageUrl = "";
       }
 
       const dataToSubmit: CreateNoticeInput = {
@@ -423,6 +465,7 @@ const AddEditNoticePage: React.FC = () => {
         title: normalizedTitle,
         description: normalizedDescription,
         imageUrl: finalImageUrl || "",
+        documentUrl: finalDocumentUrl || "",
         priority: isAchievement ? "low" : (isHighPriority ? "high" : formData.priority),
         startTime: computedStartTime,
         endTime: computedEndTime,
@@ -459,7 +502,26 @@ const AddEditNoticePage: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const isPdfFile = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      if (isAchievement && isPdfFile) {
+        toast({
+          title: "Images only for achievements",
+          description: "Student achievements support JPG or PNG images, not PDFs.",
+          variant: "destructive",
+        });
+        e.target.value = '';
+        return;
+      }
       setUploadedFile(file);
+      setFormData(prev => ({
+        ...prev,
+        imageUrl: isPdfFile ? "" : prev.imageUrl,
+        documentUrl: isPdfFile ? prev.documentUrl : "",
+        pdfOrientation:
+          file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+            ? prev.pdfOrientation
+            : undefined,
+      }));
     }
   };
 
@@ -508,6 +570,97 @@ const AddEditNoticePage: React.FC = () => {
                 />
               </div>
 
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <Label className="text-sm font-medium">
+                    {isAchievement ? 'Achievement Image' : 'Notice Media'}
+                  </Label>
+                  {uploadedFile && (
+                    <span className="text-xs text-muted-foreground">
+                      Selected: {uploadedFile.name}
+                    </span>
+                  )}
+                </div>
+
+                <input
+                  ref={mediaInputRef}
+                  type="file"
+                  accept={isAchievement ? ".png,.jpg,.jpeg,image/png,image/jpeg" : ".png,.jpg,.jpeg,image/png,image/jpeg,.pdf,application/pdf"}
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+
+                <div className="rounded-xl border bg-muted/20 p-4 space-y-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="gap-2"
+                      onClick={() => mediaInputRef.current?.click()}
+                    >
+                      <Upload className="h-4 w-4" />
+                      {previewAssetUrl ? 'Replace file' : isAchievement ? 'Add image' : 'Add image or PDF'}
+                    </Button>
+                    {previewAssetUrl && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="gap-2 text-destructive hover:text-destructive"
+                        onClick={() => {
+                          setUploadedFile(null);
+                          setFormData(prev => ({ ...prev, imageUrl: "", documentUrl: "", pdfOrientation: undefined }));
+                          if (mediaInputRef.current) mediaInputRef.current.value = '';
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                        Remove file
+                      </Button>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {isAchievement
+                        ? 'Upload a JPG or PNG so the image appears in Student Spotlight.'
+                        : 'Images will be used in slideshow and overview cards. PDFs are still allowed for notice display.'}
+                    </p>
+                  </div>
+
+                  {previewAssetUrl ? (
+                    <div className="overflow-hidden rounded-lg border bg-background/70">
+                      {hasPdf ? (
+                        <div className="flex h-28 items-center justify-center gap-2 text-sm text-muted-foreground">
+                          <FileText className="h-5 w-5" />
+                          PDF selected for notice display
+                        </div>
+                      ) : (
+                        <img
+                          src={previewAssetUrl}
+                          alt="Selected upload preview"
+                          className="max-h-64 w-full object-contain"
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex h-28 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+                      {isAchievement ? 'No image selected yet' : 'No media selected yet'}
+                    </div>
+                  )}
+
+                  {isUploading && uploadProgress > 0 && (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>Upload progress</span>
+                        <span>{uploadProgress}%</span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full bg-primary transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* details field */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">
@@ -535,56 +688,69 @@ const AddEditNoticePage: React.FC = () => {
                   </TabsContent>
 
                   <TabsContent value="extract" className="mt-0">
-                    <div
-                      className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors"
-                      onClick={() => extractInputRef.current?.click()}
-                    >
-                      {isExtracting ? (
-                        <div className="flex flex-col items-center gap-2">
-                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                          <p className="text-sm font-medium">AI is extracting key points…</p>
-                          <p className="text-xs text-muted-foreground">This may take a few seconds</p>
-                        </div>
-                      ) : extractPreview ? (
-                        <div className="space-y-2">
-                          {extractPreview.startsWith('data:image') ? (
-                            <img src={extractPreview} alt="Uploaded" className="max-h-32 mx-auto rounded-lg object-contain" />
-                          ) : (
-                            <div className="flex flex-col items-center gap-1">
-                              <FileText className="h-10 w-10 text-rose-500" />
-                              <p className="text-sm text-muted-foreground">PDF uploaded</p>
-                            </div>
-                          )}
-                          <p className="text-xs text-muted-foreground">Click to replace</p>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-2">
-                          <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                            <Upload className="h-6 w-6 text-muted-foreground" />
+                    <div className="space-y-3 rounded-xl border bg-muted/20 p-4">
+                      <input
+                        ref={extractInputRef}
+                        type="file"
+                        accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+                        className="hidden"
+                        onChange={handleExtract}
+                      />
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="gap-2"
+                          onClick={() => extractInputRef.current?.click()}
+                          disabled={isExtracting}
+                        >
+                          {isExtracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                          {isExtracting ? 'Extracting...' : 'Choose JPG or PNG'}
+                        </Button>
+                        <p className="text-xs text-muted-foreground">
+                          Upload a JPG or PNG poster to auto-fill the title, description, and first detected link.
+                        </p>
+                      </div>
+
+                      {extractPreview && (
+                        <div className="rounded-lg border bg-background/80 p-3">
+                          <p className="mb-2 text-xs font-semibold text-foreground">Last extracted file</p>
+                          <div className="overflow-hidden rounded-md border bg-muted/30">
+                            {extractPreview.startsWith('data:image') ? (
+                              <img src={extractPreview} alt="Extraction source preview" className="max-h-48 w-full object-contain" />
+                            ) : (
+                              <div className="flex h-24 items-center justify-center gap-2 text-sm text-muted-foreground">
+                                <FileText className="h-4 w-4" />
+                                Unsupported preview
+                              </div>
+                            )}
                           </div>
-                          <p className="text-sm font-medium">Upload an image (JPG / PNG)</p>
-                          <p className="text-xs text-muted-foreground">AI will extract and summarise the key points into the description</p>
+                        </div>
+                      )}
+
+                      {extractedLinks.length > 0 && (
+                        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
+                          <p className="text-xs font-semibold text-emerald-700">Detected links</p>
+                          <div className="mt-2 space-y-1">
+                            {extractedLinks.slice(0, 3).map((link) => (
+                              <p key={link} className="truncate text-xs text-muted-foreground">
+                                {link}
+                              </p>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
-                    <input
-                      ref={extractInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleExtract}
-                    />
                   </TabsContent>
                 </Tabs>
               </div>
 
-              {/* QR code(s) from AI-extracted links */}
               {extractedLinks.length > 0 && (
                 <div className="space-y-3">
                   {extractedLinks.map((link, i) => (
-                    <div key={i} className="flex flex-col items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
+                    <div key={link} className="flex flex-col items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
                       <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-                        {extractedLinks.length > 1 ? `Link ${i + 1} — Scan QR to open` : 'Scan QR to Register / Open Link'}
+                        {extractedLinks.length > 1 ? `Link ${i + 1} - Scan QR to open` : 'Scan QR to Register / Open Link'}
                       </p>
                       <div className="rounded-lg bg-white p-3 shadow-sm">
                         <QRCodeSVG value={link} size={160} includeMargin={false} />
@@ -595,56 +761,18 @@ const AddEditNoticePage: React.FC = () => {
                 </div>
               )}
 
-              {/* file upload block */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Upload File (PDF/Image)</Label>
-                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png,.gif"
-                    onChange={handleFileChange}
-                    className="hidden"
-                    id="file-upload"
-                  />
-                  <label
-                    htmlFor="file-upload"
-                    className="cursor-pointer flex flex-col items-center gap-2"
-                  >
-                    <Upload className="h-10 w-10 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">
-                      {uploadedFile ? uploadedFile.name : 'Click to upload or drag and drop'}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      PDF, JPG, PNG up to 10MB
-                    </span>
-                  </label>
-                  {isUploading && uploadedFile && (
-                    <div className="mt-3 w-full">
-                      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary transition-all duration-200 rounded-full"
-                          style={{ width: `${uploadProgress}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground text-center mt-1">{uploadProgress}%</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* PDF Orientation selector — only visible when a PDF is present */}
               {hasPdf && !isAchievement && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Document Shape</Label>
                   <p className="text-xs text-muted-foreground">Controls how this PDF is displayed on TV.</p>
                   <div className="grid grid-cols-2 gap-2">
-                    {(['landscape', 'portrait'] as const).map(orient => (
+                    {(['landscape', 'portrait'] as const).map((orient) => (
                       <button
                         key={orient}
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, pdfOrientation: orient }))}
                         className={cn(
-                          'flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all',
+                          'flex flex-col items-center gap-2 rounded-xl border-2 p-3 text-center transition-all',
                           formData.pdfOrientation === orient
                             ? 'border-primary bg-primary/5 text-primary'
                             : 'border-border bg-muted/20 text-muted-foreground hover:bg-muted'
@@ -654,9 +782,9 @@ const AddEditNoticePage: React.FC = () => {
                           ? <Monitor className="h-5 w-5" />
                           : <Smartphone className="h-5 w-5" />}
                         <span className="text-xs font-semibold">
-                          {orient === 'landscape' ? 'Landscape — Full Screen' : 'Portrait — Side-by-Side'}
+                          {orient === 'landscape' ? 'Landscape - Full Screen' : 'Portrait - Side-by-Side'}
                         </span>
-                        <span className="text-[10px] opacity-60 leading-tight text-center">
+                        <span className="text-[10px] leading-tight opacity-60">
                           {orient === 'landscape'
                             ? 'PDF fills the entire TV width'
                             : 'Two portrait PDFs shown next to each other'}
@@ -667,10 +795,9 @@ const AddEditNoticePage: React.FC = () => {
                 </div>
               )}
 
-              {/* Category pill grid */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Category <span className="text-destructive">*</span></Label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {(Object.entries(categoryConfig) as [string, typeof categoryConfig[string]][]).map(([cat, cfg]) => {
                     const Icon = cfg.icon;
                     const isActive = formData.category === cat;
@@ -680,7 +807,7 @@ const AddEditNoticePage: React.FC = () => {
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, category: cat as Category }))}
                         className={cn(
-                          'flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all text-left',
+                          'flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm font-medium transition-all',
                           isActive ? 'border-2' : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted hover:text-foreground'
                         )}
                         style={isActive ? { borderColor: cfg.accent, backgroundColor: `${cfg.accent}20`, color: cfg.accent } : {}}
@@ -694,20 +821,19 @@ const AddEditNoticePage: React.FC = () => {
                 {formData.category === 'other' && (
                   <input
                     type="text"
-                    className="mt-2 w-full border border-dashed rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="mt-2 w-full rounded-md border border-dashed bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                     placeholder="Enter custom category (e.g. Workshop, Sports, Club)"
                     value={formData.customCategory || ''}
-                    onChange={e => setFormData(prev => ({ ...prev, customCategory: e.target.value }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, customCategory: e.target.value }))}
                   />
                 )}
               </div>
 
-              {/* Priority 3-card picker — hidden for achievements */}
               {!isAchievement && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Priority</Label>
                   <div className="grid grid-cols-3 gap-3">
-                    {PRIORITIES.map(p => (
+                    {PRIORITIES.map((p) => (
                       <button
                         key={p.value}
                         type="button"
@@ -716,13 +842,13 @@ const AddEditNoticePage: React.FC = () => {
                           setIsHighPriority(p.value === 'high');
                         }}
                         className={cn(
-                          'flex flex-col items-start gap-1 p-3 rounded-xl border-2 transition-all text-left',
+                          'flex flex-col items-start gap-1 rounded-xl border-2 p-3 text-left transition-all',
                           formData.priority === p.value
                             ? `${p.bg} ${p.color}`
                             : 'border-border bg-muted/20 text-muted-foreground hover:bg-muted'
                         )}
                       >
-                        <div className={cn('flex items-center gap-1.5 font-semibold text-sm', formData.priority === p.value ? p.color : '')}>
+                        <div className={cn('flex items-center gap-1.5 text-sm font-semibold', formData.priority === p.value ? p.color : '')}>
                           {p.icon} {p.label}
                         </div>
                         <span className="text-[11px] leading-tight opacity-80">{p.sub}</span>
@@ -732,35 +858,33 @@ const AddEditNoticePage: React.FC = () => {
                 </div>
               )}
 
-              {/* Show/hide footer fields */}
               {!isAchievement && (
-                <div className="flex items-center gap-4 pt-2">
-                  <div className="flex items-center gap-2.5 h-9 px-3 rounded-md border bg-background">
+                <div className="flex flex-wrap items-center gap-4 pt-2">
+                  <div className="flex h-9 items-center gap-2.5 rounded-md border bg-background px-3">
                     <Switch
                       id="show-issued-by"
                       checked={formData.showIssuedBy !== false}
                       onCheckedChange={(v) => setFormData(prev => ({ ...prev, showIssuedBy: v }))}
                     />
-                    <Label htmlFor="show-issued-by" className="text-sm cursor-pointer select-none">
-                      Show &ldquo;Issued By&rdquo;
+                    <Label htmlFor="show-issued-by" className="cursor-pointer select-none text-sm">
+                      Show "Issued By"
                     </Label>
                   </div>
-                  <div className="flex items-center gap-2.5 h-9 px-3 rounded-md border bg-background">
+                  <div className="flex h-9 items-center gap-2.5 rounded-md border bg-background px-3">
                     <Switch
                       id="show-valid-till"
                       checked={formData.showValidTill !== false}
                       onCheckedChange={(v) => setFormData(prev => ({ ...prev, showValidTill: v }))}
                     />
-                    <Label htmlFor="show-valid-till" className="text-sm cursor-pointer select-none">
-                      Show &ldquo;Valid Till&rdquo;
+                    <Label htmlFor="show-valid-till" className="cursor-pointer select-none text-sm">
+                      Show "Valid Till"
                     </Label>
                   </div>
                 </div>
               )}
 
-              {/* Template selection — hidden for achievements */}
               {!isAchievement && (
-                <div className="space-y-3 pt-4 border-t">
+              <div className="space-y-3 pt-4 border-t">
                   <Label className="font-bold text-base">Display Style</Label>
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                     {TEMPLATES.map(tpl => {
@@ -1014,10 +1138,10 @@ const AddEditNoticePage: React.FC = () => {
                           {formData.title || <span className="opacity-30 italic">Achievement title…</span>}
                         </p>
                         {/* 2. Image */}
-                        {(uploadedFile ? URL.createObjectURL(uploadedFile) : formData.imageUrl) && (
+                        {previewAssetUrl && !hasPdf && (
                           <div className="w-full rounded-xl overflow-hidden border border-yellow-400/10" style={{ aspectRatio: '4/3' }}>
                             <img
-                              src={uploadedFile ? URL.createObjectURL(uploadedFile) : formData.imageUrl}
+                              src={previewAssetUrl}
                               alt={formData.title}
                               className="w-full h-full object-cover"
                             />
@@ -1062,12 +1186,13 @@ const AddEditNoticePage: React.FC = () => {
                             notice={{
                               ...formData,
                               priority: isHighPriority ? "high" : formData.priority,
-                              imageUrl: uploadedFile ? URL.createObjectURL(uploadedFile) : formData.imageUrl
+                              imageUrl: hasPdf ? "" : previewAssetUrl,
+                              documentUrl: hasPdf ? previewAssetUrl : ""
                             }}
                           />
                         </div>
                       </div>
-                      {(formData.template === 'split' || formData.template === 'full-image') && !formData.imageUrl && !uploadedFile && (
+                      {(formData.template === 'split' || formData.template === 'full-image') && !previewAssetUrl && (
                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
                           <p className="text-slate-400 text-sm font-medium">Please upload an image to preview this template</p>
                         </div>

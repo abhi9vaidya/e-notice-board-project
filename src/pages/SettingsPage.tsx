@@ -82,17 +82,26 @@ const SettingsPage: React.FC = () => {
 
   const handleSave = () => {
     localStorage.setItem("rbu-notice-settings", JSON.stringify(settings));
+
+    const parseField = (val: any, def: number) => {
+      if (val === '' || val === null || val === undefined) return def;
+      const n = Number(val);
+      return isNaN(n) ? def : n;
+    };
+
     // Validate numeric TV form fields
     const parsed = {
       ...tvForm,
-      singleHighDuration:        Math.max(5,  Math.min(300, Number(tvForm.singleHighDuration)        || tvDefaults.singleHighDuration)),
-      singleMediumDuration:      Math.max(5,  Math.min(300, Number(tvForm.singleMediumDuration)      || tvDefaults.singleMediumDuration)),
-      singleNormalDuration:      Math.max(5,  Math.min(300, Number(tvForm.singleNormalDuration)      || tvDefaults.singleNormalDuration)),
-      multiNoticePageDuration:   Math.max(5,  Math.min(300, Number(tvForm.multiNoticePageDuration)   || tvDefaults.multiNoticePageDuration)),
-      multiHighDuration:         Math.max(5,  Math.min(300, Number(tvForm.multiHighDuration)         || tvDefaults.multiHighDuration)),
-      multiAchievementDuration:  Math.max(5,  Math.min(300, Number(tvForm.multiAchievementDuration)  || tvDefaults.multiAchievementDuration)),
-      autoSingleDuration:        Math.max(15, Math.min(3600, Number(tvForm.autoSingleDuration)       || tvDefaults.autoSingleDuration)),
-      autoMultiDuration:         Math.max(15, Math.min(3600, Number(tvForm.autoMultiDuration)        || tvDefaults.autoMultiDuration)),
+      singleHighDuration:        Math.max(5,  Math.min(300, parseField(tvForm.singleHighDuration, tvDefaults.singleHighDuration))),
+      singleMediumDuration:      Math.max(5,  Math.min(300, parseField(tvForm.singleMediumDuration, tvDefaults.singleMediumDuration))),
+      singleNormalDuration:      Math.max(5,  Math.min(300, parseField(tvForm.singleNormalDuration, tvDefaults.singleNormalDuration))),
+      multiNoticePageDuration:   Math.max(5,  Math.min(300, parseField(tvForm.multiNoticePageDuration, tvDefaults.multiNoticePageDuration))),
+      multiHighDuration:         Math.max(5,  Math.min(300, parseField(tvForm.multiHighDuration, tvDefaults.multiHighDuration))),
+      multiAchievementDuration:  Math.max(5,  Math.min(300, parseField(tvForm.multiAchievementDuration, tvDefaults.multiAchievementDuration))),
+      autoSingleDuration:        Math.max(15, Math.min(3600, parseField(tvForm.autoSingleDuration, tvDefaults.autoSingleDuration))),
+      autoMultiDuration:         Math.max(15, Math.min(3600, parseField(tvForm.autoMultiDuration, tvDefaults.autoMultiDuration))),
+      tvSafeAreaPercent:        Math.max(0,  Math.min(10, parseField(tvForm.tvSafeAreaPercent, tvDefaults.tvSafeAreaPercent))),
+      tvUiScalePercent:         Math.max(90, Math.min(120, parseField(tvForm.tvUiScalePercent, tvDefaults.tvUiScalePercent))),
     };
     saveTVSettings(parsed);
     setTVForm(parsed);
@@ -204,6 +213,99 @@ const SettingsPage: React.FC = () => {
                       </button>
                     );
                   })}
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Monitor className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-semibold">TV Installation Calibration</h3>
+                  <Badge variant="secondary" className="text-[0.62rem]">MiTV-AXS02</Badge>
+                </div>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  Safe area keeps content away from the screen edge to avoid bezel cut-off and overscan.
+                  UI scale increases readability for the actual TV viewing distance.
+                </p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="tvSafeAreaPercent" className="text-xs font-bold text-sky-600">
+                      Safe Area Margin
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="tvSafeAreaPercent"
+                        type="number"
+                        min="0"
+                        max="10"
+                        step="0.5"
+                        value={tvForm.tvSafeAreaPercent}
+                        onChange={e => setTVForm(f => ({ ...f, tvSafeAreaPercent: Number(e.target.value) }))}
+                        className="h-9 text-sm"
+                      />
+                      <span className="text-xs text-muted-foreground shrink-0">%</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {[2, 4, 6].map(p => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setTVForm(f => ({ ...f, tvSafeAreaPercent: p }))}
+                          className={cn(
+                            "text-[0.6rem] px-2 py-0.5 rounded-full border transition-colors",
+                            tvForm.tvSafeAreaPercent === p
+                              ? "border-sky-500 bg-sky-500/10 text-sky-600"
+                              : "border-border text-muted-foreground hover:border-sky-500/40"
+                          )}
+                        >
+                          {p}%
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      4% is the recommended starting point for the installed Mi TV.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="tvUiScalePercent" className="text-xs font-bold text-orange-500">
+                      TV UI Scale
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="tvUiScalePercent"
+                        type="number"
+                        min="90"
+                        max="120"
+                        step="1"
+                        value={tvForm.tvUiScalePercent}
+                        onChange={e => setTVForm(f => ({ ...f, tvUiScalePercent: Number(e.target.value) }))}
+                        className="h-9 text-sm"
+                      />
+                      <span className="text-xs text-muted-foreground shrink-0">%</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {[100, 105, 110].map(p => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setTVForm(f => ({ ...f, tvUiScalePercent: p }))}
+                          className={cn(
+                            "text-[0.6rem] px-2 py-0.5 rounded-full border transition-colors",
+                            tvForm.tvUiScalePercent === p
+                              ? "border-orange-500 bg-orange-500/10 text-orange-500"
+                              : "border-border text-muted-foreground hover:border-orange-500/40"
+                          )}
+                        >
+                          {p}%
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      105% gives better readability on a 4K campus TV without crowding the layout.
+                    </p>
+                  </div>
                 </div>
               </div>
 

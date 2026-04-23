@@ -100,14 +100,15 @@ const NoticeTable: React.FC<NoticeTableProps> = ({
 
   return (
     <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+      <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50 hover:bg-muted/50">
             <TableHead className="font-semibold">Title</TableHead>
             <TableHead className="font-semibold">Category</TableHead>
-            <TableHead className="font-semibold">Priority</TableHead>
-            <TableHead className="font-semibold">Faculty</TableHead>
-            <TableHead className="font-semibold">Valid Until</TableHead>
+            <TableHead className="font-semibold hidden md:table-cell">Priority</TableHead>
+            <TableHead className="font-semibold hidden lg:table-cell">Faculty</TableHead>
+            <TableHead className="font-semibold hidden lg:table-cell">Valid Until</TableHead>
             <TableHead className="font-semibold text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -156,16 +157,16 @@ const NoticeTable: React.FC<NoticeTableProps> = ({
                     {category.label}
                   </Badge>
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden md:table-cell">
                   <Badge variant="secondary" className={cn('gap-1', priority.className)}>
                     {notice.priority === 'high' && <AlertTriangle className="h-3 w-3" />}
                     {priority.label}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-muted-foreground">
+                <TableCell className="text-muted-foreground hidden lg:table-cell">
                   {notice.facultyName}
                 </TableCell>
-                <TableCell className="text-muted-foreground">
+                <TableCell className="text-muted-foreground hidden lg:table-cell">
                   {format(new Date(notice.endTime), 'dd MMM yyyy, hh:mm a')}
                 </TableCell>
                 <TableCell className="text-right">
@@ -174,7 +175,7 @@ const NoticeTable: React.FC<NoticeTableProps> = ({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                       >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
@@ -205,6 +206,7 @@ const NoticeTable: React.FC<NoticeTableProps> = ({
           })}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 };

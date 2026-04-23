@@ -7,6 +7,7 @@ interface AutoScrollTextProps {
     content: string;
     className?: string;
     speed?: number; // pixels per second
+    style?: React.CSSProperties;
 }
 
 // Markdown prose wrapper — all spacing done via explicit inline styles on
@@ -32,7 +33,7 @@ const MdContent: React.FC<{ children: string }> = ({ children }) => (
     </ReactMarkdown>
 );
 
-export const AutoScrollText: React.FC<AutoScrollTextProps> = ({ content, className = '', speed = 30 }) => {
+export const AutoScrollText: React.FC<AutoScrollTextProps> = ({ content, className = '', speed = 30, style }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
     const [scrollDistance, setScrollDistance] = useState(0);
@@ -61,10 +62,13 @@ export const AutoScrollText: React.FC<AutoScrollTextProps> = ({ content, classNa
         <div
             ref={containerRef}
             className={`relative overflow-hidden w-full h-full ${className}`}
-            style={scrollDistance > 0 ? {
-                maskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)',
-                WebkitMaskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)',
-            } : {}}
+            style={{
+                ...(style || {}),
+                ...(scrollDistance > 0 ? {
+                    maskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)',
+                    WebkitMaskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)',
+                } : {}),
+            }}
         >
             <motion.div
                 ref={contentRef}
