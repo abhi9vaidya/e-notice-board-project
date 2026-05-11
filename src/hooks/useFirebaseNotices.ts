@@ -45,7 +45,6 @@ export const useNotices = () => {
             const data = await getAllNotices();
             setNotices(data);
         } catch (err) {
-            console.error('Error fetching notices:', err);
             toast({ title: 'Error', description: 'Failed to load notices.', variant: 'destructive' });
         } finally {
             setLoading(false);
@@ -61,7 +60,6 @@ export const useNotices = () => {
             await fetchNotices();
             return true;
         } catch (err) {
-            console.error('Error creating notice:', err);
             toast({ title: 'Error', description: 'Failed to create notice.', variant: 'destructive' });
             return false;
         }
@@ -74,7 +72,6 @@ export const useNotices = () => {
             await fetchNotices();
             return true;
         } catch (err) {
-            console.error('Error updating notice:', err);
             toast({ title: 'Error', description: 'Failed to update notice.', variant: 'destructive' });
             return false;
         }
@@ -92,7 +89,6 @@ export const useNotices = () => {
             await fetchNotices();
             return true;
         } catch (err) {
-            console.error('Error removing notice:', err);
             toast({ title: 'Error', description: 'Failed to remove notice.', variant: 'destructive' });
             return false;
         }
@@ -115,7 +111,6 @@ export const useActiveNotices = () => {
                 setLoading(false);
             },
             (error) => {
-                console.error("Error in useActiveNotices:", error);
                 setNotices([]);
                 setLoading(false);
             }
@@ -139,7 +134,7 @@ export const useActiveAchievements = () => {
             const data = await getActiveAchievements();
             setAchievements(data);
         } catch (err) {
-            console.error('Error fetching achievements:', err);
+            // fail silently for fallback
         } finally {
             setLoading(false);
         }

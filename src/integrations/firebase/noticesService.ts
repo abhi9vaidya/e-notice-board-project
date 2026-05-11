@@ -149,8 +149,9 @@ export interface AutoArchiveOptions {
 // create notice
 export const createNotice = async (input: CreateNoticeInput): Promise<string> => {
     const now = Timestamp.now();
+    const cleanInput = Object.fromEntries(Object.entries(input).filter(([_, v]) => v !== undefined)) as CreateNoticeInput;
     const data: FirestoreNotice = {
-        ...input,
+        ...cleanInput,
         startTime: Timestamp.fromDate(input.startTime),
         endTime: Timestamp.fromDate(input.endTime),
         createdAt: now,

@@ -14,6 +14,7 @@ const Dashboard: React.FC = () => {
   const {
     notices,
     removeNotice,
+    loading,
   } = useNotices();
 
   const [selectedCategory, setSelectedCategory] = useState<Category | 'all'>('all');
@@ -58,7 +59,7 @@ const Dashboard: React.FC = () => {
               <FileText className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{activeNotices}</div>
+              <div className="text-2xl font-bold">{loading ? <div className="h-8 w-12 bg-muted animate-pulse rounded" /> : activeNotices}</div>
               <p className="text-xs text-muted-foreground">Currently displayed</p>
             </CardContent>
           </Card>
@@ -71,7 +72,7 @@ const Dashboard: React.FC = () => {
               <AlertTriangle className="h-4 w-4 text-destructive" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{highPriorityNotices}</div>
+              <div className="text-2xl font-bold">{loading ? <div className="h-8 w-12 bg-muted animate-pulse rounded" /> : highPriorityNotices}</div>
               <p className="text-xs text-muted-foreground">Urgent notices</p>
             </CardContent>
           </Card>
@@ -84,7 +85,7 @@ const Dashboard: React.FC = () => {
               <Clock className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{recentNotices}</div>
+              <div className="text-2xl font-bold">{loading ? <div className="h-8 w-12 bg-muted animate-pulse rounded" /> : recentNotices}</div>
               <p className="text-xs text-muted-foreground">Last 5 hours</p>
             </CardContent>
           </Card>
@@ -97,7 +98,7 @@ const Dashboard: React.FC = () => {
               <LayoutGrid className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{notices.length}</div>
+              <div className="text-2xl font-bold">{loading ? <div className="h-8 w-12 bg-muted animate-pulse rounded" /> : notices.length}</div>
               <p className="text-xs text-muted-foreground">All time</p>
             </CardContent>
           </Card>
@@ -148,9 +149,10 @@ const Dashboard: React.FC = () => {
           isRecent={isRecent}
           onEdit={handleEditClick}
           onDelete={(id) => removeNotice(id, false)} // soft delete (archive)
+          isLoading={loading}
         />
 
-        {filteredNotices.length === 0 && (
+        {filteredNotices.length === 0 && !loading && (
           <div className="text-center py-16 bg-card rounded-xl border shadow-sm">
             <div className="mx-auto h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
               <LayoutGrid className="h-8 w-8 text-muted-foreground" />

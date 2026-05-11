@@ -27,6 +27,7 @@ import {
   Trash2,
   Eye,
   AlertTriangle,
+  Trophy,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -37,6 +38,7 @@ interface NoticeTableProps {
   onEdit: (notice: Notice) => void;
   onDelete: (id: string) => void;
   onView?: (notice: Notice) => void;
+  isLoading?: boolean;
 }
 
 const categoryConfig: Record<Category, { icon: React.ReactNode; label: string; className: string }> = {
@@ -70,6 +72,11 @@ const categoryConfig: Record<Category, { icon: React.ReactNode; label: string; c
     label: 'Other',
     className: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
   },
+  achievements: {
+    icon: <Trophy className="h-4 w-4" />,
+    label: 'Achievements',
+    className: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+  },
 };
 
 const priorityConfig: Record<Priority, { label: string; className: string }> = {
@@ -93,8 +100,9 @@ const NoticeTable: React.FC<NoticeTableProps> = ({
   onEdit,
   onDelete,
   onView,
+  isLoading,
 }) => {
-  if (notices.length === 0) {
+  if (notices.length === 0 && !isLoading) {
     return null;
   }
 
@@ -113,7 +121,18 @@ const NoticeTable: React.FC<NoticeTableProps> = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {notices.map((notice) => {
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <TableRow key={`skeleton-${i}`} className="bg-muted/5">
+                <TableCell><div className="flex items-center gap-2"><div className="h-10 w-10 rounded-lg bg-muted animate-pulse shrink-0" /><div><div className="h-4 w-32 sm:w-48 bg-muted animate-pulse rounded mb-2" /><div className="h-3 w-40 sm:w-64 bg-muted animate-pulse rounded" /></div></div></TableCell>
+                <TableCell><div className="h-6 w-24 bg-muted animate-pulse rounded-full" /></TableCell>
+                <TableCell className="hidden md:table-cell"><div className="h-6 w-20 bg-muted animate-pulse rounded-full" /></TableCell>
+                <TableCell className="hidden lg:table-cell"><div className="h-4 w-28 bg-muted animate-pulse rounded" /></TableCell>
+                <TableCell className="hidden lg:table-cell"><div className="h-4 w-32 bg-muted animate-pulse rounded" /></TableCell>
+                <TableCell className="text-right"><div className="h-8 w-8 ml-auto bg-muted animate-pulse rounded" /></TableCell>
+              </TableRow>
+            ))
+          ) : notices.map((notice) => {
             const category = categoryConfig[notice.category as Category] || categoryConfig.other;
             const priority = priorityConfig[notice.priority as Priority] || priorityConfig.medium;
             const recent = isRecent(notice);

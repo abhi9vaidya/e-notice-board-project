@@ -13,57 +13,7 @@ import { format } from 'date-fns';
 import { AutoScrollText } from '@/components/AutoScrollText';
 import { QRCodeSVG } from 'qrcode.react';
 
-// ── URL helpers ────────────────────────────────────────────────────────────────
-
-/** True when the URL points to a PDF document. */
-export const isPdfUrl = (url: string) => {
-    const u = url.toLowerCase();
-    return (
-        u.includes('.pdf') ||
-        u.includes('/raw/upload/') ||
-        u.includes('mime=application/pdf') ||
-        u.includes('content-type=application/pdf') ||
-        u.includes('export=download')
-    );
-};
-
-/**
- * Convert a storage URL to a displayable image URL.
- *
- * Handles three cases:
- *  1. Cloudinary image  → use as-is (already a direct image URL)
- *  2. Cloudinary PDF    → insert `f_jpg,pg_1` transformation to get first-page JPEG
- *  3. Google Drive URL  → use the thumbnail API (avoids virus-scan interstitial)
- *  4. Anything else     → use as-is
- */
-export function toDisplayImageUrl(url: string): string {
-    // ── Cloudinary ──────────────────────────────────────────────────────────
-    if (url.includes('res.cloudinary.com')) {
-        if (isPdfUrl(url)) {
-            // Insert transformation before the version/folder segment.
-            // e.g. /image/upload/v123/... → /image/upload/f_jpg,pg_1/v123/...
-            // Also works for /raw/upload/ → replace with /image/upload/
-            return url
-                .replace('/raw/upload/', '/image/upload/')
-                .replace('/image/upload/', '/image/upload/f_jpg,pg_1/');
-        }
-        // Regular Cloudinary image — serve as-is
-        return url;
-    }
-
-    // ── Google Drive ────────────────────────────────────────────────────────
-    // Extract file ID from /uc?id=ID, /file/d/ID/view, /open?id=ID etc.
-    const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]{20,})/) ||
-        url.match(/\/d\/([a-zA-Z0-9_-]{20,})/);
-    if (idMatch) {
-        // thumbnail endpoint works for both images and PDFs (first-page PNG)
-        // and does NOT redirect to a virus-scan warning page
-        return `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w1920`;
-    }
-
-    // ── base64 data URL or any other URL — use as-is ────────────────────────
-    return url;
-}
+import { isPdfUrl, toDisplayImageUrl } from '@/lib/mediaUtils';
 
 // ── Shared media panel renderer ────────────────────────────────────────────────
 
@@ -115,9 +65,16 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({ imageUrl, documentUrl, c
         }
 
         return (
-            <img
+            <>
+                <img
+                    src={src}
+                    className="absolute inset-0 w-full h-full object-cover blur-[30px] opacity-40 scale-110 pointer-events-none"
+                    alt=""
+                    aria-hidden="true"
+                />
+                <img
                 src={src}
-                className={cn('w-full h-full', fit === 'cover' ? 'object-cover' : 'object-contain')}
+                className={cn('relative z-10 w-full h-full', fit === 'cover' ? 'object-cover' : 'object-contain')}
                 alt=""
                 onError={(e) => {
                     // thumbnail failed → try the raw Drive URL as last resort
@@ -125,6 +82,7 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({ imageUrl, documentUrl, c
                     if (img.src !== effectiveUrl) img.src = effectiveUrl;
                 }}
             />
+            </>
         );
     };
 
@@ -169,8 +127,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
     const category = notice.category || 'other';
     const config = categoryConfig[category] || categoryConfig.other;
     const CategoryIcon = config.icon;
-    const rawTemplate = notice.template as Template || 'standard';
-    const template: Template = rawTemplate === 'featured' ? 'standard' : rawTemplate;
+    const template: Template = notice.template as Template || 'standard';
     const placement = notice.templatePlacement || 'left';
 
     // Per-notice text scale factor (0.8 - 1.5, default 1.0)
@@ -362,6 +319,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                     imageUrl={notice.imageUrl}
                                     documentUrl={notice.documentUrl}
                                     className={`h-full w-full rounded-[2rem] border ${isLight ? 'border-slate-200' : 'border-white/10'} shadow-2xl`}
+                                    fit="contain"
                                 />
                             ) : (
                                 <div className={`h-full rounded-[2rem] ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-white/5 border-white/10'} border border-dashed flex items-center justify-center`}>
@@ -530,11 +488,11 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
         case 'featured':
             return (
                 <div className={containerClass}>
-                    <div className={`h-full ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-white/5 border-white/10'} rounded-xl sm:rounded-2xl xl:rounded-[3rem] border p-4 sm:p-8 xl:p-14 relative overflow-hidden text-left`}>
-                        <div className="absolute top-0 right-0 p-4 sm:p-6 xl:p-10">
+                    <div className={`h-full ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-white/5 border-white/10'} rounded-xl sm:rounded-2xl xl:rounded-[3rem] border p-4 sm:p-8 xl:p-14 relative overflow-hidden text-left flex gap-8`}>
+                        <div className="absolute top-0 right-0 p-4 sm:p-6 xl:p-10 pointer-events-none">
                             <Trophy className="h-20 w-20 sm:h-28 sm:w-28 xl:h-40 xl:w-40 text-white/5 -rotate-12" />
                         </div>
-                        <div className="relative z-10 h-full flex flex-col">
+                        <div className="relative z-10 flex-1 flex flex-col min-h-0">
                             <div className="text-primary font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-xs sm:text-sm xl:text-base mb-2 sm:mb-3 xl:mb-4 shrink-0">Featured Update</div>
                             <h1 className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'} mb-4 sm:mb-6 xl:mb-10 leading-tight shrink-0 line-clamp-3`}
                                 style={titleStyle}>
@@ -549,7 +507,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                             </div>
                             <div className="mt-4 sm:mt-8 xl:mt-12 flex items-center gap-4 sm:gap-6 xl:gap-10">
                                 <div className="flex items-center gap-2 sm:gap-3 xl:gap-4">
-                                    <div className="w-8 h-8 sm:w-10 sm:h-10 xl:w-14 xl:h-14 rounded-xl xl:rounded-2xl bg-primary flex items-center justify-center shadow-lg text-black">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 xl:w-14 xl:h-14 rounded-xl xl:rounded-2xl bg-primary flex items-center justify-center shadow-lg text-black shrink-0">
                                         <User className="h-4 w-4 sm:h-5 sm:w-5 xl:h-8 xl:w-8" />
                                     </div>
                                     <div>
@@ -558,7 +516,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                     </div>
                                 </div>
                                 {regUrl && (
-                                    <div className="ml-auto flex flex-col items-center gap-1">
+                                    <div className="ml-auto flex flex-col items-center gap-1 shrink-0">
                                         <div className="rounded-xl bg-white p-1.5 sm:p-2 xl:p-2.5 shadow-2xl">
                                             <QRCodeSVG value={regUrl} size={120} includeMargin={false} />
                                         </div>
@@ -567,6 +525,16 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                 )}
                             </div>
                         </div>
+                        {(notice.imageUrl || notice.documentUrl) && (
+                            <div className="relative z-10 w-[38%] shrink-0 h-full">
+                                <MediaPanel
+                                    imageUrl={notice.imageUrl}
+                                    documentUrl={notice.documentUrl}
+                                    className={`w-full h-full rounded-[2rem] shadow-2xl border ${isLight ? 'border-slate-200' : 'border-white/10'}`}
+                                    fit="contain"
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
             );
@@ -585,6 +553,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                             imageUrl={notice.imageUrl}
                             documentUrl={notice.documentUrl}
                             className="w-full rounded-xl shadow-xl flex-1 min-h-0"
+                            fit="contain"
                         />
                     )}
                     <div className="flex flex-col items-center gap-3 shrink-0">
@@ -600,6 +569,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                     imageUrl={notice.imageUrl}
                     documentUrl={notice.documentUrl}
                     className={cn('w-[38%] self-stretch rounded-[2rem] shadow-2xl shrink-0', isStandardRight && 'order-1')}
+                    fit="contain"
                 />
             ) : null;
 

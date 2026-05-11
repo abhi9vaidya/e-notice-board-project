@@ -1,11 +1,12 @@
-﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useActiveNotices } from '@/hooks/useFirebaseNotices';
 import { useArchive } from '@/hooks/useArchive';
-import { Sparkles, Trophy, CalendarDays, LayoutGrid, MonitorPlay, RefreshCw } from 'lucide-react';
+import { Sparkles, Trophy, CalendarDays, LayoutGrid, MonitorPlay, RefreshCw, WifiOff } from 'lucide-react';
 import { format, isToday, isTomorrow } from 'date-fns';
 import rbuLogo from '@/assets/rbu-logo.png';
-import { TVNoticePreview, toDisplayImageUrl } from '@/components/TVNoticePreview';
+import { TVNoticePreview } from '@/components/TVNoticePreview';
+import { toDisplayImageUrl } from '@/lib/mediaUtils';
 import { AutoScrollText } from '@/components/AutoScrollText';
 import { TVMultiView } from '@/components/TVMultiView';
 import { getDailyQuote } from '@/data/spiritualQuotes';
@@ -112,7 +113,6 @@ const AchievementSpotlightCard: React.FC<{
                 if (img.src !== achievement.imageUrl) {
                   img.src = achievement.imageUrl;
                 } else {
-                  console.warn(`[AchievementSpotlightCard] Image failed to load for: "${achievement.title}" — URL: ${achievement.imageUrl}`);
                   setImgError(true);
                   setImgLoading(false);
                 }
@@ -185,6 +185,19 @@ const TVDisplay: React.FC = () => {
   const { notices: activeNotices, loading: noticesLoading } = useActiveNotices();
   const { archivedNotices } = useArchive();
   const { settings } = useTVDisplaySettings();
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   // ─── Active display mode (single | multi) ─────────────────────────────────
   const [activeMode, setActiveMode] = useState<'single' | 'multi'>(
     resolveTVMode(settings.displayMode, settings.autoStartMode)
@@ -428,7 +441,11 @@ const TVDisplay: React.FC = () => {
               style={{ inset: `${settings.tvSafeAreaPercent}%` }}
             >
               <div className="text-center">
-                <div className="w-12 h-12 border-2 border-black/10 border-t-primary rounded-full animate-spin mb-5 mx-auto" />
+                <div className="flex justify-center gap-6 mb-8 opacity-60">
+                  <div className="w-56 h-72 rounded-2xl bg-slate-500/20 animate-pulse" />
+                  <div className="w-56 h-72 rounded-2xl bg-slate-500/20 animate-pulse delay-75" />
+                  <div className="w-56 h-72 rounded-2xl bg-slate-500/20 animate-pulse delay-150" />
+                </div>
                 <p className="text-slate-500 font-bold tracking-[0.3em] uppercase text-xs">Updating Board</p>
               </div>
             </div>
@@ -943,6 +960,24 @@ const TVDisplay: React.FC = () => {
           </motion.div>
         </div>
       </footer>
+
+      {/* ── Offline Overlay ── */}
+      <AnimatePresence>
+        {isOffline && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="absolute bottom-12 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-6 py-3 rounded-full border shadow-2xl bg-black/80 border-red-500/30 backdrop-blur-md"
+          >
+            <WifiOff className="h-4 w-4 text-red-500" />
+            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <p className="text-white text-xs sm:text-sm font-medium tracking-wide">
+              Reconnecting to campus network...
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
           </div>
         </div>

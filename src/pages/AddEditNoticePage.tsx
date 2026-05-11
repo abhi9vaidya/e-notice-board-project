@@ -487,7 +487,6 @@ const AddEditNoticePage: React.FC = () => {
         navigate("/manage-notices");
       }
     } catch (error) {
-      console.error("Submission error:", error);
       const message = error instanceof Error ? error.message : "There was an error uploading your file. Please check your connection.";
       toast({
         title: "Upload Failed",

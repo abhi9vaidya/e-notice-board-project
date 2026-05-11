@@ -15,6 +15,11 @@ export const uploadToGoogleDrive = async (file: File): Promise<string> => {
         throw new Error('Google Drive Proxy URL not configured in .env');
     }
 
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_FILE_SIZE) {
+        throw new Error('File too large. Please compress it to under 10MB before uploading.');
+    }
+
     // convert to base64
     const base64 = await fileToBase64(file);
 
@@ -24,37 +29,31 @@ export const uploadToGoogleDrive = async (file: File): Promise<string> => {
         base64: base64.split(',')[1] // remove prefix
     };
 
-    try {
-        // send as simple request — redirect:follow is required because GAS does a 302 on every POST
-        const resultResponse = await fetch(proxyUrl, {
-            method: 'POST',
-            redirect: 'follow',
-            headers: { 'Content-Type': 'text/plain' }, // text/plain avoids CORS preflight on GAS
-            body: JSON.stringify(payload),
-        });
+    // send as simple request — redirect:follow is required because GAS does a 302 on every POST
+    const resultResponse = await fetch(proxyUrl, {
+        method: 'POST',
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain' }, // text/plain avoids CORS preflight on GAS
+        body: JSON.stringify(payload),
+    });
 
-        // handle gas cors issues
-        try {
-            const result: DriveUploadResponse = await resultResponse.json();
-            if (result.status === 'success' && result.url) {
-                return result.url;
-            }
-            throw new Error(result.message || 'Drive proxy returned error status');
-        } catch (e) {
-            // If we can't read the response due to CORS, but the request was sent...
-            // This is a common GAS limitation. 
-            console.warn('Could not read response body due to CORS, but request was sent.');
-            // We'll return a generic success if we think it went through, 
-            // or just rethrow if it's a real network error
-            if (resultResponse.type === 'opaque' || resultResponse.status === 200 || resultResponse.status === 0) {
-                // We can't actually get the URL here if it's opaque.
-                throw new Error('CORS restriction: File uploaded but URL could not be retrieved. Please check Drive.');
-            }
-            throw e;
+    // handle gas cors issues
+    try {
+        const result: DriveUploadResponse = await resultResponse.json();
+        if (result.status === 'success' && result.url) {
+            return result.url;
         }
-    } catch (error) {
-        console.error('Google Drive Upload Error:', error);
-        throw error;
+        throw new Error(result.message || 'Drive proxy returned error status');
+    } catch (e) {
+        // If we can't read the response due to CORS, but the request was sent...
+        // This is a common GAS limitation. 
+        // We'll return a generic success if we think it went through, 
+        // or just rethrow if it's a real network error
+        if (resultResponse.type === 'opaque' || resultResponse.status === 200 || resultResponse.status === 0) {
+            // We can't actually get the URL here if it's opaque.
+            throw new Error('CORS restriction: File uploaded but URL could not be retrieved. Please check Drive.');
+        }
+        throw e;
     }
 };
 

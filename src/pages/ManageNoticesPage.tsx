@@ -47,7 +47,7 @@ import { cn } from "@/lib/utils";
 
 const ManageNoticesPage: React.FC = () => {
   const navigate = useNavigate();
-  const { notices, removeNotice } = useNotices();
+  const { notices, removeNotice, loading } = useNotices();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<Category | "all">("all");
 
@@ -172,7 +172,18 @@ const ManageNoticesPage: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredNotices.length === 0 ? (
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={`skeleton-${i}`} className="bg-muted/5">
+                      <TableCell><div className="h-4 w-48 bg-muted animate-pulse rounded mb-2" /><div className="h-3 w-64 bg-muted animate-pulse rounded" /></TableCell>
+                      <TableCell><div className="h-6 w-24 bg-muted animate-pulse rounded-full" /></TableCell>
+                      <TableCell className="hidden md:table-cell"><div className="h-4 w-24 bg-muted animate-pulse rounded" /></TableCell>
+                      <TableCell className="hidden md:table-cell"><div className="h-4 w-24 bg-muted animate-pulse rounded" /></TableCell>
+                      <TableCell className="hidden sm:table-cell"><div className="h-6 w-20 bg-muted animate-pulse rounded-full" /></TableCell>
+                      <TableCell className="text-right"><div className="flex justify-end gap-2"><div className="h-8 w-8 bg-muted animate-pulse rounded" /><div className="h-8 w-8 bg-muted animate-pulse rounded" /></div></TableCell>
+                    </TableRow>
+                  ))
+                ) : filteredNotices.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="h-32 text-center">
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
