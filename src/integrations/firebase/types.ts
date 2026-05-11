@@ -40,6 +40,8 @@ export interface FirestoreNotice {
     facultyId: string;
     imageUrl?: string;
     documentUrl?: string;
+    secondImageUrl?: string;
+    secondDocumentUrl?: string;
     registrationUrl?: string;
     pdfOrientation?: 'landscape' | 'portrait';
     startTime: Timestamp;
@@ -83,6 +85,8 @@ export interface Notice {
     facultyId: string;
     imageUrl?: string;
     documentUrl?: string;
+    secondImageUrl?: string;
+    secondDocumentUrl?: string;
     registrationUrl?: string;
     pdfOrientation?: 'landscape' | 'portrait';
     startTime: Date;

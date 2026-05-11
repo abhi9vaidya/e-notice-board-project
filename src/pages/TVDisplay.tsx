@@ -302,12 +302,26 @@ const TVDisplay: React.FC = () => {
   }, [archivedAchievements, achPage]);
 
   // Group portrait-PDF notices into double slides; everything else is a single slide
+  // A portrait notice with its own secondImageUrl/secondDocumentUrl is self-contained side-by-side
   const slides = useMemo<Slide[]>(() => {
     const result: Slide[] = [];
     let i = 0;
     while (i < displayItems.length) {
       const n = displayItems[i];
-      if (
+      const hasSelfPair = n.pdfOrientation === 'portrait' && (n.secondImageUrl || n.secondDocumentUrl);
+      if (hasSelfPair) {
+        // Self-contained side-by-side: create a synthetic second notice for the right panel
+        const secondNotice: Notice = {
+          ...n,
+          id: n.id + '-side2',
+          imageUrl: n.secondImageUrl || '',
+          documentUrl: n.secondDocumentUrl || '',
+          secondImageUrl: undefined,
+          secondDocumentUrl: undefined,
+        };
+        result.push({ type: 'double', notices: [n, secondNotice] });
+        i++;
+      } else if (
         n.pdfOrientation === 'portrait' &&
         i + 1 < displayItems.length &&
         displayItems[i + 1].pdfOrientation === 'portrait'

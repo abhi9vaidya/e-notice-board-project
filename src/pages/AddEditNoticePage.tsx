@@ -132,7 +132,7 @@ const AddEditNoticePage: React.FC = () => {
     startTime: new Date(),
     endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     isArchived: false,
-    showIssuedBy: true,
+    showIssuedBy: false,
     showValidTill: true,
     showTextOverlay: true,
     textScale: 1.0,
@@ -157,6 +157,7 @@ const AddEditNoticePage: React.FC = () => {
   const isAchievement = formData.category === 'achievements';
 
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [secondUploadedFile, setSecondUploadedFile] = useState<File | null>(null);
 
   // Detect whether the current upload / existing file is a PDF
   const hasPdf = React.useMemo(() => {
@@ -183,6 +184,7 @@ const AddEditNoticePage: React.FC = () => {
   const [extractedLinks, setExtractedLinks] = useState<string[]>([]);
   const extractInputRef = useRef<HTMLInputElement>(null);
   const mediaInputRef = useRef<HTMLInputElement>(null);
+  const secondMediaInputRef = useRef<HTMLInputElement>(null);
   const layoutEditorRef = useRef<HTMLDivElement>(null);
   const [previewAssetUrl, setPreviewAssetUrl] = useState('');
   const [selectedLayoutSection, setSelectedLayoutSection] = useState<LayoutSection>('title');
@@ -460,12 +462,36 @@ const AddEditNoticePage: React.FC = () => {
         finalImageUrl = "";
       }
 
+      // Upload second file (for portrait side-by-side)
+      let finalSecondImageUrl = formData.secondImageUrl || "";
+      let finalSecondDocumentUrl = formData.secondDocumentUrl || "";
+      if (secondUploadedFile) {
+        const secondUrl = await uploadNoticeFile(secondUploadedFile, undefined, {
+          category: formData.category,
+          facultyId: formData.facultyId,
+          facultyName: formData.facultyName,
+          noticeTitle: normalizedTitle + ' (2)',
+          startTime: computedStartTime,
+          endTime: computedEndTime,
+        });
+        const isSecondPdf = secondUploadedFile.type === 'application/pdf' || secondUploadedFile.name.toLowerCase().endsWith('.pdf');
+        if (isSecondPdf) {
+          finalSecondDocumentUrl = secondUrl;
+          finalSecondImageUrl = "";
+        } else {
+          finalSecondImageUrl = secondUrl;
+          finalSecondDocumentUrl = "";
+        }
+      }
+
       const dataToSubmit: CreateNoticeInput = {
         ...formData,
         title: normalizedTitle,
         description: normalizedDescription,
         imageUrl: finalImageUrl || "",
         documentUrl: finalDocumentUrl || "",
+        secondImageUrl: finalSecondImageUrl || "",
+        secondDocumentUrl: finalSecondDocumentUrl || "",
         priority: isAchievement ? "low" : (isHighPriority ? "high" : formData.priority),
         startTime: computedStartTime,
         endTime: computedEndTime,
@@ -521,6 +547,13 @@ const AddEditNoticePage: React.FC = () => {
             ? prev.pdfOrientation
             : undefined,
       }));
+    }
+  };
+
+  const handleSecondFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSecondUploadedFile(file);
     }
   };
 
@@ -790,6 +823,84 @@ const AddEditNoticePage: React.FC = () => {
                         </span>
                       </button>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {formData.pdfOrientation === 'portrait' && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <Label className="text-sm font-medium">
+                      Second File (Side-by-Side)
+                    </Label>
+                    {secondUploadedFile && (
+                      <span className="text-xs text-muted-foreground">
+                        Selected: {secondUploadedFile.name}
+                      </span>
+                    )}
+                  </div>
+
+                  <input
+                    ref={secondMediaInputRef}
+                    type="file"
+                    accept=".png,.jpg,.jpeg,image/png,image/jpeg,.pdf,application/pdf"
+                    className="hidden"
+                    onChange={handleSecondFileChange}
+                  />
+
+                  <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4 space-y-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="gap-2"
+                        onClick={() => secondMediaInputRef.current?.click()}
+                      >
+                        <Upload className="h-4 w-4" />
+                        {secondUploadedFile || formData.secondImageUrl || formData.secondDocumentUrl ? 'Replace second file' : 'Add second file'}
+                      </Button>
+                      {(secondUploadedFile || formData.secondImageUrl || formData.secondDocumentUrl) && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="gap-2 text-destructive hover:text-destructive"
+                          onClick={() => {
+                            setSecondUploadedFile(null);
+                            setFormData(prev => ({ ...prev, secondImageUrl: "", secondDocumentUrl: "" }));
+                            if (secondMediaInputRef.current) secondMediaInputRef.current.value = '';
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Upload a second image or PDF to display side-by-side with the first on TV.
+                    </p>
+                    {secondUploadedFile ? (
+                      <div className="overflow-hidden rounded-lg border bg-background/70">
+                        {(secondUploadedFile.type === 'application/pdf' || secondUploadedFile.name.toLowerCase().endsWith('.pdf')) ? (
+                          <div className="flex h-20 items-center justify-center gap-2 text-sm text-muted-foreground">
+                            <FileText className="h-5 w-5" /> PDF selected
+                          </div>
+                        ) : (
+                          <img
+                            src={URL.createObjectURL(secondUploadedFile)}
+                            alt="Second file preview"
+                            className="max-h-40 w-full object-contain"
+                          />
+                        )}
+                      </div>
+                    ) : (formData.secondImageUrl || formData.secondDocumentUrl) ? (
+                      <div className="flex h-20 items-center justify-center gap-2 text-sm text-muted-foreground rounded-lg border bg-background/70">
+                        <FileText className="h-5 w-5" /> Second file already uploaded
+                      </div>
+                    ) : (
+                      <div className="flex h-20 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+                        No second file selected
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

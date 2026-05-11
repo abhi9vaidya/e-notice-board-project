@@ -35,6 +35,8 @@ const toAppNotice = (id: string, data: FirestoreNotice): Notice => ({
     facultyId: data.facultyId,
     imageUrl: data.imageUrl,
     documentUrl: data.documentUrl,
+    secondImageUrl: data.secondImageUrl,
+    secondDocumentUrl: data.secondDocumentUrl,
     registrationUrl: data.registrationUrl,
     pdfOrientation: data.pdfOrientation,
     startTime: data.startTime.toDate(),
