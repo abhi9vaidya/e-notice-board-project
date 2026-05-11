@@ -37,14 +37,17 @@ export const AutoScrollText: React.FC<AutoScrollTextProps> = ({ content, classNa
     const containerRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
     const [scrollDistance, setScrollDistance] = useState(0);
+    const [contentHeight, setContentHeight] = useState(0);
+    const gap = 32;
 
     useEffect(() => {
         const checkScroll = () => {
             if (containerRef.current && contentRef.current) {
                 const containerHeight = containerRef.current.clientHeight;
-                const contentHeight = contentRef.current.scrollHeight;
-                if (contentHeight > containerHeight + 10) {
-                    setScrollDistance(contentHeight - containerHeight + 60);
+                const measuredContentHeight = contentRef.current.scrollHeight;
+                setContentHeight(measuredContentHeight);
+                if (measuredContentHeight > containerHeight + 10) {
+                    setScrollDistance(measuredContentHeight + gap);
                 } else {
                     setScrollDistance(0);
                 }
@@ -73,18 +76,22 @@ export const AutoScrollText: React.FC<AutoScrollTextProps> = ({ content, classNa
             <motion.div
                 ref={contentRef}
                 initial={{ y: 0 }}
-                animate={{ y: scrollDistance > 0 ? -scrollDistance : 0 }}
+                animate={{ y: scrollDistance > 0 ? [0, -scrollDistance] : 0 }}
                 transition={scrollDistance > 0 ? {
                     duration: scrollDistance / speed,
                     ease: 'linear',
                     repeat: Infinity,
-                    repeatType: 'reverse',
-                    repeatDelay: 2,
-                    delay: 2,
+                    repeatType: 'loop',
+                    delay: 1,
                 } : {}}
-                className={scrollDistance > 0 ? 'pb-16 will-change-transform' : ''}
+                className={scrollDistance > 0 ? 'will-change-transform' : ''}
             >
                 <MdContent>{content}</MdContent>
+                {scrollDistance > 0 && (
+                    <div style={{ marginTop: `${gap}px`, minHeight: `${contentHeight}px` }}>
+                        <MdContent>{content}</MdContent>
+                    </div>
+                )}
             </motion.div>
         </div>
     );
