@@ -1,78 +1,80 @@
-﻿# E-Notice Board
+# E-Notice Board
 
-A cloud-based digital notice board for campus communication, optimized for both faculty workflow and always-on TV display screens.
+A cloud-based digital notice board system designed for academic institution campuses. This application is optimized for faculty administration workflows and always-on television display screens across campus departments.
 
-Live URL: https://rbu-notice-board.web.app
+Live Deployment URL: https://rbu-notice-board.web.app
 
-## Overview
+## Project Overview
 
-Faculty and admins create notices from a web dashboard. Notices are stored in Firestore and rendered in real time on a dedicated TV route (`/tv`) with animated slideshow and multi-view layouts.
+The E-Notice Board is a modern campus communication system that allows faculty and administrators to easily publish notices from a secure dashboard. Published notices are processed and synced in real time to dedicated television display routes (`/tv`). The display client renders these notices using automated slide loops, custom templates, scroll animations, and intelligent priority-based scheduling.
 
-The current version includes:
-- Allowlist-first Google authentication for faculty onboarding
-- Admin role management and access governance
-- Notice scheduling, auto-archiving, and category-based display
-- Image/PDF upload via Google Drive Apps Script proxy
-- AI-assisted text extraction from uploaded images
-- Configurable TV behavior (single, multi, and auto-switch modes)
+The system features:
+- Allowlist-controlled Google Authentication for secure faculty onboarding.
+- Multi-tier role management (Faculty and Administrator access levels).
+- Advanced notice scheduling, scheduling calendars, and automated archival states.
+- Seamless document and image hosting using Google Drive as a backend storage layer.
+- AI-assisted OCR metadata extraction for uploaded notice files.
+- Dedicated TV display system with multiple layout orientations and auto-alternating loops.
 
-## Tech Stack
+## Technical Architecture
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 18, TypeScript, Vite |
-| UI | Tailwind CSS, shadcn/ui, Framer Motion |
-| Routing | React Router v6 |
-| State/Data | TanStack Query, custom hooks |
-| Auth | Firebase Authentication (Google + optional email/password for admin/legacy) |
-| Database | Cloud Firestore |
-| File Storage Bridge | Google Drive via Apps Script Web App proxy |
-| Hosting | Firebase Hosting |
-| Testing | Vitest + Testing Library |
+The platform is designed around a modern Serverless Web App architecture to ensure high performance, real-time synchronization, and zero server maintenance overhead.
 
-## Core Features
+| Architectural Layer | Technology | Description |
+|---|---|---|
+| **Frontend Framework** | React 18, TypeScript, Vite | Client runtime compiled for speed and type safety. |
+| **Styling & Layout** | Tailwind CSS, shadcn/ui, Framer Motion | Fluid typography, customized layout frameworks, smooth micro-animations. |
+| **Routing** | React Router v6 | Client-side page resolution and authentication guards. |
+| **State & Data Sync** | TanStack Query, Firestore Snapshots | Real-time listeners for instant TV screen updates. |
+| **Authentication** | Firebase Auth (Google Sign-In + Fallback) | Restricted allowlist login protocol for faculty members. |
+| **Database** | Cloud Firestore | Real-time, NoSQL document store for notices and profile schema. |
+| **Storage Engine** | Google Drive API via Apps Script Web App Proxy | Custom file pipeline with a 10MB limit and direct thumbnail resolvers. |
+| **Hosting Platform** | Firebase Hosting | Optimized global CDN for lightning-fast loads. |
+| **Local Verification** | Vitest, React Testing Library | Unit tests and regression suite. |
 
-- Faculty and admin dashboard for end-to-end notice management
-- Rich notice composer with Markdown editor and live TV preview
-- Template support: `standard`, `split`, `full-image`, `text-only`, `featured`
-- PDF/image notice uploads with generated metadata-aware naming
-- Optional registration URL (QR-enabled in TV notice cards)
-- Student Spotlight for `achievements` category (separate TV panel)
-- Real-time TV updates from Firestore snapshots
-- Auto-expiry and archive support
-- TV themes (`dark`/`light`) and mode controls:
-- `single`: slideshow with per-priority durations
-- `multi`: overview layout with high-priority + grid + spotlight
-- `auto`: timed alternation between single and multi
+## Core Functional Systems
 
-## Access and Authentication Flow
+### 1. Unified Administration & Notice Workspace
+- Faculty and Administrators get an end-to-end management board.
+- Dynamic notice composer equipped with a full Markdown Editor, category-based theme engine, and active TV live preview.
+- Granular publication control: configurable start time, auto-expiry threshold, and custom priority badges (Urgent, Important, General).
+- Optimized ergonomics, such as hiding "Issued By" author metadata by default to maximize visible space on presentation screens.
 
-1. Admin adds faculty email to Firestore `allowlist`.
-2. Faculty signs in with Google.
-3. On first login, faculty confirms department.
-4. Profile is created in Firestore as approved `faculty`.
-5. Admin can promote users to `admin` from the Admin page.
+### 2. Intelligent Document Shape Configurations
+- **Landscape - Full Screen**: Fits standard landscape notices and documents across the entire width of the display interface.
+- **Portrait - Side-by-Side (Dual-File Support)**: Specifically allows uploading and rendering of two separate documents or images side-by-side within a single notice slide, or automates pairing separate portrait-orientation notices together on the same screen to maximize space efficiency.
 
-Notes:
-- Self-registration is intentionally disabled.
-- Email/password login exists as fallback for admin/legacy accounts.
+### 3. Smart Fallbacks and Display Resilience
+- Real-time text extraction automatically reads text content from uploaded notice files to pre-fill metadata fields.
+- Dynamic error handling: broken notice images automatically fallback to clean system containers or gracefully hide to ensure the TV layout never looks broken or unpolished.
+- Height-aware autoscrolling handles long text strings, moving them smoothly from top to bottom before resetting, bypassing browser layout jumps.
+- Custom stylized scrollbars provide a unified interface appearance across standard desktop, tablet, and TV environments.
 
-## Current Routes
+### 4. Adaptive TV Rendering Engines
+- **Single Mode**: Cycles through active notices one-by-one with per-priority transition times.
+- **Multi-Grid Mode**: Splits the screen into high-priority announcements, a grid of upcoming events, and a dedicated Student Spotlight column.
+- **Auto-Switch Mode**: Alternates intelligently between Single and Multi-Grid display modes on a timer.
 
-| Route | Purpose |
-|---|---|
-| `/` | Entry route (splash + sign in + dashboard handoff) |
-| `/tv` | Public TV display view |
-| `/manage-notices` | Notice management list |
-| `/add-notice` | Create/Edit notice page (`?edit=<id>` for edits) |
-| `/archive` | Archived notices |
-| `/categories` | Category view |
-| `/profile` | Profile page |
-| `/settings` | Settings page (TV controls, password tools; admin features gated) |
-| `/admin` | Admin console (allowlist + role management) |
-| `/about` | Public about page |
+---
 
-## Firestore Data Model
+## System Routes
+
+| Location | Gating Policy | Main Responsibility |
+|---|---|---|
+| `/` | Public | Splash screen, public overview, and authentication portal. |
+| `/tv` | Public | Always-on TV display presentation view. |
+| `/manage-notices` | Authorized (Faculty/Admin) | Complete dashboard of all published, active, and scheduled notices. |
+| `/add-notice` | Authorized (Faculty/Admin) | Composition interface (supports editing via `?edit=id`). |
+| `/archive` | Authorized (Faculty/Admin) | Vault of expired and archived notices for reference. |
+| `/categories` | Public | Directory filter of notice classifications. |
+| `/profile` | Authorized (Faculty/Admin) | Departmental registration info and personal profile details. |
+| `/settings` | Authorized (Faculty/Admin) | TV layout configurations, interface themes, and credentials. |
+| `/admin` | Authorized (Admin Only) | User promotion, allowlist control, and campus-wide parameters. |
+| `/about` | Public | Institutional documentation and project details. |
+
+---
+
+## Firestore Schema Reference
 
 ### `profiles/{uid}`
 ```json
@@ -110,6 +112,8 @@ Notes:
   "facultyId": "string",
   "imageUrl": "string (optional)",
   "documentUrl": "string (optional)",
+  "secondImageUrl": "string (optional)",
+  "secondDocumentUrl": "string (optional)",
   "registrationUrl": "string (optional)",
   "pdfOrientation": "portrait | landscape (optional)",
   "showIssuedBy": "boolean (optional)",
@@ -123,87 +127,71 @@ Notes:
 }
 ```
 
-## Environment Variables
+---
 
-Create `.env` from `.env.example` and provide values before running locally.
+## Local Configuration and Deployment
 
-Required for current workflow:
-- `VITE_FIREBASE_API_KEY`
-- `VITE_FIREBASE_AUTH_DOMAIN`
-- `VITE_FIREBASE_PROJECT_ID`
-- `VITE_FIREBASE_STORAGE_BUCKET`
-- `VITE_FIREBASE_MESSAGING_SENDER_ID`
-- `VITE_FIREBASE_APP_ID`
-- `VITE_GOOGLE_DRIVE_PROXY_URL` (Apps Script endpoint for uploads)
+### 1. Environment Preparation
+Copy `.env.example` into a new `.env` file in your root folder and set the values.
 
-Optional:
-- `VITE_GROQ_API_KEY` (AI extraction from uploaded images)
-- `VITE_FIREBASE_MEASUREMENT_ID`
+```env
+VITE_FIREBASE_API_KEY=your_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=sender_id
+VITE_FIREBASE_APP_ID=app_id
+VITE_GOOGLE_DRIVE_PROXY_URL=your_google_apps_script_url
+VITE_GROQ_API_KEY=your_groq_vision_key
+```
 
-Important: `.env.example` currently includes some legacy placeholders (for older integrations). Follow the list above for the active implementation.
-
-## Local Development
-
-Prerequisites:
-- Node.js 18+
-- npm
-- Firebase project with Auth + Firestore
-- Deployed Google Apps Script proxy (see `docs/drive_proxy.gs`)
-
-Install and run:
+### 2. Project Bootstrapping
+Install dependencies and run the local development server:
 
 ```bash
+# Clone the repository
 git clone https://github.com/abhi9vaidya/e-notice-board-project.git
 cd e-notice-board-project
+
+# Install node dependencies
 npm install
+
+# Start the local vite bundler
 npm run dev
 ```
+The application will be accessible at: `http://localhost:5173`
 
-Local app URL: `http://localhost:5173`
-
-## Firebase Setup Checklist
-
-1. Create Firebase project.
-2. Enable Google sign-in in Firebase Authentication.
-3. Create Firestore database.
-4. Deploy rules:
-```bash
-firebase deploy --only firestore:rules
-```
-5. Create at least one admin profile and seed allowlist entries.
-
-## Build, Test, and Deploy
+### 3. Firebase Deployment
+To release database rules, storage rules, and frontend static assets:
 
 ```bash
+# Verify type definitions and style guidelines
 npm run lint
-npm run test
+
+# Compile production bundle
 npm run build
-firebase deploy --only hosting
+
+# Deploy assets and security settings
+firebase deploy
 ```
 
-## TV Deployment Notes
+---
 
-- Open `https://<your-domain>/tv` on the display device.
-- Use kiosk browser mode for full-screen persistence.
-- TV display reads Firestore updates in real time.
-- If tab remains hidden for long periods, the display auto-refreshes when visible again.
+## TV Hardware Installation Guide
+- Mount display TVs in landscape layout with standard 1080p resolution.
+- Configure device browsers (e.g., Google Chrome on Android TV or Raspberry Pi) to launch in kiosk mode pointing to: `https://your-domain.web.app/tv`
+- The screen will dynamically catch real-time socket streams from Firestore. No manual reloads are required.
 
-## Future Enhancements
-
-- Mobile app for students with push notifications
-- Advanced analytics dashboard (notice engagement, views)
-- Role-based category subscriptions for personalized notices
-- Offline TV caching for low-connectivity environments
-- Multi-language support for wider accessibility
+---
 
 ## Contributors
 
-| Name | Focus |
+| Developer | Core Responsibilities |
 |---|---|
-| Abhinav Vaidya | Full-stack implementation, Firebase integration |
-| Mansi Motghare | Backend integration and API work |
-| Parnavi Kite | Frontend development and UI |
-| Kartik Suchak | Testing and documentation |
+| Abhinav Vaidya | Full-Stack Architecture, Database Design, Real-time Sync |
+| Mansi Motghare | Backend Integration, Apps Script Proxy Pipelines |
+| Parnavi Kite | Frontend Layouts, Interface Components, Responsive Design |
+| Kartik Suchak | Automated Testing, Verification Suite, Technical Writing |
 
-Institution: Shri Ramdeobaba College of Engineering and Management, Nagpur  
-Course: B.Tech CSE, 6th Semester Project (2026).
+**Institution**: Shri Ramdeobaba College of Engineering and Management, Nagpur  
+**Course**: B.Tech CSE, 6th Semester Mini Project (2026)
