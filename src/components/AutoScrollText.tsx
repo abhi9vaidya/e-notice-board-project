@@ -74,7 +74,6 @@ export const AutoScrollText: React.FC<AutoScrollTextProps> = ({ content, classNa
             }}
         >
             <motion.div
-                ref={contentRef}
                 initial={{ y: 0 }}
                 animate={{ y: scrollDistance > 0 ? [0, -scrollDistance] : 0 }}
                 transition={scrollDistance > 0 ? {
@@ -86,7 +85,9 @@ export const AutoScrollText: React.FC<AutoScrollTextProps> = ({ content, classNa
                 } : {}}
                 className={scrollDistance > 0 ? 'will-change-transform' : ''}
             >
-                <MdContent>{content}</MdContent>
+                <div ref={contentRef}>
+                    <MdContent>{content}</MdContent>
+                </div>
                 {scrollDistance > 0 && (
                     <div style={{ marginTop: `${gap}px`, minHeight: `${contentHeight}px` }}>
                         <MdContent>{content}</MdContent>
