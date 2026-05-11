@@ -1,5 +1,6 @@
-  import React from 'react';
+import React from 'react';
 import { Notice, Category, Priority } from '@/integrations/firebase/types';
+import { toDisplayImageUrl } from '@/lib/mediaUtils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -150,9 +151,12 @@ const NoticeTable: React.FC<NoticeTableProps> = ({
                   <div className="flex items-center gap-2">
                     {notice.imageUrl && (
                       <img
-                        src={notice.imageUrl}
+                        src={toDisplayImageUrl(notice.imageUrl)}
                         alt=""
                         className="h-10 w-10 rounded-lg object-cover shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
                       />
                     )}
                     <div className="min-w-0">
