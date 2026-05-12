@@ -20,12 +20,106 @@ export interface ExtractedNotice {
   links: string[];
 }
 
+interface PDFJSGlobal {
+  getDocument: (args: { data: Uint8Array }) => {
+    promise: Promise<{
+      numPages: number;
+      getPage: (pageNo: number) => Promise<{
+        getViewport: (args: { scale: number }) => { width: number; height: number };
+        render: (args: { canvasContext: CanvasRenderingContext2D; viewport: unknown }) => { promise: Promise<void> };
+      }>;
+    }>;
+  };
+  GlobalWorkerOptions: {
+    workerSrc: string;
+  };
+}
+
+interface WindowWithPDFJS extends Window {
+  pdfjsLib?: PDFJSGlobal;
+}
+
+/**
+ * Loads the PDF.js library dynamically from CDN to avoid bundler/worker issues in React/Vite.
+ */
+const loadPdfJs = (): Promise<PDFJSGlobal> => {
+  return new Promise((resolve, reject) => {
+    const customWindow = window as unknown as WindowWithPDFJS;
+    if (customWindow.pdfjsLib) {
+      resolve(customWindow.pdfjsLib);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    script.onload = () => {
+      const pdfjsLib = customWindow.pdfjsLib;
+      if (!pdfjsLib) {
+        reject(new Error('PDF.js loaded but pdfjsLib global object was not found.'));
+        return;
+      }
+      // Configure CDN worker path
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      resolve(pdfjsLib);
+    };
+    script.onerror = () => reject(new Error('Failed to load PDF.js library from CDN. Check your connection.'));
+    document.head.appendChild(script);
+  });
+};
+
+/**
+ * Converts the first page of a PDF file to a high-quality Base64 JPEG data URL.
+ */
+export async function convertPdfToImage(pdfFile: File): Promise<string> {
+  const pdfjsLib = await loadPdfJs();
+  const fileReader = new FileReader();
+
+  return new Promise((resolve, reject) => {
+    fileReader.onload = async function() {
+      try {
+        const typedarray = new Uint8Array(this.result as ArrayBuffer);
+        // Load document
+        const loadingTask = pdfjsLib.getDocument({ data: typedarray });
+        const pdf = await loadingTask.promise;
+        
+        if (pdf.numPages === 0) {
+          throw new Error('This PDF has no pages.');
+        }
+
+        // Get the first page
+        const page = await pdf.getPage(1);
+
+        // Render at a high resolution (scale 2.0) for optimal Groq Vision text extraction/OCR accuracy
+        const viewport = page.getViewport({ scale: 2.0 });
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        if (!context) {
+          throw new Error('Failed to create canvas 2D context.');
+        }
+
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport,
+        };
+
+        await page.render(renderContext).promise;
+        
+        // Export to a compressed JPEG data URL for optimal upload performance with Groq
+        const base64Image = canvas.toDataURL('image/jpeg', 0.85);
+        resolve(base64Image);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Error processing PDF document. Please try again.';
+        reject(new Error(message));
+      }
+    };
+    fileReader.onerror = () => reject(new Error('Failed to read PDF file from disk.'));
+    fileReader.readAsArrayBuffer(pdfFile);
+  });
+}
+
 export async function extractTextFromFile(base64Data: string, fileType: 'image' | 'pdf'): Promise<ExtractedNotice> {
-  if (fileType === 'pdf') {
-    throw new Error(
-      'PDF extraction is not supported with the Groq vision API. Please upload a JPG or PNG screenshot of the document instead.'
-    );
-  }
 
   const apiKey = import.meta.env.VITE_GROQ_API_KEY;
   if (!apiKey) {

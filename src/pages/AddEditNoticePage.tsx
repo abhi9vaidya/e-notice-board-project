@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { uploadNoticeFile } from "@/integrations/firebase/storageService";
-import { extractTextFromFile } from "@/lib/extractText";
+import { extractTextFromFile, convertPdfToImage } from "@/lib/extractText";
 import { QRCodeSVG } from 'qrcode.react';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import AdminLayout from "@/components/layout/AdminLayout";
@@ -201,45 +201,66 @@ const AddEditNoticePage: React.FC = () => {
   const handleExtract = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     const isSupportedImage =
       file.type === 'image/png' ||
       file.type === 'image/jpeg' ||
       file.name.toLowerCase().endsWith('.png') ||
       file.name.toLowerCase().endsWith('.jpg') ||
       file.name.toLowerCase().endsWith('.jpeg');
-    if (!isSupportedImage) {
+      
+    if (!isPdf && !isSupportedImage) {
       toast({
         title: 'Unsupported extraction file',
-        description: 'Text extraction only supports PNG and JPG images.',
+        description: 'Text extraction only supports PNG, JPG images, and PDF documents.',
         variant: 'destructive',
       });
       e.target.value = '';
       return;
     }
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64 = reader.result as string;
-      setExtractPreview(base64);
-      setIsExtracting(true);
-      try {
-        const { title, description, links } = await extractTextFromFile(base64, 'image');
-        setFormData(prev => ({
-          ...prev,
-          description,
-          ...(title && !prev.title ? { title } : {}),
-          ...(links.length > 0 ? { registrationUrl: links[0] } : {}),
-        }));
-        setExtractedLinks(links);
-        setDescTab('type');
-        toast({ title: 'Extracted!', description: 'Title and description filled in. Review before saving.' });
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Failed to extract text.';
-        toast({ title: 'Extraction failed', description: msg, variant: 'destructive' });
-      } finally {
-        setIsExtracting(false);
+
+    setIsExtracting(true);
+    toast({
+      title: isPdf ? 'Processing PDF' : 'Reading Image',
+      description: isPdf ? 'Converting PDF page to image for extraction...' : 'Reading your image file...',
+    });
+
+    try {
+      let base64 = '';
+      if (isPdf) {
+        // Dynamically load PDF.js and convert page to base64 image
+        base64 = await convertPdfToImage(file);
+      } else {
+        // Read image file as standard data URL
+        base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('Failed to read image file.'));
+          reader.readAsDataURL(file);
+        });
       }
-    };
-    reader.readAsDataURL(file);
+
+      setExtractPreview(base64);
+
+      // Now extract text from the generated base64 image
+      const { title, description, links } = await extractTextFromFile(base64, 'image');
+      
+      setFormData(prev => ({
+        ...prev,
+        description,
+        ...(title && !prev.title ? { title } : {}),
+        ...(links.length > 0 ? { registrationUrl: links[0] } : {}),
+      }));
+      setExtractedLinks(links);
+      setDescTab('type');
+      toast({ title: 'Extracted!', description: 'Title and description filled in. Review before saving.' });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to extract text.';
+      toast({ title: 'Extraction failed', description: msg, variant: 'destructive' });
+    } finally {
+      setIsExtracting(false);
+    }
   };
 
   useEffect(() => {
@@ -724,7 +745,7 @@ const AddEditNoticePage: React.FC = () => {
                       <input
                         ref={extractInputRef}
                         type="file"
-                        accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+                        accept=".png,.jpg,.jpeg,image/png,image/jpeg,.pdf,application/pdf"
                         className="hidden"
                         onChange={handleExtract}
                       />
@@ -737,10 +758,10 @@ const AddEditNoticePage: React.FC = () => {
                           disabled={isExtracting}
                         >
                           {isExtracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                          {isExtracting ? 'Extracting...' : 'Choose JPG or PNG'}
+                          {isExtracting ? 'Extracting...' : 'Choose Image or PDF'}
                         </Button>
                         <p className="text-xs text-muted-foreground">
-                          Upload a JPG or PNG poster to auto-fill the title, description, and first detected link.
+                          Upload a JPG, PNG poster, or PDF document to auto-fill the title, description, and first detected link.
                         </p>
                       </div>
 

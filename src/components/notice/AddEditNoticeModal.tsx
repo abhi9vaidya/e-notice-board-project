@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Notice, Category, Priority, Template, TemplatePlacement } from '@/integrations/firebase/types';
 import { NoticeFormData } from '@/hooks/useFirebaseNotices';
 import { useAuth } from '@/context/AuthContext';
@@ -23,7 +23,7 @@ import {
   User, Clock, ChevronLeft, ChevronRight, Tv,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { extractTextFromFile } from '@/lib/extractText';
+import { extractTextFromFile, convertPdfToImage } from '@/lib/extractText';
 import { QRCodeSVG } from 'qrcode.react';
 import { format, addDays, addWeeks, addMonths } from 'date-fns';
 
@@ -396,27 +396,55 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({ isOpen, onClose
   const handleExtract = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64 = reader.result as string;
-      setUploadedImage(base64);
-      setIsExtracting(true);
-      try {
-        const type = file.type === 'application/pdf' ? 'pdf' : 'image';
-        const { title, description, links } = await extractTextFromFile(base64, type);
-        set('description', description);
-        if (title && !formData.title) set('title', title);
-        if (links.length > 0) set('registrationUrl', links[0]);
-        setExtractedLinks(links);
-        setDescriptionTab('text');
-        toast.success('Extracted! Title and description filled in. Review before saving.');
-      } catch {
-        toast.error('Failed to extract text. Please type manually.');
-      } finally {
-        setIsExtracting(false);
+
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isSupportedImage =
+      file.type === 'image/png' ||
+      file.type === 'image/jpeg' ||
+      file.name.toLowerCase().endsWith('.png') ||
+      file.name.toLowerCase().endsWith('.jpg') ||
+      file.name.toLowerCase().endsWith('.jpeg') ||
+      file.type.startsWith('image/');
+
+    if (!isPdf && !isSupportedImage) {
+      toast.error('Unsupported extraction file. Please upload an image or PDF.');
+      return;
+    }
+
+    setIsExtracting(true);
+    const toastId = toast.loading(isPdf ? 'Converting PDF page to image...' : 'Reading image...');
+
+    try {
+      let base64 = '';
+      if (isPdf) {
+        base64 = await convertPdfToImage(file);
+      } else {
+        base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('Failed to read image file.'));
+          reader.readAsDataURL(file);
+        });
       }
-    };
-    reader.readAsDataURL(file);
+
+      setUploadedImage(base64);
+
+      toast.loading('Analyzing document with AI...', { id: toastId });
+      const { title, description, links } = await extractTextFromFile(base64, 'image');
+      
+      set('description', description);
+      if (title && !formData.title) set('title', title);
+      if (links.length > 0) set('registrationUrl', links[0]);
+      setExtractedLinks(links);
+      setDescriptionTab('text');
+      
+      toast.success('Extracted! Title and description filled in.', { id: toastId });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to extract text. Please type manually.';
+      toast.error(message, { id: toastId });
+    } finally {
+      setIsExtracting(false);
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -549,11 +577,11 @@ const AddEditNoticeModal: React.FC<AddEditNoticeModalProps> = ({ isOpen, onClose
                         <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                           <Upload className="h-5 w-5 text-muted-foreground" />
                         </div>
-                        <p className="text-sm font-medium">Upload an image (JPG / PNG)</p>
-                        <p className="text-xs text-muted-foreground">AI will extract and summarise the key points</p>
+                        <p className="text-sm font-medium">Upload an image or PDF document</p>
+                        <p className="text-xs text-muted-foreground">AI will extract and summarise the key points (supports PNG, JPG, and PDF)</p>
                       </div>
                     )}
-                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleExtract} />
+                    <input ref={fileInputRef} type="file" accept="image/*,.pdf,application/pdf" className="hidden" onChange={handleExtract} />
                   </div>
                   {formData.description && (
                     <div className="space-y-1">
