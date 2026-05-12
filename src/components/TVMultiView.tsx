@@ -38,6 +38,7 @@ import { categoryConfig } from '@/config/categoryConfig';
 import { cn } from '@/lib/utils';
 import type { TVDisplaySettings } from '@/hooks/useTVDisplaySettings';
 import type { Notice } from '@/integrations/firebase/types';
+import { TV_BRAND } from '@/config/tvBrandTheme';
 
 // â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -71,7 +72,7 @@ const CompactCard: React.FC<{ notice: Notice }> = ({ notice }) => {
     : (isLight ? 'text-slate-500 border-slate-300' : 'text-slate-400 border-white/10');
 
   return (
-    <div className={`h-full flex flex-col rounded-2xl border ${isLight ? "border-slate-200 bg-white shadow-sm" : "border-white/8 bg-white/[0.03]"} overflow-hidden p-4 gap-2.5`}>
+    <div className={`h-full flex flex-col rounded-2xl border-2 overflow-hidden p-4 gap-2.5 ${isLight ? 'border-[#003366]/30 bg-white shadow-sm' : 'border-white/8 bg-white/[0.03]'}`}>
       <div className="flex items-center justify-between shrink-0">
         <div className={cn(
           'flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[0.58rem] font-black uppercase tracking-widest',
@@ -86,17 +87,17 @@ const CompactCard: React.FC<{ notice: Notice }> = ({ notice }) => {
           {format(new Date(notice.createdAt), 'dd MMM')}
         </span>
       </div>
-      <h3 className={`text-[0.9rem] font-black ${isLight ? "text-slate-900" : "text-white"} leading-snug line-clamp-2 shrink-0`}>{notice.title}</h3>
+      <h3 className={`text-[0.9rem] font-black leading-snug line-clamp-2 shrink-0 ${isLight ? 'italic text-[#F15A24]' : 'text-white'}`}>{notice.title}</h3>
       {notice.imageUrl ? (
-        <div className={`flex-1 min-h-0 rounded-xl overflow-hidden border ${isLight ? "border-slate-200" : "border-white/8"}`}>
+        <div className={`flex-1 min-h-0 rounded-xl overflow-hidden border-2 ${isLight ? 'border-[#003366]/40' : 'border-white/8'}`}>
           <MediaPanel imageUrl={notice.imageUrl} className="w-full h-full" fit="cover" />
         </div>
       ) : notice.description ? (
-        <p className={`flex-1 text-[0.72rem] ${isLight ? "text-slate-500" : "text-slate-400"} leading-relaxed line-clamp-4 min-h-0`}>
+        <p className={`flex-1 text-[0.72rem] leading-relaxed line-clamp-4 min-h-0 ${isLight ? 'text-[#003366]' : 'text-slate-400'}`}>
           {notice.description.replace(/[#*`_~>[\]]/g, '').trim()}
         </p>
       ) : null}
-      <div className={`flex items-center gap-1.5 shrink-0 mt-auto pt-1 border-t ${isLight ? "border-slate-100" : "border-white/5"}`}>
+      <div className={`flex items-center gap-1.5 shrink-0 mt-auto pt-1 border-t ${isLight ? 'border-[#003366]/15' : 'border-white/5'}`}>
         <User className="h-3 w-3 text-slate-600" />
         <span className="text-[0.6rem] text-slate-600 font-medium truncate">{notice.facultyName}</span>
       </div>
@@ -114,7 +115,7 @@ const LargeNoticeCard: React.FC<{ notice: Notice }> = ({ notice }) => {
   const isHigh = notice.priority === 'high';
 
   return (
-    <div className={`h-full flex flex-col rounded-2xl border ${isLight ? "border-slate-200 bg-white shadow-sm" : "border-white/8 bg-white/[0.03]"} overflow-hidden p-6 gap-4`}>
+    <div className={`h-full flex flex-col rounded-2xl border-2 overflow-hidden p-6 gap-4 ${isLight ? 'border-[#003366]/30 bg-white shadow-sm' : 'border-white/8 bg-white/[0.03]'}`}>
       {/* Badge row */}
       <div className="flex items-center gap-3 shrink-0">
         <div
@@ -136,19 +137,19 @@ const LargeNoticeCard: React.FC<{ notice: Notice }> = ({ notice }) => {
       </div>
 
       {/* Title */}
-      <h2 className={`text-3xl font-black ${isLight ? "text-slate-900" : "text-white"} leading-snug shrink-0 line-clamp-3`}>{notice.title}</h2>
+      <h2 className={`text-3xl font-black leading-snug shrink-0 line-clamp-3 ${isLight ? 'italic text-[#F15A24]' : 'text-white'}`}>{notice.title}</h2>
 
       {/* Image + description split */}
       {notice.imageUrl ? (
         <div className="flex-1 min-h-0 flex gap-4">
-          <div className={`w-[45%] shrink-0 rounded-xl overflow-hidden border ${isLight ? "border-slate-200" : "border-white/8"}`}>
+          <div className={`w-[45%] shrink-0 rounded-xl overflow-hidden border-2 ${isLight ? 'border-[#003366]/40' : 'border-white/8'}`}>
             <MediaPanel imageUrl={notice.imageUrl} className="w-full h-full" fit="cover" />
           </div>
           {notice.description && (
             <div className="flex-1 min-h-0 overflow-hidden">
               <AutoScrollText
                 content={notice.description}
-                className={`text-[0.9rem] ${isLight ? "text-slate-500" : "text-slate-400"} leading-relaxed`}
+                className={`text-[0.9rem] leading-relaxed ${isLight ? 'text-[#003366] font-medium' : 'text-slate-400'}`}
                 speed={20}
               />
             </div>
@@ -158,14 +159,14 @@ const LargeNoticeCard: React.FC<{ notice: Notice }> = ({ notice }) => {
         <div className="flex-1 min-h-0 overflow-hidden">
           <AutoScrollText
             content={notice.description}
-            className={`text-[1rem] ${isLight ? "text-slate-500" : "text-slate-400"} leading-relaxed`}
+            className={`text-[1rem] leading-relaxed ${isLight ? 'text-[#003366] font-medium' : 'text-slate-400'}`}
             speed={20}
           />
         </div>
       ) : null}
 
       {/* Footer */}
-      <div className={`flex items-center gap-2 shrink-0 mt-auto pt-3 border-t ${isLight ? "border-slate-100" : "border-white/5"}`}>
+      <div className={`flex items-center gap-2 shrink-0 mt-auto pt-3 border-t ${isLight ? 'border-[#003366]/15' : 'border-white/5'}`}>
         <User className="h-4 w-4 text-slate-600" />
         <span className="text-xs text-slate-500 font-medium">{notice.facultyName}</span>
         {notice.endTime && (
@@ -185,34 +186,34 @@ const LargeNoticeCard: React.FC<{ notice: Notice }> = ({ notice }) => {
 const AchievementCard: React.FC<{ achievement: Notice; idx: number; total: number }> = ({ achievement, idx, total }) => {
   const isLight = useTVTheme();
   return (
-  <div className={`h-full flex flex-col rounded-2xl border ${isLight ? "border-yellow-300 bg-amber-50/80" : "border-yellow-400/15 bg-white/[0.02]"} overflow-hidden p-5 gap-3`}
-    style={{ background: isLight ? 'linear-gradient(135deg, rgba(255,251,235,0.9) 0%, rgba(254,252,232,0.75) 100%)' : 'linear-gradient(135deg, rgba(26,18,0,0.6) 0%, rgba(15,10,0,0.4) 100%)' }}>
+  <div className={`h-full flex flex-col rounded-2xl border-2 overflow-hidden p-5 gap-3 ${isLight ? 'border-[#003366]/35 bg-white shadow-md' : 'border-yellow-400/15 bg-white/[0.02]'}`}
+    style={isLight ? { background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)' } : { background: 'linear-gradient(135deg, rgba(26,18,0,0.6) 0%, rgba(15,10,0,0.4) 100%)' }}>
     {/* Header */}
     <div className="flex items-center gap-2 shrink-0">
-      <Trophy className="h-4 w-4 text-yellow-400" />
-      <span className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-yellow-400/60">Achievement</span>
+      <Trophy className={`h-4 w-4 ${isLight ? 'text-[#F15A24]' : 'text-yellow-400'}`} />
+      <span className={`text-[0.6rem] font-black uppercase tracking-[0.3em] ${isLight ? 'text-[#003366]/70' : 'text-yellow-400/60'}`}>Achievement</span>
       {total > 1 && (
-        <span className="ml-auto text-[0.55rem] text-yellow-400/40 font-bold">{idx + 1}/{total}</span>
+        <span className={`ml-auto text-[0.55rem] font-bold ${isLight ? 'text-[#003366]/45' : 'text-yellow-400/40'}`}>{idx + 1}/{total}</span>
       )}
     </div>
 
     {/* Image */}
     {achievement.imageUrl && (
-      <div className={`w-full rounded-xl overflow-hidden shrink-0 border ${isLight ? "border-yellow-300" : "border-yellow-400/10"}`}
+      <div className={`w-full rounded-xl overflow-hidden shrink-0 border-2 ${isLight ? 'border-[#003366]/40' : 'border-yellow-400/10'}`}
         style={{ aspectRatio: '16/9' }}>
         <MediaPanel imageUrl={achievement.imageUrl} className="w-full h-full" fit="cover" />
       </div>
     )}
 
     {/* Title */}
-    <h3 className={`text-xl font-black ${isLight ? "text-slate-900" : "text-white"} leading-snug shrink-0 line-clamp-2`}>{achievement.title}</h3>
+    <h3 className={`text-xl font-black leading-snug shrink-0 line-clamp-2 ${isLight ? 'italic text-[#F15A24]' : 'text-white'}`}>{achievement.title}</h3>
 
     {/* Description */}
     {achievement.description && (
       <div className="flex-1 min-h-0 overflow-hidden">
         <AutoScrollText
           content={achievement.description}
-          className={`text-[0.78rem] ${isLight ? "text-yellow-800" : "text-yellow-100/60"}`}
+          className={`text-[0.78rem] leading-relaxed ${isLight ? 'text-[#003366] font-medium' : 'text-yellow-100/60'}`}
           speed={18}
         />
       </div>
@@ -220,9 +221,9 @@ const AchievementCard: React.FC<{ achievement: Notice; idx: number; total: numbe
 
     {/* Faculty */}
     {achievement.facultyName && (
-      <div className={`shrink-0 flex items-center gap-1.5 mt-auto pt-2 border-t ${isLight ? "border-yellow-200" : "border-yellow-400/8"}`}>
-        <User className="h-3 w-3 text-yellow-400/30" />
-        <span className="text-[0.6rem] text-yellow-400/40 font-medium">{achievement.facultyName}</span>
+      <div className={`shrink-0 flex items-center gap-1.5 mt-auto pt-2 border-t ${isLight ? 'border-[#003366]/15' : 'border-yellow-400/8'}`}>
+        <User className={`h-3 w-3 ${isLight ? 'text-[#003366]/35' : 'text-yellow-400/30'}`} />
+        <span className={`text-[0.6rem] font-medium ${isLight ? 'text-[#003366]/55' : 'text-yellow-400/40'}`}>{achievement.facultyName}</span>
       </div>
     )}
   </div>
@@ -252,15 +253,15 @@ const Spotlight: React.FC<SpotlightProps> = ({ achievement, quoteText, quoteAuth
         transition={{ duration: 0.4 }}
         className="flex-1 flex flex-col min-h-0 gap-3"
       >
-        <p className={`text-xl font-black ${isLight ? "text-slate-900" : "text-white"} leading-snug shrink-0`}>{achievement.title}</p>
+        <p className={`text-xl font-black leading-snug shrink-0 ${isLight ? 'italic text-[#F15A24]' : 'text-white'}`}>{achievement.title}</p>
         {achievement.imageUrl && (
-          <div className={`w-full rounded-xl overflow-hidden shrink-0 border ${isLight ? "border-yellow-300" : "border-yellow-400/10"}`} style={{ aspectRatio: '4/3' }}>
+          <div className={`w-full rounded-xl overflow-hidden shrink-0 border-2 ${isLight ? 'border-[#003366]/40' : 'border-yellow-400/10'}`} style={{ aspectRatio: '4/3' }}>
             <MediaPanel imageUrl={achievement.imageUrl} className="w-full h-full" fit="cover" />
           </div>
         )}
         {achievement.description && (
           <div className="flex-1 min-h-0 overflow-hidden">
-            <AutoScrollText content={achievement.description} className={`text-[0.82rem] ${isLight ? "text-yellow-800" : "text-yellow-100/70"}`} speed={22} />
+            <AutoScrollText content={achievement.description} className={`text-[0.82rem] ${isLight ? 'text-[#003366] font-medium' : 'text-yellow-100/70'}`} speed={22} />
           </div>
         )}
         {totalCount > 1 && (
@@ -268,7 +269,7 @@ const Spotlight: React.FC<SpotlightProps> = ({ achievement, quoteText, quoteAuth
             {Array.from({ length: totalCount }).map((_, i) => (
               <div key={i} className="rounded-full transition-all duration-500" style={{
                 width: i === currentIdx % totalCount ? 14 : 5, height: 5,
-                backgroundColor: i === currentIdx % totalCount ? '#facc15' : (isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)'),
+                backgroundColor: i === currentIdx % totalCount ? TV_BRAND.orange : (isLight ? 'rgba(0,51,102,0.2)' : 'rgba(255,255,255,0.12)'),
               }} />
             ))}
           </div>
@@ -303,7 +304,7 @@ const MultiAchievementSidebar: React.FC<{
   const visible = total > 0 ? achievements.slice(pageStart, pageStart + perPage) : [];
 
   return (
-    <aside className={`flex-1 border-l ${isLight ? "border-slate-200" : "border-white/5"} flex flex-col overflow-hidden min-h-0`}>
+    <aside className={`flex-1 border-l-2 flex flex-col overflow-hidden min-h-0 ${isLight ? 'border-[#003366]/25 bg-white' : 'border-white/5'}`}>
       {/* Header */}
       <div className="flex items-center gap-2.5 px-5 pt-4 pb-3 shrink-0">
         <Trophy className="h-3.5 w-3.5 text-yellow-400" />
@@ -316,7 +317,7 @@ const MultiAchievementSidebar: React.FC<{
           </span>
         )}
       </div>
-      <div className={`h-px ${isLight ? "bg-slate-200" : "bg-white/5"} shrink-0 mx-5`} />
+      <div className={`h-px shrink-0 mx-5 ${isLight ? 'bg-[#003366]/15' : 'bg-white/5'}`} />
 
       {/* Cards */}
       <div className="flex-1 overflow-hidden p-4 flex flex-col gap-3 min-h-0">
@@ -333,25 +334,25 @@ const MultiAchievementSidebar: React.FC<{
               {visible.map((ach) => (
                 <div
                   key={ach.id}
-                  className={`flex-1 min-h-0 rounded-2xl border ${isLight ? "border-yellow-300 bg-amber-50/60" : "border-yellow-400/10 bg-yellow-400/[0.03]"} flex flex-col overflow-hidden p-4 gap-3`}
-                  style={{ background: isLight ? 'linear-gradient(135deg, rgba(255,251,235,0.9) 0%, rgba(254,252,232,0.75) 100%)' : 'linear-gradient(135deg, rgba(26,18,0,0.5) 0%, rgba(15,10,0,0.35) 100%)' }}
+                  className={`flex-1 min-h-0 rounded-2xl border-2 flex flex-col overflow-hidden p-4 gap-3 ${isLight ? 'border-[#003366]/35 bg-white' : 'border-yellow-400/10 bg-yellow-400/[0.03]'}`}
+                  style={!isLight ? { background: 'linear-gradient(135deg, rgba(26,18,0,0.5) 0%, rgba(15,10,0,0.35) 100%)' } : undefined}
                 >
                   {/* Top: image + meta */}
                   <div className="flex gap-3 items-start shrink-0">
                     {ach.imageUrl && (
-                      <div className={`w-24 rounded-xl overflow-hidden shrink-0 border ${isLight ? "border-yellow-300" : "border-yellow-400/10"}`}
+                      <div className={`w-24 rounded-xl overflow-hidden shrink-0 border-2 ${isLight ? 'border-[#003366]/40' : 'border-yellow-400/10'}`}
                         style={{ aspectRatio: '4/3' }}>
                         <MediaPanel imageUrl={ach.imageUrl} className="w-full h-full" fit="cover" />
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-1.5">
-                        <Trophy className="h-3 w-3 text-yellow-400 shrink-0" />
-                        <span className="text-[0.5rem] font-black uppercase tracking-[0.25em] text-yellow-400/60">Achievement</span>
+                        <Trophy className={`h-3 w-3 shrink-0 ${isLight ? 'text-[#F15A24]' : 'text-yellow-400'}`} />
+                        <span className={`text-[0.5rem] font-black uppercase tracking-[0.25em] ${isLight ? 'text-[#003366]/65' : 'text-yellow-400/60'}`}>Achievement</span>
                       </div>
-                      <p className={`text-base font-black ${isLight ? "text-slate-900" : "text-white"} leading-snug line-clamp-2`}>{ach.title}</p>
+                      <p className={`text-base font-black leading-snug line-clamp-2 ${isLight ? 'text-[#003366]' : 'text-white'}`}>{ach.title}</p>
                       {ach.facultyName && (
-                        <p className="text-[0.62rem] text-yellow-400/40 font-medium mt-1">{ach.facultyName}</p>
+                        <p className={`text-[0.62rem] font-medium mt-1 ${isLight ? 'text-[#003366]/55' : 'text-yellow-400/40'}`}>{ach.facultyName}</p>
                       )}
                     </div>
                   </div>
@@ -360,7 +361,7 @@ const MultiAchievementSidebar: React.FC<{
                     <div className="flex-1 min-h-0 overflow-hidden">
                       <AutoScrollText
                         content={ach.description}
-                        className={`text-[0.78rem] ${isLight ? "text-yellow-800" : "text-yellow-100/55"} leading-relaxed`}
+                        className={`text-[0.78rem] leading-relaxed ${isLight ? 'text-[#003366] font-medium' : 'text-yellow-100/55'}`}
                         speed={22}
                       />
                     </div>
@@ -384,7 +385,7 @@ const MultiAchievementSidebar: React.FC<{
           {Array.from({ length: pageCount }).map((_, i) => (
             <div key={i} className="rounded-full transition-all duration-500" style={{
               width: i === currentPage ? 14 : 5, height: 5,
-              backgroundColor: i === currentPage ? '#facc15' : (isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)'),
+              backgroundColor: i === currentPage ? TV_BRAND.orange : (isLight ? 'rgba(0,51,102,0.2)' : 'rgba(255,255,255,0.12)'),
             }} />
           ))}
         </div>
@@ -405,20 +406,20 @@ const SpotlightSidebar: React.FC<{
 }> = ({ achievements, spotlightIdx, quoteText, quoteAuthor, spotlight, wide }) => {
   const isLight = useTVTheme();
   return (
-  <aside className={`${wide ? "w-[30rem]" : "w-80"} shrink-0 border-l ${isLight ? "border-slate-200" : "border-white/5"} flex flex-col overflow-hidden`}>
+  <aside className={`${wide ? "w-[30rem]" : "w-80"} shrink-0 border-l-2 flex flex-col overflow-hidden ${isLight ? 'border-[#003366]/25 bg-white' : 'border-white/5'}`}>
     <div className="flex items-center gap-2.5 px-5 pt-4 pb-3 shrink-0">
-      <Trophy className="h-3.5 w-3.5 text-yellow-400" />
-      <span className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-500">
+      <Trophy className={`h-3.5 w-3.5 ${isLight ? 'text-[#F15A24]' : 'text-yellow-400'}`} />
+      <span className={`text-[0.6rem] font-black uppercase tracking-[0.3em] ${isLight ? 'text-[#003366]/70' : 'text-slate-500'}`}>
         Student Spotlight
         {achievements.length > 0 && (
-          <span className="ml-1.5 text-yellow-400/60">
+          <span className={`ml-1.5 ${isLight ? 'text-[#F15A24]/80' : 'text-yellow-400/60'}`}>
             ({(spotlightIdx % achievements.length) + 1}/{achievements.length})
           </span>
         )}
       </span>
-      <span className="ml-auto text-[0.5rem] font-black uppercase tracking-widest text-yellow-500/50">Achievements</span>
+      <span className={`ml-auto text-[0.5rem] font-black uppercase tracking-widest ${isLight ? 'text-[#F15A24]/90' : 'text-yellow-500/50'}`}>Achievements</span>
     </div>
-    <div className={`h-px ${isLight ? "bg-slate-200" : "bg-white/5"} shrink-0 mx-5`} />
+    <div className={`h-px shrink-0 mx-5 ${isLight ? 'bg-[#003366]/15' : 'bg-white/5'}`} />
     <div className="flex-1 overflow-hidden p-5 flex flex-col min-h-0">
       <Spotlight
         achievement={spotlight}
@@ -512,12 +513,12 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
       <div className="flex-1 flex flex-col overflow-hidden min-h-0 px-6 py-4 gap-4">
         {/* Header row */}
         <div className="flex items-center gap-2.5 shrink-0">
-          <Trophy className="h-4 w-4 text-yellow-400" />
-          <span className="text-[0.6rem] font-black uppercase tracking-[0.35em] text-slate-500">
+          <Trophy className={`h-4 w-4 ${isLight ? 'text-[#F15A24]' : 'text-yellow-400'}`} />
+          <span className={cn('text-[0.6rem] font-black uppercase tracking-[0.35em]', isLight ? 'text-[#003366]/70' : 'text-slate-500')}>
             Student Spotlight â€” Achievements
           </span>
           {achievements.length > achievePerPage && (
-            <span className="ml-2 text-yellow-400/50 text-[0.55rem] font-black">
+            <span className={`ml-2 text-[0.55rem] font-black ${isLight ? 'text-[#F15A24]/80' : 'text-yellow-400/50'}`}>
               ({achievePageIdx + 1}/{totalAchievePages})
             </span>
           )}
@@ -563,7 +564,7 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
             {Array.from({ length: totalAchievePages }).map((_, i) => (
               <div key={i} className="rounded-full transition-all duration-500" style={{
                 width: i === achievePageIdx ? 16 : 6, height: 6,
-                backgroundColor: i === achievePageIdx ? '#facc15' : (isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)'),
+                backgroundColor: i === achievePageIdx ? TV_BRAND.orange : (isLight ? 'rgba(0,51,102,0.2)' : 'rgba(255,255,255,0.12)'),
               }} />
             ))}
           </div>
@@ -585,8 +586,11 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
         <div className="flex-1 flex flex-col overflow-hidden min-h-0 p-6 pr-4">
           {/* Section label */}
           <div className="flex items-center gap-2.5 mb-3 shrink-0">
-            <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_6px_hsl(var(--primary))]" />
-            <span className="text-[0.6rem] font-black uppercase tracking-[0.35em] text-slate-500">Notice</span>
+            <div className={cn(
+              'w-2 h-2 rounded-full',
+              isLight ? 'bg-[#F15A24] shadow-[0_0_6px_rgba(241,90,36,0.55)]' : 'bg-primary shadow-[0_0_6px_hsl(var(--primary))]'
+            )} />
+            <span className={cn('text-[0.6rem] font-black uppercase tracking-[0.35em]', isLight ? 'text-[#003366]/70' : 'text-slate-500')}>Notice</span>
           </div>
           <div className="flex-1 min-h-0">
             <AnimatePresence mode="wait">
@@ -622,8 +626,11 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
         <div className="flex-1 flex flex-col overflow-hidden min-h-0 p-6 pr-4 gap-3">
           {/* Section label */}
           <div className="flex items-center gap-2.5 shrink-0">
-            <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_6px_hsl(var(--primary))]" />
-            <span className="text-[0.6rem] font-black uppercase tracking-[0.35em] text-slate-500">
+            <div className={cn(
+              'w-2 h-2 rounded-full',
+              isLight ? 'bg-[#F15A24] shadow-[0_0_6px_rgba(241,90,36,0.55)]' : 'bg-primary shadow-[0_0_6px_hsl(var(--primary))]'
+            )} />
+            <span className={cn('text-[0.6rem] font-black uppercase tracking-[0.35em]', isLight ? 'text-[#003366]/70' : 'text-slate-500')}>
               Notices
             </span>
             <span className="text-[0.55rem] font-black text-primary/50 uppercase tracking-widest ml-1">
@@ -665,7 +672,7 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
           <div className="flex flex-col overflow-hidden" style={{ flex: '1 1 58%' }}>
             <div className="flex items-center gap-2.5 px-6 pt-4 pb-2.5 shrink-0">
               <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_#f43f5e]" />
-              <span className="text-[0.6rem] font-black uppercase tracking-[0.35em] text-slate-500">
+              <span className={cn('text-[0.6rem] font-black uppercase tracking-[0.35em]', isLight ? 'text-[#003366]/70' : 'text-slate-500')}>
                 High Priority
                 {highNotices.length > 1 && (
                   <span className="ml-2 text-rose-500/70">({(highIdx % highNotices.length) + 1}/{highNotices.length})</span>
@@ -682,7 +689,7 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
                   transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                   className="h-full"
                 >
-                  <div className={`h-full rounded-2xl border ${isLight ? "border-slate-300 bg-white/50" : "border-white/8 bg-white/[0.02]"} overflow-hidden`}
+                  <div className={`h-full rounded-2xl border-2 overflow-hidden ${isLight ? 'border-[#003366]/30 bg-white' : 'border-white/8 bg-white/[0.02]'}`}
                     style={{ containerType: 'size' }}>
                     <div className="h-full" style={{ transform: 'scale(0.55)', transformOrigin: 'top left', width: '181.8%', height: '181.8%' }}>
                       <TVNoticePreview notice={heroNotice} isLight={isLight} />
@@ -698,8 +705,11 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
         {otherNotices.length > 0 && (
           <div className="flex flex-col overflow-hidden" style={{ flex: heroNotice ? '1 1 42%' : '1 1 100%' }}>
             <div className="flex items-center gap-2.5 px-6 pt-1 pb-2.5 shrink-0">
-              <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_6px_hsl(var(--primary))]" />
-              <span className="text-[0.6rem] font-black uppercase tracking-[0.35em] text-slate-500">Notices</span>
+              <div className={cn(
+              'w-2 h-2 rounded-full',
+              isLight ? 'bg-[#F15A24] shadow-[0_0_6px_rgba(241,90,36,0.55)]' : 'bg-primary shadow-[0_0_6px_hsl(var(--primary))]'
+            )} />
+              <span className={cn('text-[0.6rem] font-black uppercase tracking-[0.35em]', isLight ? 'text-[#003366]/70' : 'text-slate-500')}>Notices</span>
               <span className="text-[0.55rem] font-black text-primary/50 uppercase tracking-widest ml-1">
                 ({noticePageIdx + 1}/{totalNoticePages})
               </span>
@@ -708,7 +718,7 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
                   {Array.from({ length: totalNoticePages }).map((_, i) => (
                     <div key={i} className="rounded-full transition-all duration-500" style={{
                       width: i === noticePageIdx ? 14 : 5, height: 5,
-                      backgroundColor: i === noticePageIdx ? 'hsl(var(--primary))' : (isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)'),
+                      backgroundColor: i === noticePageIdx ? TV_BRAND.orange : (isLight ? 'rgba(0,51,102,0.2)' : 'rgba(255,255,255,0.12)'),
                     }} />
                   ))}
                 </div>

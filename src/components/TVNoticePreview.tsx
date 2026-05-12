@@ -9,6 +9,7 @@ import {
     Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { TV_BRAND, TV_BRAND_CN } from '@/config/tvBrandTheme';
 import { format } from 'date-fns';
 import { AutoScrollText } from '@/components/AutoScrollText';
 import { QRCodeSVG } from 'qrcode.react';
@@ -174,26 +175,26 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
 
     // Always render footer now since it holds badges
     const footer = (
-        <div className={`mt-auto pt-3 sm:pt-4 xl:pt-6 border-t ${isLight ? 'border-slate-200' : 'border-white/5'} flex flex-col sm:flex-row sm:items-center justify-between shrink-0 gap-3 sm:gap-0`}>
+        <div className={`mt-auto pt-3 sm:pt-4 xl:pt-6 border-t ${isLight ? 'border-[#003366]/25' : 'border-white/5'} flex flex-col sm:flex-row sm:items-center justify-between shrink-0 gap-3 sm:gap-0`}>
             <div className="flex flex-wrap items-center gap-4 sm:gap-6 xl:gap-8">
                 {showIssuedBy && (
                     <div className="flex items-center gap-2 sm:gap-3 xl:gap-4">
-                        <div className={`w-8 h-8 sm:w-10 sm:h-10 xl:w-12 xl:h-12 rounded-full ${isLight ? 'bg-slate-100' : 'bg-white/5'} flex items-center justify-center`}>
-                            <User className="h-4 w-4 sm:h-5 sm:w-5 xl:h-6 xl:w-6 text-slate-400" />
+                        <div className={`w-8 h-8 sm:w-10 sm:h-10 xl:w-12 xl:h-12 rounded-full ${isLight ? 'bg-[#003366]/10' : 'bg-white/5'} flex items-center justify-center`}>
+                            <User className={`h-4 w-4 sm:h-5 sm:w-5 xl:h-6 xl:w-6 ${isLight ? 'text-[#003366]/50' : 'text-slate-400'}`} />
                         </div>
                         <div>
-                            <p className="text-[10px] sm:text-xs uppercase tracking-[0.2em] font-bold text-slate-500">Issued By</p>
-                            <p className={`text-sm sm:text-base xl:text-xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>{notice.facultyName || 'Faculty Name'}</p>
+                            <p className={`text-[10px] sm:text-xs uppercase tracking-[0.2em] font-bold ${isLight ? 'text-[#003366]/55' : 'text-slate-500'}`}>Issued By</p>
+                            <p className={`text-sm sm:text-base xl:text-xl font-bold ${isLight ? 'text-[#003366]' : 'text-white'}`}>{notice.facultyName || 'Faculty Name'}</p>
                         </div>
                     </div>
                 )}
-                <div className={showIssuedBy ? "hidden sm:block w-px h-8 bg-white/10" : "hidden"} />
+                <div className={showIssuedBy ? cn('hidden sm:block w-px h-8', isLight ? 'bg-[#003366]/15' : 'bg-white/10') : 'hidden'} />
                 {badges}
             </div>
             {showValidTill && notice.endTime ? (
                 <div className="text-left sm:text-right">
-                    <p className="text-[10px] sm:text-xs uppercase tracking-[0.2em] font-bold text-slate-500">Valid Till</p>
-                    <p className={`text-sm sm:text-base xl:text-xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>
+                    <p className={`text-[10px] sm:text-xs uppercase tracking-[0.2em] font-bold ${isLight ? 'text-[#003366]/55' : 'text-slate-500'}`}>Valid Till</p>
+                    <p className={`text-sm sm:text-base xl:text-xl font-bold ${isLight ? 'text-[#F15A24]' : 'text-white'}`}>
                         {format(new Date(notice.endTime), 'dd MMM yyyy')}
                     </p>
                 </div>
@@ -203,12 +204,91 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
 
     const containerClass = cn(
         "h-full w-full font-sans",
-        isLight ? 'text-slate-900' : 'text-white',
+        isLight ? TV_BRAND_CN.navy : 'text-white',
         !isHero && "p-4"
     );
 
-    // Achievement notices get their own gold treatment regardless of template
+    // Achievement notices — poster-style (light) vs gold cinematic (dark)
     if (category === 'achievements') {
+        if (isLight) {
+            return (
+                <div className={containerClass}>
+                    <div className={cn(
+                        'h-full rounded-xl sm:rounded-2xl xl:rounded-[2.5rem] relative overflow-hidden border-2 bg-white shadow-[0_24px_60px_rgba(0,51,102,0.08)]',
+                        TV_BRAND_CN.borderNavyStrong
+                    )}>
+                        <div className="absolute inset-0 pointer-events-none opacity-[0.04]"
+                            style={{ background: `radial-gradient(circle at 30% 20%, ${TV_BRAND.navy}, transparent 55%)` }} />
+                        <Trophy className="absolute right-4 sm:right-10 xl:right-16 top-1/2 -translate-y-1/2 h-28 sm:h-44 xl:h-52 w-28 sm:w-44 xl:w-52 text-[#003366] pointer-events-none select-none" />
+                        <div className="relative z-10 h-full flex flex-col p-4 sm:p-6 xl:p-10">
+                            <div className="flex items-center gap-2 sm:gap-3 xl:gap-4 shrink-0 mb-4 sm:mb-6 xl:mb-8">
+                                <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full border-2 border-[#003366]/25 bg-[#F15A24]/10">
+                                    <Trophy className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#F15A24]" />
+                                    <span className={`${TV_BRAND_CN.navy} font-black uppercase tracking-widest text-[10px] sm:text-xs xl:text-sm`}>Achievement</span>
+                                </div>
+                            </div>
+                            <div className="flex-1 flex min-h-0 flex-col gap-4 xl:flex-row xl:items-center xl:gap-8">
+                                <div className="flex-1 flex flex-col justify-center min-h-0">
+                                    <h1 className={`font-black italic leading-[1.0] tracking-tight mb-2 sm:mb-3 xl:mb-5 ${TV_BRAND_CN.orange}`}
+                                        style={titleStyle}>
+                                        {notice.title || 'Achievement'}
+                                    </h1>
+                                    <div className="w-10 sm:w-14 xl:w-20 h-[3px] rounded-full bg-[#F15A24] mb-3 sm:mb-4 xl:mb-6" />
+                                    {notice.description && (
+                                        <div className="overflow-hidden max-h-20 sm:max-h-28 xl:max-h-40 relative">
+                                            <AutoScrollText
+                                                className={`${TV_BRAND_CN.navy} leading-relaxed font-semibold italic`}
+                                                content={notice.description}
+                                                style={descStyle}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                                {notice.imageUrl && (
+                                    <div className={cn(
+                                        'w-full shrink-0 overflow-hidden rounded-2xl border-2 shadow-lg xl:w-[34%]',
+                                        TV_BRAND_CN.borderNavyStrong
+                                    )}
+                                        style={{ aspectRatio: '4 / 5' }}>
+                                        <MediaPanel
+                                            imageUrl={notice.imageUrl}
+                                            className="h-full w-full bg-[#F8FAFC]"
+                                            fit="cover"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                            <div className={cn('flex items-end justify-between gap-4 shrink-0 pt-3 sm:pt-4 xl:pt-6 border-t', TV_BRAND_CN.borderNavy)}>
+                                <div className="flex items-center gap-2 sm:gap-2.5 xl:gap-3 min-w-0">
+                                    <div className="w-7 h-7 sm:w-8 sm:h-8 xl:w-10 xl:h-10 rounded-full bg-[#003366]/10 flex items-center justify-center">
+                                        <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 xl:h-5 xl:w-5 text-[#003366]/50" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-[9px] sm:text-[10px] xl:text-xs uppercase tracking-widest font-bold text-[#003366]/45">Issued By</p>
+                                        <p className={`text-sm sm:text-base xl:text-lg font-bold truncate ${TV_BRAND_CN.navy}`}>{notice.facultyName || 'Faculty'}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-end gap-4">
+                                    {notice.endTime && (
+                                        <p className={`text-xs sm:text-sm font-bold uppercase tracking-widest whitespace-nowrap ${TV_BRAND_CN.orange}`}>
+                                            {format(new Date(notice.endTime), 'dd MMM yyyy')}
+                                        </p>
+                                    )}
+                                    {regUrl && (
+                                        <div className="flex flex-col items-center gap-1 shrink-0">
+                                            <div className="rounded-lg bg-white p-1.5 sm:p-2 shadow-xl border border-[#003366]/20">
+                                                <QRCodeSVG value={regUrl} size={100} includeMargin={false} />
+                                            </div>
+                                            <p className="text-[8px] sm:text-[9px] xl:text-[10px] font-black uppercase tracking-wider text-[#F15A24]">Scan to Register</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
         return (
             <div className={containerClass}>
                 <div className="h-full rounded-xl sm:rounded-2xl xl:rounded-[2.5rem] relative overflow-hidden border border-yellow-400/20"
@@ -299,13 +379,13 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                         {/* Text side — takes remaining width */}
                         <div className={cn("flex-1 flex flex-col h-full py-6 min-h-0", isRight && "order-2")}>
 
-                            <h1 className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'} leading-[1] tracking-tight mb-3 xl:mb-5 shrink-0 line-clamp-3`}
+                            <h1 className={`font-black ${isLight ? 'italic text-[#F15A24]' : 'text-white'} leading-[1] tracking-tight mb-3 xl:mb-5 shrink-0 line-clamp-3`}
                                 style={titleStyle}>
                                 {notice.title || 'Notice Title'}
                             </h1>
                             <div className="flex-1 overflow-hidden min-h-0 relative">
                                 <AutoScrollText
-                                    className={`${isLight ? 'text-slate-600' : 'text-slate-400'} leading-relaxed`}
+                                    className={`${isLight ? 'text-[#003366] font-medium' : 'text-slate-400'} leading-relaxed`}
                                     content={notice.description || 'Notice description goes here.'}
                                     style={descStyle}
                                 />
@@ -318,12 +398,12 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                 <MediaPanel
                                     imageUrl={notice.imageUrl}
                                     documentUrl={notice.documentUrl}
-                                    className={`h-full w-full rounded-[2rem] border ${isLight ? 'border-slate-200' : 'border-white/10'} shadow-2xl`}
+                                    className={`h-full w-full rounded-[2rem] border ${isLight ? 'border-[#003366]/40 shadow-[0_12px_40px_rgba(0,51,102,0.12)]' : 'border-white/10'} shadow-2xl`}
                                     fit="contain"
                                 />
                             ) : (
-                                <div className={`h-full rounded-[2rem] ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-white/5 border-white/10'} border border-dashed flex items-center justify-center`}>
-                                    <FileText className="h-32 w-32 text-white/5" />
+                                <div className={`h-full rounded-[2rem] ${isLight ? 'bg-[#F8FAFC] border-[#003366]/25' : 'bg-white/5 border-white/10'} border border-dashed flex items-center justify-center`}>
+                                    <FileText className={`h-32 w-32 ${isLight ? 'text-[#003366]/10' : 'text-white/5'}`} />
                                 </div>
                             )}
                         </div>
@@ -335,7 +415,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
         case 'full-image':
             return (
                 <div className={containerClass}>
-                    <div className={`relative h-full w-full rounded-[3rem] overflow-hidden border ${isLight ? 'border-slate-200' : 'border-white/5'}`}>
+                    <div className={`relative h-full w-full rounded-[3rem] overflow-hidden border ${isLight ? 'border-[#003366]/35' : 'border-white/5'}`}>
                         {(notice.imageUrl || notice.documentUrl) ? (
                             <MediaPanel
                                 imageUrl={notice.imageUrl}
@@ -397,21 +477,21 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                 <div className={containerClass}>
                     <div className="h-full flex flex-col items-center justify-center text-center max-w-6xl mx-auto py-4 sm:py-6 xl:py-10">
 
-                        <h1 className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'} leading-[1] tracking-tight mb-4 sm:mb-6 xl:mb-10 shrink-0 line-clamp-3`}
+                        <h1 className={`font-bold ${isLight ? 'italic text-[#F15A24]' : 'text-white'} leading-[1] tracking-tight mb-4 sm:mb-6 xl:mb-10 shrink-0 line-clamp-3`}
                             style={titleStyle}>
                             {notice.title || 'Notice Title'}
                         </h1>
-                        <div className="w-16 sm:w-24 xl:w-32 h-0.5 xl:h-1 mb-4 sm:mb-8 xl:mb-12 shrink-0" style={{ backgroundColor: config.accent }} />
+                        <div className="w-16 sm:w-24 xl:w-32 h-0.5 xl:h-1 mb-4 sm:mb-8 xl:mb-12 shrink-0" style={{ backgroundColor: isLight ? TV_BRAND.orange : config.accent }} />
                         <div className="w-full flex-1 min-h-0 max-w-5xl overflow-hidden relative">
                             <AutoScrollText
-                                className={`${isLight ? 'text-slate-600' : 'text-slate-400'} leading-[1.4] mx-auto text-center`}
+                                className={`${isLight ? 'text-[#003366] font-medium' : 'text-slate-400'} leading-[1.4] mx-auto text-center`}
                                 content={notice.description || 'Notice description goes here in large text...'}
                                 style={descStyle}
                             />
                         </div>
-                        <div className={`mt-6 sm:mt-10 xl:mt-20 flex items-center gap-4 sm:gap-8 xl:gap-16 ${isLight ? 'text-slate-500' : 'text-slate-500'} font-bold uppercase tracking-[0.2em] text-xs sm:text-sm xl:text-lg shrink-0`}>
+                        <div className={`mt-6 sm:mt-10 xl:mt-20 flex items-center gap-4 sm:gap-8 xl:gap-16 ${isLight ? 'text-[#003366]/70' : 'text-slate-500'} font-bold uppercase tracking-[0.2em] text-xs sm:text-sm xl:text-lg shrink-0`}>
                             <span>{notice.facultyName || 'Faculty Name'}</span>
-                            <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isLight ? 'bg-slate-300' : 'bg-white/10'}`} />
+                            <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isLight ? 'bg-[#F15A24]/50' : 'bg-white/10'}`} />
                             <span>{notice.endTime ? format(new Date(notice.endTime), 'dd MMM yyyy') : 'DD MMM YYYY'}</span>
                         </div>
                         {regUrl && (
@@ -419,7 +499,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                 <div className="rounded-xl bg-white p-2 sm:p-3 shadow-2xl">
                                     <QRCodeSVG value={regUrl} size={140} includeMargin={false} />
                                 </div>
-                                <p className="text-xs sm:text-sm font-black uppercase tracking-[0.2em] text-primary">Scan to Register</p>
+                                <p className={`text-xs sm:text-sm font-black uppercase tracking-[0.2em] ${isLight ? 'text-[#F15A24]' : 'text-primary'}`}>Scan to Register</p>
                             </div>
                         )}
                     </div>
@@ -430,13 +510,13 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
             const layout = { ...DEFAULT_CUSTOM_LAYOUT, ...(notice.customLayout ?? {}) };
             return (
                 <div className={containerClass}>
-                    <div className={`relative h-full w-full rounded-[2.5rem] border overflow-hidden ${isLight ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-[#0b111f]'}`}>
+                    <div className={`relative h-full w-full rounded-[2.5rem] border overflow-hidden ${isLight ? 'border-[#003366]/35 bg-white' : 'border-white/10 bg-[#0b111f]'}`}>
                         <div className="absolute inset-0 pointer-events-none"
-                            style={{ background: isLight ? 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)' : 'linear-gradient(135deg, #0b1220 0%, #111a2b 100%)' }} />
+                            style={{ background: isLight ? 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)' : 'linear-gradient(135deg, #0b1220 0%, #111a2b 100%)' }} />
 
                         <div className="absolute" style={boxStyle(layout.title)}>
                             <h1
-                                className={cn(`font-black leading-[1.02] tracking-tight h-full overflow-hidden ${isLight ? 'text-slate-900' : 'text-white'}`)}
+                                className={cn(`font-black leading-[1.02] tracking-tight h-full overflow-hidden ${isLight ? 'italic text-[#F15A24]' : 'text-white'}`)}
                                 style={{ fontSize: `clamp(22px, ${layout.titleSize * 0.65}px, ${layout.titleSize}px)` }}
                             >
                                 {notice.title || 'Notice Title'}
@@ -451,7 +531,10 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                         </div>
 
                         {layout.showMedia && (notice.imageUrl || notice.documentUrl) && (
-                            <div className="absolute rounded-2xl overflow-hidden border border-white/10 shadow-xl" style={boxStyle(layout.media)}>
+                            <div className={cn(
+                                'absolute rounded-2xl overflow-hidden shadow-xl',
+                                isLight ? 'border-2 border-[#003366]/35' : 'border border-white/10'
+                            )} style={boxStyle(layout.media)}>
                                 <MediaPanel
                                     imageUrl={notice.imageUrl}
                                     documentUrl={notice.documentUrl}
@@ -488,31 +571,35 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
         case 'featured':
             return (
                 <div className={containerClass}>
-                    <div className={`h-full ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-white/5 border-white/10'} rounded-xl sm:rounded-2xl xl:rounded-[3rem] border p-4 sm:p-8 xl:p-14 relative overflow-hidden text-left flex gap-8`}>
+                    <div className={`h-full ${isLight ? 'bg-white border-[#003366]/30' : 'bg-white/5 border-white/10'} rounded-xl sm:rounded-2xl xl:rounded-[3rem] border-2 p-4 sm:p-8 xl:p-14 relative overflow-hidden text-left flex gap-8`}>
                         <div className="absolute top-0 right-0 p-4 sm:p-6 xl:p-10 pointer-events-none">
-                            <Trophy className="h-20 w-20 sm:h-28 sm:w-28 xl:h-40 xl:w-40 text-white/5 -rotate-12" />
+                            <Trophy className={cn('h-20 w-20 sm:h-28 sm:w-28 xl:h-40 xl:w-40 -rotate-12', isLight ? 'text-[#003366]/[0.07]' : 'text-white/5')} />
                         </div>
                         <div className="relative z-10 flex-1 flex flex-col min-h-0">
-                            <div className="text-primary font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-xs sm:text-sm xl:text-base mb-2 sm:mb-3 xl:mb-4 shrink-0">Featured Update</div>
-                            <h1 className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'} mb-4 sm:mb-6 xl:mb-10 leading-tight shrink-0 line-clamp-3`}
+                            <div className={cn(
+                                'font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-xs sm:text-sm xl:text-base mb-2 sm:mb-3 xl:mb-4 shrink-0',
+                                isLight ? '' : 'text-primary'
+                            )} style={isLight ? { color: TV_BRAND.orange } : undefined}>Featured Update</div>
+                            <h1 className={`font-bold ${isLight ? 'italic text-[#F15A24]' : 'text-white'} mb-4 sm:mb-6 xl:mb-10 leading-tight shrink-0 line-clamp-3`}
                                 style={titleStyle}>
                                 {notice.title || 'Notice Title'}
                             </h1>
                             <div className="flex-1 overflow-hidden pr-2 sm:pr-5 xl:pr-10 min-h-0 relative">
                                 <AutoScrollText
-                                    className={`${isLight ? 'text-slate-600' : 'text-slate-300'} leading-relaxed`}
+                                    className={`${isLight ? 'text-[#003366] font-medium' : 'text-slate-300'} leading-relaxed`}
                                     content={notice.description || 'Notice description goes here...'}
                                     style={descStyle}
                                 />
                             </div>
                             <div className="mt-4 sm:mt-8 xl:mt-12 flex items-center gap-4 sm:gap-6 xl:gap-10">
                                 <div className="flex items-center gap-2 sm:gap-3 xl:gap-4">
-                                    <div className="w-8 h-8 sm:w-10 sm:h-10 xl:w-14 xl:h-14 rounded-xl xl:rounded-2xl bg-primary flex items-center justify-center shadow-lg text-black shrink-0">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 xl:w-14 xl:h-14 rounded-xl xl:rounded-2xl flex items-center justify-center shadow-lg shrink-0 text-white"
+                                        style={{ backgroundColor: isLight ? TV_BRAND.navy : 'hsl(var(--primary))' }}>
                                         <User className="h-4 w-4 sm:h-5 sm:w-5 xl:h-8 xl:w-8" />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest">Authorized By</p>
-                                        <p className={`text-sm sm:text-lg xl:text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>{notice.facultyName || 'Faculty Name'}</p>
+                                        <p className={`text-[10px] sm:text-xs font-bold uppercase tracking-widest ${isLight ? 'text-[#003366]/55' : 'text-slate-500'}`}>Authorized By</p>
+                                        <p className={`text-sm sm:text-lg xl:text-2xl font-bold ${isLight ? 'text-[#003366]' : 'text-white'}`}>{notice.facultyName || 'Faculty Name'}</p>
                                     </div>
                                 </div>
                                 {regUrl && (
@@ -520,7 +607,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                         <div className="rounded-xl bg-white p-1.5 sm:p-2 xl:p-2.5 shadow-2xl">
                                             <QRCodeSVG value={regUrl} size={120} includeMargin={false} />
                                         </div>
-                                        <p className="text-[9px] sm:text-[10px] xl:text-[11px] font-black uppercase tracking-wider text-primary">Scan to Register</p>
+                                        <p className={`text-[9px] sm:text-[10px] xl:text-[11px] font-black uppercase tracking-wider ${isLight ? 'text-[#F15A24]' : 'text-primary'}`}>Scan to Register</p>
                                     </div>
                                 )}
                             </div>
@@ -530,7 +617,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                 <MediaPanel
                                     imageUrl={notice.imageUrl}
                                     documentUrl={notice.documentUrl}
-                                    className={`w-full h-full rounded-[2rem] shadow-2xl border ${isLight ? 'border-slate-200' : 'border-white/10'}`}
+                                    className={`w-full h-full rounded-[2rem] shadow-2xl border ${isLight ? 'border-[#003366]/40' : 'border-white/10'}`}
                                     fit="contain"
                                 />
                             </div>
@@ -579,13 +666,13 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
 
                         <div className={cn('flex-1 min-h-0 flex items-start gap-12', isStandardRight && 'flex-row-reverse')}>
                             <div className="flex-1 flex flex-col min-h-0 h-full justify-center">
-                                <h1 className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'} leading-[1] tracking-tight mb-3 xl:mb-5 shrink-0 line-clamp-3`}
+                                <h1 className={`font-black ${isLight ? 'italic text-[#F15A24]' : 'text-white'} leading-[1] tracking-tight mb-3 xl:mb-5 shrink-0 line-clamp-3`}
                                     style={titleStyle}>
                                     {notice.title || 'Notice Title'}
                                 </h1>
                                 <div className="flex-1 min-h-0 overflow-hidden relative">
                                     <AutoScrollText
-                                        className={`${isLight ? 'text-slate-600' : 'text-slate-400'} leading-relaxed`}
+                                        className={`${isLight ? 'text-[#003366] font-medium' : 'text-slate-400'} leading-relaxed`}
                                         content={notice.description || 'Notice description goes here...'}
                                         style={descStyle}
                                     />

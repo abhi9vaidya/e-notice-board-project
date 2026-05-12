@@ -135,30 +135,38 @@ export async function extractTextFromFile(base64Data: string, fileType: 'image' 
   }
 
   const prompt =
-    'You are helping a college faculty member create a notice board post from the attached document.\n' +
+    'You are helping a college faculty member create an extremely clear, professional, and visually engaging notice board post from the attached document.\n' +
+    'The output description MUST be easy to read at a glance from a distance on a TV display screen.\n\n' +
     'Respond in EXACTLY this format with no extra text before or after:\n\n' +
-    'TITLE: <5-10 word descriptive title, no punctuation at the end>\n\n' +
+    'TITLE: <5-10 word descriptive, punchy title, no punctuation at the end>\n\n' +
     'DESCRIPTION:\n' +
     '<markdown description here>\n\n' +
     'Rules for the TITLE:\n' +
-    '- Short (5–10 words), descriptive, easy to understand at a glance.\n' +
-    '- Captures the main purpose/event (e.g. "Machine Learning Internship – Uptricks Services").\n\n' +
+    '- Capitalize key words, keep it very punchy and clear (e.g., "Grand Campus Hackathon 2026 – Register Now!").\n' +
+    '- Limit to 5-10 words maximum so it fits perfectly on screen headers.\n\n' +
     'Rules for the DESCRIPTION (raw Markdown):\n' +
-    '1. Start with a short one-line summary paragraph (no heading).\n' +
-    '2. Then use "## " headings to group related details (## Details, ## Schedule, ## Venue, ## Important Dates, ## Eligibility, ## How to Apply — use only what is relevant).\n' +
-    '3. Under each heading use bullet points ("- ") for individual facts. Keep each bullet concise.\n' +
-    '4. Use **bold** for names, dates, deadlines, and key values.\n' +
-    '5. Leave a blank line between every section.\n' +
-    '6. Do NOT include any URLs or hyperlinks inside the description. If there is a registration link or any URL, put it ONLY in the LINKS section below.\n' +
-    '7. Do NOT wrap output in a code block.\n' +
-    '8. Do NOT omit any meaningful detail from the document.\n\n' +
-    'After the DESCRIPTION section, if the document contains any URLs (registration links, form links, website links, etc.), add:\n' +
+    '1. Start with a short, highly engaging 1-2 sentence overview paragraph (no heading, no bullets) summarizing the entire notice.\n' +
+    '2. Use "## " headings with professional emojis for grouping details logically. Only use the relevant sections below:\n' +
+    '   ## Schedule & Timings\n' +
+    '   ## Venue & Location\n' +
+    '   ## Eligibility Criteria\n' +
+    '   ## How to Apply / Register\n' +
+    '   ## Registration Fees & Charges\n' +
+    '   ## Prizes, Awards & Benefits\n' +
+    '   ## Contact Details & Helpdesk\n' +
+    '3. Under each heading, write concise, high-impact bullet points ("- "). Avoid long paragraphs.\n' +
+    '4. Use **bolding** strategically on critical details like dates, times, deadlines, venues, fee amounts, and names.\n' +
+    '5. Keep sentences short, active, and engaging for students.\n' +
+    '6. Do NOT include any raw URLs or links in the description. Put them ONLY in the LINKS section below.\n' +
+    '7. Do NOT wrap output in markdown code blocks (no ```).\n' +
+    '8. Ensure all crucial academic or scheduling details are perfectly preserved.\n\n' +
+    'After the DESCRIPTION section, if the document contains any URLs (registration links, forms, websites, etc.), add:\n' +
     'LINKS:\n' +
     '<one full URL per line, label on same line separated by | e.g.  https://example.com | Registration Form>\n' +
     'If there are no links, omit the LINKS section entirely.';
 
   const body = {
-    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+    model: 'llama-3.2-11b-vision-preview',
     messages: [
       {
         role: 'user',
@@ -169,7 +177,7 @@ export async function extractTextFromFile(base64Data: string, fileType: 'image' 
       },
     ],
     max_tokens: 1024,
-    temperature: 0.3,
+    temperature: 0.35,
   };
 
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {

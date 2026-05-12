@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useActiveNotices } from '@/hooks/useFirebaseNotices';
 import { useArchive } from '@/hooks/useArchive';
-import { Sparkles, Trophy, CalendarDays, LayoutGrid, MonitorPlay, RefreshCw, WifiOff } from 'lucide-react';
+import { Sparkles, Trophy, CalendarDays, LayoutGrid, MonitorPlay, RefreshCw, WifiOff, Laptop } from 'lucide-react';
 import { format, isToday, isTomorrow } from 'date-fns';
 import rbuLogo from '@/assets/rbu-logo.png';
 import { TVNoticePreview } from '@/components/TVNoticePreview';
@@ -14,6 +14,7 @@ import { categoryConfig } from '@/config/categoryConfig';
 import { cn } from '@/lib/utils';
 import { useTVDisplaySettings, type TVDisplayMode } from '@/hooks/useTVDisplaySettings';
 import type { Notice } from '@/integrations/firebase/types';
+import { TV_BRAND, TV_BRAND_CN } from '@/config/tvBrandTheme';
 
 type Slide =
   | { type: 'single'; notice: Notice }
@@ -69,7 +70,7 @@ const AchievementSpotlightCard: React.FC<{
       <div className={cn('flex flex-col gap-3 h-full', className)}>
         <p
           className={cn(
-            `font-black ${isLight ? 'text-slate-900' : 'text-white'} leading-snug shrink-0`,
+            `font-black leading-snug shrink-0 ${isLight ? `${TV_BRAND_CN.orange} italic` : 'text-white'}`,
             titleClassName
           )}
         >
@@ -80,8 +81,8 @@ const AchievementSpotlightCard: React.FC<{
         {achievement.imageUrl && !imgError && (
           <div
             className={cn(
-              'w-full rounded-xl overflow-hidden shrink-0 border relative',
-              isLight ? 'border-yellow-300 bg-yellow-50' : 'border-yellow-400/10 bg-yellow-500/5'
+              'w-full rounded-xl overflow-hidden shrink-0 border-2 relative',
+              isLight ? `${TV_BRAND_CN.borderNavyStrong} bg-white` : 'border-yellow-400/10 bg-yellow-500/5'
             )}
             style={{ aspectRatio: imageAspectRatio ?? '4/3' }}
           >
@@ -124,10 +125,10 @@ const AchievementSpotlightCard: React.FC<{
         {/* ── Image: error / unavailable fallback ── */}
         {achievement.imageUrl && imgError && (
           <div
-            className={cn(
-              'w-full rounded-xl overflow-hidden shrink-0 border flex items-center justify-center',
+              className={cn(
+              'w-full rounded-xl overflow-hidden shrink-0 border-2 flex items-center justify-center',
               isLight
-                ? 'border-yellow-300 bg-yellow-50/80'
+                ? `${TV_BRAND_CN.borderNavyStrong} bg-[#F8FAFC]`
                 : 'border-yellow-400/10 bg-yellow-500/5'
             )}
             style={{ aspectRatio: imageAspectRatio ?? '4/3' }}
@@ -155,9 +156,9 @@ const AchievementSpotlightCard: React.FC<{
         {!achievement.imageUrl && (
           <div
             className={cn(
-              'w-full rounded-xl overflow-hidden shrink-0 border flex items-center justify-center',
+              'w-full rounded-xl overflow-hidden shrink-0 border-2 flex items-center justify-center',
               isLight
-                ? 'border-yellow-200 bg-yellow-50/50'
+                ? `${TV_BRAND_CN.borderNavyStrong} bg-[#F8FAFC]`
                 : 'border-yellow-400/5 bg-yellow-500/[0.02]'
             )}
             style={{ aspectRatio: imageAspectRatio ?? '4/3' }}
@@ -172,7 +173,7 @@ const AchievementSpotlightCard: React.FC<{
           <div className="flex-1 min-h-0 overflow-hidden">
             <AutoScrollText
               content={achievement.description}
-              className={textClassName ?? (isLight ? 'text-yellow-800' : 'text-yellow-100/70')}
+              className={textClassName ?? (isLight ? `${TV_BRAND_CN.navy} font-semibold` : 'text-yellow-100/70')}
               speed={scrollSpeed}
             />
           </div>
@@ -412,8 +413,8 @@ const TVDisplay: React.FC = () => {
   }, []);
 
   const isLight = settings.tvTheme === 'light';
-  const rootBg = isLight ? 'bg-white/72' : 'bg-[#060810]/92';
-  const rootText = isLight ? 'text-slate-900' : 'text-white';
+  const rootBg = isLight ? 'bg-white' : 'bg-[#001428]/95';
+  const rootText = isLight ? TV_BRAND_CN.navy : 'text-white';
   const canvasStyle: React.CSSProperties = {
     width: '100vw',
     height: '100vh',
@@ -425,27 +426,29 @@ const TVDisplay: React.FC = () => {
   };
   const outerBackgroundStyle: React.CSSProperties = {
     background: isLight
-      ? 'radial-gradient(circle at top left, rgba(255,255,255,0.95) 0%, rgba(244,247,252,0.98) 38%, rgba(220,229,241,1) 100%)'
-      : 'radial-gradient(circle at top left, rgba(20,30,56,0.95) 0%, rgba(8,12,22,1) 48%, rgba(2,6,15,1) 100%)',
+      ? `linear-gradient(180deg, ${TV_BRAND.white} 0%, ${TV_BRAND.paper} 55%, #eef2f7 100%)`
+      : `linear-gradient(180deg, #000a14 0%, #001428 45%, #002244 100%)`,
   };
   const frameGlowStyle: React.CSSProperties = {
     background: isLight
-      ? 'radial-gradient(circle at 18% 12%, rgba(243,111,39,0.22), transparent 28%), radial-gradient(circle at 88% 10%, rgba(14,116,144,0.18), transparent 24%), radial-gradient(circle at 50% 100%, rgba(251,191,36,0.18), transparent 30%)'
-      : 'radial-gradient(circle at 18% 12%, rgba(243,111,39,0.14), transparent 28%), radial-gradient(circle at 82% 10%, rgba(56,189,248,0.14), transparent 22%)',
+      ? 'radial-gradient(circle at 12% 8%, rgba(241,90,36,0.12), transparent 32%), radial-gradient(circle at 92% 12%, rgba(0,51,102,0.08), transparent 28%)'
+      : 'radial-gradient(circle at 18% 12%, rgba(241,90,36,0.12), transparent 30%), radial-gradient(circle at 82% 8%, rgba(0,51,102,0.35), transparent 26%)',
   };
   const shellClassName = isLight
-    ? 'border border-slate-300/70 shadow-[0_30px_80px_rgba(148,163,184,0.28)] backdrop-blur-2xl'
-    : 'border border-white/10 shadow-[0_24px_70px_rgba(0,0,0,0.55)] backdrop-blur-xl';
+    ? `border-2 ${TV_BRAND_CN.borderNavyStrong} shadow-[0_24px_60px_rgba(0,51,102,0.12)]`
+    : 'border border-[#F15A24]/20 shadow-[0_24px_70px_rgba(0,0,0,0.55)] backdrop-blur-xl';
   const headerClassName = isLight
-    ? 'border-slate-300/80 bg-white/82 shadow-[0_10px_30px_rgba(148,163,184,0.14)] backdrop-blur-xl'
-    : 'border-white/5 bg-black/10';
+    ? `border-b-2 ${TV_BRAND_CN.borderNavy} bg-white`
+    : 'border-b border-[#003366]/50 bg-[#001a33]/90';
   const sidebarClassName = isLight
-    ? 'border-slate-300/70 bg-white/66 backdrop-blur-xl'
-    : 'border-white/5 bg-white/[0.02]';
-  const footerClassName = isLight
-    ? 'bg-white/82 border-t border-slate-300/80 backdrop-blur-xl'
-    : 'bg-black/20';
-  const progressTrackClassName = isLight ? 'bg-slate-300/55' : 'bg-white/5';
+    ? `border-l-2 ${TV_BRAND_CN.borderNavy} bg-white`
+    : 'border-l border-white/5 bg-[#001428]/80';
+  const progressTrackClassName = isLight ? 'bg-[#003366]/15' : 'bg-white/10';
+
+  // Edge-to-edge (0% inset): sharp corners; with inset, rounded shell reads correctly.
+  const hasTvSafeArea = settings.tvSafeAreaPercent > 0;
+  const tvCanvasRadiusClass = hasTvSafeArea ? 'rounded-[clamp(18px,1.6vw,36px)]' : 'rounded-none';
+  const tvShellRadiusClass = hasTvSafeArea ? 'rounded-[clamp(18px,1.4vw,30px)]' : 'rounded-none';
 
   // Whether we are in the "no notices → show achievements" branch
   const showingAchievementsFull = displayItems.length === 0;
@@ -455,21 +458,21 @@ const TVDisplay: React.FC = () => {
       <div className="h-screen w-screen overflow-hidden bg-black">
         <div className="relative h-full w-full" style={outerBackgroundStyle}>
           <div
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[clamp(18px,1.6vw,36px)] overflow-hidden"
+            className={cn('absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 overflow-hidden', tvCanvasRadiusClass)}
             style={canvasStyle}
           >
             <div className="absolute inset-0" style={frameGlowStyle} />
             <div
-              className={`absolute ${rootBg} ${rootText} ${shellClassName} flex items-center justify-center rounded-[clamp(18px,1.4vw,30px)]`}
+              className={cn(`absolute ${rootBg} ${rootText} ${shellClassName} flex items-center justify-center`, tvShellRadiusClass)}
               style={{ inset: `${settings.tvSafeAreaPercent}%` }}
             >
               <div className="text-center">
                 <div className="flex justify-center gap-6 mb-8 opacity-60">
-                  <div className="w-56 h-72 rounded-2xl bg-slate-500/20 animate-pulse" />
-                  <div className="w-56 h-72 rounded-2xl bg-slate-500/20 animate-pulse delay-75" />
-                  <div className="w-56 h-72 rounded-2xl bg-slate-500/20 animate-pulse delay-150" />
+                  <div className="w-56 h-72 rounded-2xl bg-[#003366]/15 animate-pulse" />
+                  <div className="w-56 h-72 rounded-2xl bg-[#F15A24]/10 animate-pulse delay-75" />
+                  <div className="w-56 h-72 rounded-2xl bg-[#003366]/15 animate-pulse delay-150" />
                 </div>
-                <p className="text-slate-500 font-bold tracking-[0.3em] uppercase text-xs">Updating Board</p>
+                <p className={`font-bold tracking-[0.3em] uppercase text-xs ${isLight ? TV_BRAND_CN.navyMuted : 'text-slate-500'}`}>Updating Board</p>
               </div>
             </div>
           </div>
@@ -482,23 +485,25 @@ const TVDisplay: React.FC = () => {
     <div className="h-screen w-screen overflow-hidden bg-black select-none">
       <div className="relative h-full w-full" style={outerBackgroundStyle}>
         <div
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[clamp(18px,1.6vw,36px)] overflow-hidden flex flex-col"
+          className={cn('absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 overflow-hidden flex flex-col', tvCanvasRadiusClass)}
           style={canvasStyle}
         >
           <div className="absolute inset-0" style={frameGlowStyle} />
           <div className="absolute flex flex-col" style={safeAreaStyle}>
-            <div className={`h-full w-full ${rootBg} ${rootText} ${shellClassName} flex flex-col overflow-hidden rounded-[clamp(18px,1.4vw,30px)]`}>
+            <div className={cn(`h-full w-full ${rootBg} ${rootText} ${shellClassName} flex flex-col overflow-hidden`, tvShellRadiusClass)}>
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <header
         className={`shrink-0 h-12 sm:h-14 xl:h-[4.5rem] px-3 sm:px-6 xl:px-10 flex items-center justify-between border-b ${headerClassName} z-20 relative`}
       >
         <div className="flex items-center gap-4">
-          <div className="h-7 w-7 sm:h-8 sm:w-8 xl:h-10 xl:w-10 bg-white/95 p-0.5 sm:p-1 rounded-lg shrink-0">
+          <div className={`h-7 w-7 sm:h-8 sm:w-8 xl:h-10 xl:w-10 p-0.5 sm:p-1 rounded-lg shrink-0 border-2 ${isLight ? TV_BRAND_CN.borderNavyStrong : 'border-white/20'} bg-white`}>
             <img src={rbuLogo} className="h-full w-full object-contain" alt="RBU" />
           </div>
           <div>
-            <h1 className="text-sm sm:text-base xl:text-xl font-black tracking-tight leading-none">Ramdeobaba University</h1>
-            <p className="text-[0.5rem] sm:text-[0.55rem] xl:text-[0.65rem] font-bold tracking-[0.35em] text-slate-500 uppercase mt-0.5">
+            <h1 className={`text-sm sm:text-base xl:text-xl font-black tracking-tight leading-none ${isLight ? TV_BRAND_CN.navy : 'text-white'}`}>
+              Ramdeobaba University
+            </h1>
+            <p className={`text-[0.5rem] sm:text-[0.55rem] xl:text-[0.65rem] font-black italic tracking-[0.28em] uppercase mt-0.5 ${isLight ? TV_BRAND_CN.orange : 'text-[#F15A24]'}`}>
               Nagpur &middot; Digital Notice Board
             </p>
           </div>
@@ -520,9 +525,9 @@ const TVDisplay: React.FC = () => {
                         height: 6,
                         backgroundColor:
                           i === achPage
-                            ? '#facc15'
+                            ? TV_BRAND.orange
                             : isLight
-                              ? 'rgba(0,0,0,0.15)'
+                              ? 'rgba(0,51,102,0.2)'
                               : 'rgba(255,255,255,0.12)',
                       }}
                     />
@@ -531,9 +536,9 @@ const TVDisplay: React.FC = () => {
               )}
               <div
                 className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.55rem] font-black uppercase tracking-widest border',
+                  'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.55rem] font-black uppercase tracking-widest border-2',
                   isLight
-                    ? 'text-yellow-700 border-yellow-300 bg-yellow-100'
+                    ? `${TV_BRAND_CN.borderNavyStrong} ${TV_BRAND_CN.navy} bg-[#F15A24]/10`
                     : 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10'
                 )}
               >
@@ -555,9 +560,9 @@ const TVDisplay: React.FC = () => {
                         height: 6,
                         backgroundColor:
                           i === currentIndex
-                            ? 'hsl(var(--primary))'
+                            ? TV_BRAND.orange
                             : isLight
-                              ? 'rgba(0,0,0,0.15)'
+                              ? 'rgba(0,51,102,0.2)'
                               : 'rgba(255,255,255,0.12)',
                       }}
                     />
@@ -568,11 +573,11 @@ const TVDisplay: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <div
                     className={cn(
-                      'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.55rem] font-black uppercase tracking-widest border',
+                      'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.55rem] font-black uppercase tracking-widest border-2',
                       activeMode === 'single'
-                        ? 'text-primary border-primary/30 bg-primary/10'
+                        ? `${TV_BRAND_CN.borderNavyStrong} ${TV_BRAND_CN.navy} bg-[#F15A24]/12`
                         : isLight
-                          ? 'text-purple-700 border-purple-300 bg-purple-100'
+                          ? `${TV_BRAND_CN.borderNavy} text-[#003366] bg-white`
                           : 'text-purple-400 border-purple-500/30 bg-purple-500/10'
                     )}
                   >
@@ -587,9 +592,9 @@ const TVDisplay: React.FC = () => {
                     )}
                   </div>
                   {autoCountdown > 0 && (
-                    <div className="flex items-center gap-1 text-[0.52rem] font-bold text-slate-600">
-                      <RefreshCw className="h-2.5 w-2.5" />
-                      {autoCountdown}s
+                    <div className="flex items-center gap-1 text-[0.52rem] font-bold">
+                      <RefreshCw className={cn('h-2.5 w-2.5', isLight ? 'text-[#003366]/70' : 'text-slate-400')} />
+                      <span className={isLight ? 'text-[#003366]/70' : 'text-slate-400'}>{autoCountdown}s</span>
                     </div>
                   )}
                 </div>
@@ -597,11 +602,11 @@ const TVDisplay: React.FC = () => {
               {settings.displayMode !== 'auto' && (
                 <div
                   className={cn(
-                    'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.52rem] font-black uppercase tracking-widest border',
+                    'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.52rem] font-black uppercase tracking-widest border-2',
                     settings.displayMode === 'multi'
-                      ? 'text-purple-400 border-purple-500/20 bg-purple-500/8'
+                      ? 'text-[#F5C518] border-[#F5C518]/40 bg-[#003366]/30'
                       : isLight
-                        ? 'text-slate-600 border-slate-300 bg-slate-100'
+                        ? `${TV_BRAND_CN.borderNavy} ${TV_BRAND_CN.navy} bg-white`
                         : 'text-slate-400 border-white/8 bg-white/3'
                   )}
                 >
@@ -620,19 +625,27 @@ const TVDisplay: React.FC = () => {
           )}
         </div>
 
+        <div
+          className="hidden md:flex absolute right-[clamp(8rem,18vw,14rem)] top-1/2 -translate-y-1/2 h-9 w-9 xl:h-11 xl:w-11 rounded-full items-center justify-center shrink-0"
+          style={{ backgroundColor: TV_BRAND.navy }}
+          aria-hidden
+        >
+          <Laptop className="h-4 w-4 xl:h-5 xl:w-5 text-white" strokeWidth={2} />
+        </div>
+
         {/* Clock */}
         <div className="flex items-center gap-3 sm:gap-4 xl:gap-5 text-right">
           <div>
-            <div className="text-base sm:text-lg xl:text-2xl font-bold tabular-nums tracking-tight leading-none">
+            <div className={`text-base sm:text-lg xl:text-2xl font-bold tabular-nums tracking-tight leading-none ${isLight ? TV_BRAND_CN.navy : 'text-white'}`}>
               {format(currentTime, 'HH:mm:ss')}
             </div>
-            <div className="text-[0.5rem] sm:text-[0.55rem] xl:text-[0.65rem] font-bold text-slate-500 uppercase tracking-widest mt-0.5">
+            <div className={`text-[0.5rem] sm:text-[0.55rem] xl:text-[0.65rem] font-bold uppercase tracking-widest mt-0.5 ${isLight ? 'text-[#003366]/55' : 'text-slate-500'}`}>
               {format(currentTime, 'EEEE, MMMM d')}
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]" />
-            <span className="text-[0.6rem] font-black text-emerald-400 uppercase tracking-widest">Live</span>
+            <div className="w-1.5 h-1.5 rounded-full bg-[#F15A24] shadow-[0_0_8px_#F15A24]" />
+            <span className={`text-[0.6rem] font-black uppercase tracking-widest ${isLight ? TV_BRAND_CN.orange : 'text-[#F15A24]'}`}>Live</span>
           </div>
         </div>
       </header>
@@ -663,9 +676,9 @@ const TVDisplay: React.FC = () => {
                     <div
                       key={ach.id ?? i}
                       className={cn(
-                        'flex-1 max-w-md rounded-2xl overflow-hidden border flex flex-col min-h-0',
+                        'flex-1 max-w-md rounded-2xl overflow-hidden border-2 flex flex-col min-h-0',
                         isLight
-                          ? 'bg-white border-yellow-200 shadow-lg p-6'
+                          ? `bg-white ${TV_BRAND_CN.borderNavyStrong} shadow-[0_12px_40px_rgba(0,51,102,0.1)] p-6`
                           : 'bg-white/[0.03] border-yellow-400/10 p-6'
                       )}
                     >
@@ -674,7 +687,7 @@ const TVDisplay: React.FC = () => {
                         isLight={isLight}
                         titleClassName="text-xl"
                         imageAspectRatio="16/9"
-                        textClassName={`text-[0.82rem] ${isLight ? 'text-yellow-800' : 'text-yellow-100/70'}`}
+                        textClassName={isLight ? `text-[0.82rem] ${TV_BRAND_CN.navy} font-semibold` : 'text-[0.82rem] text-yellow-100/70'}
                         scrollSpeed={22}
                         className="flex-1 min-h-0"
                       />
@@ -785,8 +798,8 @@ const TVDisplay: React.FC = () => {
                   <>
                     <div className="flex-1 flex flex-col p-5 overflow-hidden min-h-0">
                       <div className="flex items-center gap-2 mb-4 shrink-0">
-                        <CalendarDays className="h-3.5 w-3.5 text-purple-400" />
-                        <p className="text-[0.6rem] font-black uppercase tracking-[0.3em] text-slate-500">
+                        <CalendarDays className={`h-3.5 w-3.5 ${isLight ? TV_BRAND_CN.orange : 'text-purple-400'}`} />
+                        <p className={`text-[0.6rem] font-black uppercase tracking-[0.3em] ${isLight ? TV_BRAND_CN.navyMuted : 'text-slate-500'}`}>
                           Upcoming Events
                         </p>
                       </div>
@@ -798,16 +811,16 @@ const TVDisplay: React.FC = () => {
                             <div key={event.id ?? i} className="flex items-center gap-3">
                               <div className="shrink-0 w-10 text-center">
                                 {tag ? (
-                                  <div className="text-[0.6rem] font-black text-purple-400 uppercase leading-tight">
+                                  <div className={`text-[0.6rem] font-black uppercase leading-tight ${isLight ? TV_BRAND_CN.orange : 'text-purple-400'}`}>
                                     {tag}
                                   </div>
                                 ) : (
                                   <>
-                                    <div className="text-[0.55rem] font-black uppercase text-purple-400 leading-none">
+                                    <div className={`text-[0.55rem] font-black uppercase leading-none ${isLight ? TV_BRAND_CN.orange : 'text-purple-400'}`}>
                                       {format(d, 'MMM')}
                                     </div>
                                     <div
-                                      className={`text-lg font-black ${isLight ? 'text-slate-800' : 'text-white'} leading-none`}
+                                      className={`text-lg font-black leading-none ${isLight ? TV_BRAND_CN.navy : 'text-white'}`}
                                     >
                                       {format(d, 'd')}
                                     </div>
@@ -816,7 +829,7 @@ const TVDisplay: React.FC = () => {
                               </div>
                               <div className={`w-px h-8 ${isLight ? 'bg-slate-200' : 'bg-white/8'} shrink-0`} />
                               <p
-                                className={`text-[0.78rem] ${isLight ? 'text-slate-600' : 'text-white/65'} leading-snug line-clamp-2 min-w-0`}
+                                className={`text-[0.78rem] ${isLight ? `${TV_BRAND_CN.navy} opacity-90` : 'text-white/65'} leading-snug line-clamp-2 min-w-0`}
                               >
                                 {event.title}
                               </p>
@@ -825,7 +838,7 @@ const TVDisplay: React.FC = () => {
                         })}
                       </div>
                     </div>
-                    <div className={`h-px ${isLight ? 'bg-slate-200' : 'bg-white/5'} shrink-0`} />
+                    <div className={`h-px shrink-0 ${isLight ? 'bg-[#003366]/20' : 'bg-white/5'}`} />
                   </>
                 )}
 
@@ -833,18 +846,19 @@ const TVDisplay: React.FC = () => {
                 <div className="flex-1 flex flex-col p-5 overflow-hidden min-h-0">
                   <div className="flex items-center gap-2 mb-4 shrink-0">
                     <Trophy
-                      className={cn('h-3.5 w-3.5 text-yellow-400', upcomingEvents.length === 0 && 'h-4 w-4')}
+                      className={cn('h-3.5 w-3.5', isLight ? TV_BRAND_CN.orange : 'text-yellow-400', upcomingEvents.length === 0 && 'h-4 w-4')}
                     />
                     <p
                       className={cn(
-                        'font-black uppercase tracking-[0.3em] text-slate-500',
-                        upcomingEvents.length === 0 ? 'text-[0.65rem]' : 'text-[0.6rem]'
+                        'font-black uppercase tracking-[0.3em]',
+                        isLight ? `${TV_BRAND_CN.navyMuted} text-[0.6rem]` : 'text-slate-500 text-[0.6rem]',
+                        upcomingEvents.length === 0 && 'text-[0.65rem]'
                       )}
                     >
                       Student Spotlight
                     </p>
                     {upcomingEvents.length === 0 && (
-                      <span className="ml-auto text-[0.5rem] font-black uppercase tracking-widest text-yellow-500/50">
+                      <span className={`ml-auto text-[0.5rem] font-black uppercase tracking-widest ${isLight ? TV_BRAND_CN.orange : 'text-yellow-500/50'}`}>
                         Achievements
                       </span>
                     )}
@@ -865,7 +879,7 @@ const TVDisplay: React.FC = () => {
                           titleClassName={upcomingEvents.length === 0 ? 'text-xl' : 'text-base line-clamp-2'}
                           imageAspectRatio={upcomingEvents.length === 0 ? '4/3' : '16/9'}
                           textClassName={`${upcomingEvents.length === 0 ? 'text-[0.82rem]' : 'text-[0.75rem]'
-                            } ${isLight ? 'text-yellow-800' : 'text-yellow-100/70'}`}
+                            } ${isLight ? `${TV_BRAND_CN.navy} font-semibold` : 'text-yellow-100/70'}`}
                           scrollSpeed={upcomingEvents.length === 0 ? 22 : 18}
                           className="flex-1 min-h-0"
                         />
@@ -909,7 +923,7 @@ const TVDisplay: React.FC = () => {
         >
           <motion.div
             key={`${progressKey}-${currentIndex}`}
-            className="absolute inset-y-0 left-0 bg-primary"
+            className={cn('absolute inset-y-0 left-0', isLight ? 'bg-[#F15A24]' : 'bg-primary')}
             initial={{ width: '100%' }}
             animate={{ width: '0%' }}
             transition={{ duration: slideDuration / 1000, ease: 'linear' }}
@@ -924,7 +938,7 @@ const TVDisplay: React.FC = () => {
         >
           <motion.div
             key={`ach-prog-${achPage}`}
-            className="absolute inset-y-0 left-0 bg-yellow-400"
+            className="absolute inset-y-0 left-0 bg-[#F5C518]"
             initial={{ width: '100%' }}
             animate={{ width: '0%' }}
             transition={{ duration: 12, ease: 'linear' }}
@@ -941,7 +955,7 @@ const TVDisplay: React.FC = () => {
             key={`auto-${activeMode}`}
             className={cn(
               'absolute inset-y-0 left-0',
-              activeMode === 'single' ? 'bg-primary/50' : 'bg-purple-500/50'
+              activeMode === 'single' ? 'bg-[#F15A24]/80' : 'bg-[#F5C518]/70'
             )}
             initial={{ width: '100%' }}
             animate={{ width: '0%' }}
@@ -956,33 +970,57 @@ const TVDisplay: React.FC = () => {
         </div>
       )}
 
-      {/* ── Ticker — Always shows "Thought of the Day" ──────────────────── */}
-      <footer
-        className={`shrink-0 h-7 sm:h-8 xl:h-9 flex items-center overflow-hidden ${footerClassName}`}
-      >
-        <div className="shrink-0 h-full px-3 sm:px-4 xl:px-5 flex items-center bg-primary text-white font-black uppercase tracking-widest text-[0.45rem] sm:text-[0.5rem] xl:text-[0.6rem]">
-          Thought of the Day
+      {/* ── Brand accent strip + ticker (poster-style footer) ───────────── */}
+      <div className="shrink-0 flex flex-col">
+        <div
+          className={cn(
+            'relative h-1.5 w-full overflow-hidden shrink-0',
+            isLight ? 'bg-white' : 'bg-[#001428]'
+          )}
+        >
+          <div className="absolute right-0 top-0 bottom-0 flex w-[min(52%,420px)] translate-x-1">
+            <div className="flex-1 -skew-x-12 bg-[#F15A24]" />
+            <div className="w-[18%] min-w-[12px] -skew-x-12 bg-[#F5C518]" />
+            <div className="flex-[0.9] -skew-x-12 bg-[#003366]" />
+          </div>
         </div>
-        <div className="flex-1 overflow-hidden relative">
-          <motion.div
-            className="flex items-center whitespace-nowrap"
-            animate={{ x: ['0%', '-50%'] }}
-            transition={{ duration: 80, repeat: Infinity, ease: 'linear' }}
-          >
-            {[0, 1].map((dup) => (
-              <span key={dup} className="inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-5 xl:px-7">
-                <span
-                  className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full shrink-0"
-                  style={{ backgroundColor: '#facc15' }}
-                />
-                <span className={`text-[0.65rem] sm:text-[0.7rem] xl:text-[0.78rem] font-medium ${isLight ? 'text-slate-600' : 'text-white/50'}`}>
-                  &ldquo;{quoteText}&rdquo;{quoteAuthor ? ` — ${quoteAuthor}` : ''}
+        {isLight && (
+          <div className="flex justify-end items-center px-4 py-1 bg-white shrink-0 border-t border-[#003366]/15">
+            <span className="text-[0.65rem] sm:text-xs font-black text-[#F15A24] tracking-wide">
+              www.rbunagpur.in
+            </span>
+          </div>
+        )}
+        <footer
+          className={cn(
+            'shrink-0 h-7 sm:h-8 xl:h-9 flex items-stretch overflow-hidden',
+            TV_BRAND_CN.bgNavy,
+            isLight ? 'border-t-2 border-[#003366]' : 'border-t border-[#F15A24]/25'
+          )}
+        >
+          <div className="shrink-0 h-full px-3 sm:px-4 xl:px-5 flex items-center bg-[#F15A24] text-white font-black uppercase tracking-widest text-[0.45rem] sm:text-[0.5rem] xl:text-[0.6rem]">
+            Thought of the Day
+          </div>
+          <div className="flex flex-1 min-h-0 min-w-0 items-center overflow-hidden">
+            <motion.div
+              className="flex items-center whitespace-nowrap"
+              animate={{ x: ['0%', '-50%'] }}
+              transition={{ duration: 80, repeat: Infinity, ease: 'linear' }}
+            >
+              {[0, 1].map((dup) => (
+                <span key={dup} className="inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-5 xl:px-7">
+                  <span
+                    className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full shrink-0 bg-[#F5C518]"
+                  />
+                  <span className="text-[0.65rem] sm:text-[0.7rem] xl:text-[0.78rem] font-medium leading-snug text-white/90">
+                    &ldquo;{quoteText}&rdquo;{quoteAuthor ? ` — ${quoteAuthor}` : ''}
+                  </span>
                 </span>
-              </span>
-            ))}
-          </motion.div>
-        </div>
-      </footer>
+              ))}
+            </motion.div>
+          </div>
+        </footer>
+      </div>
 
       {/* ── Offline Overlay ── */}
       <AnimatePresence>
