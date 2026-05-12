@@ -192,8 +192,10 @@
   }
   
   .gradient-tv { 
-    background: linear-gradient(180deg, hsl(var(--tv-gradient-start)) 0%, hsl(var(--tv-gradient-end)) 100%); 
-  }
+  background: 
+    linear-gradient(180deg, hsl(216 70% 15% / 0.7) 0%, hsl(216 80% 8% / 0.85) 100%),
+    url('https://res.cloudinary.com/dlcxm01x7/image/upload/f_auto,q_auto/rbu_bg2_uusoro') center/cover no-repeat;
+}
   
   .spiritual-banner { 
     background: linear-gradient(90deg, hsl(280 35% 35%) 0%, hsl(280 30% 45%) 50%, hsl(280 35% 35%) 100%); 
