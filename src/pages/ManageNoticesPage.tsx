@@ -68,6 +68,7 @@ const ManageNoticesPage: React.FC = () => {
       placements: "bg-primary/10 text-primary border-primary/20",
       events: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
       announcements: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+      achievements: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 font-bold",
       other: "bg-muted text-muted-foreground",
     };
     const style = styles[category] || styles.other;
@@ -131,6 +132,7 @@ const ManageNoticesPage: React.FC = () => {
                 <SelectItem value="placements">Placements</SelectItem>
                 <SelectItem value="events">Events</SelectItem>
                 <SelectItem value="announcements">Announcements</SelectItem>
+                <SelectItem value="achievements">Achievements</SelectItem>
                 <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>

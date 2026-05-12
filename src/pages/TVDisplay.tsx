@@ -262,12 +262,21 @@ const TVDisplay: React.FC = () => {
       });
   }, [activeNotices]);
 
-  // ─── Archived achievements (archive → achievements only) ───────────────────
+  // ─── Achievements (combine active and archived achievements) ───────────────
   const archivedAchievements = useMemo(() => {
-    return (archivedNotices ?? [])
-      .filter(n => n.category === 'achievements')
+    const activeAch = (activeNotices ?? []).filter(n => n.category === 'achievements');
+    const archivedAch = (archivedNotices ?? []).filter(n => n.category === 'achievements');
+    
+    // Combine and remove any duplicate IDs
+    const combined = [...activeAch, ...archivedAch];
+    const uniqueMap = new Map<string, Notice>();
+    combined.forEach(n => {
+      if (n.id) uniqueMap.set(n.id, n);
+    });
+    
+    return Array.from(uniqueMap.values())
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [archivedNotices]);
+  }, [activeNotices, archivedNotices]);
 
   // Sidebar spotlight: cycle through archived achievements (1 card at a time)
   const [spotlightIdx, setSpotlightIdx] = useState(0);
