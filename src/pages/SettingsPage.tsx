@@ -40,12 +40,19 @@ import { cn } from "@/lib/utils";
 const SettingsPage: React.FC = () => {
   const { toast } = useToast();
   const { changePassword, setPassword, hasPasswordProvider, faculty } = useAuth();
-  const { settings: tvSettings, saveSettings: saveTVSettings, defaults: tvDefaults } = useTVDisplaySettings();
+  const { settings: tvSettings, saveSettings: saveTVSettings, defaults: tvDefaults, loading: tvLoading } = useTVDisplaySettings();
 
   // Local copy of TV settings for the form (saved only on "Save Settings" click)
   const [tvForm, setTVForm] = useState({ ...tvSettings });
-  // Keep tvForm in sync if settings change externally (e.g., opened in another tab)
-  React.useEffect(() => { setTVForm(s => ({ ...tvSettings, ...s })); }, []); // eslint-disable-line
+  const [initialized, setInitialized] = useState(false);
+
+  // Keep tvForm in sync with loaded settings on initial load
+  React.useEffect(() => {
+    if (!tvLoading && !initialized) {
+      setTVForm(tvSettings);
+      setInitialized(true);
+    }
+  }, [tvLoading, tvSettings, initialized]);
 
   const [settings, setSettings] = useState({
     slideDuration: "10",
@@ -80,10 +87,10 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     localStorage.setItem("rbu-notice-settings", JSON.stringify(settings));
 
-    const parseField = (val: any, def: number) => {
+    const parseField = (val: string | number | null | undefined, def: number) => {
       if (val === '' || val === null || val === undefined) return def;
       const n = Number(val);
       return isNaN(n) ? def : n;
@@ -101,14 +108,25 @@ const SettingsPage: React.FC = () => {
       autoSingleDuration:        Math.max(15, Math.min(3600, parseField(tvForm.autoSingleDuration, tvDefaults.autoSingleDuration))),
       autoMultiDuration:         Math.max(15, Math.min(3600, parseField(tvForm.autoMultiDuration, tvDefaults.autoMultiDuration))),
       tvSafeAreaPercent:        Math.max(0,  Math.min(10, parseField(tvForm.tvSafeAreaPercent, tvDefaults.tvSafeAreaPercent))),
-      tvUiScalePercent:         Math.max(90, Math.min(120, parseField(tvForm.tvUiScalePercent, tvDefaults.tvUiScalePercent))),
+      tvUiScalePercent:         Math.max(40, Math.min(120, parseField(tvForm.tvUiScalePercent, tvDefaults.tvUiScalePercent))),
     };
-    saveTVSettings(parsed);
-    setTVForm(parsed);
-    toast({
-      title: "Settings Saved",
-      description: "TV display settings have been applied. Changes will reflect on the TV screen immediately.",
-    });
+
+    try {
+      await saveTVSettings(parsed);
+      setTVForm(parsed);
+      toast({
+        title: "Settings Saved",
+        description: "TV display settings have been applied. Changes will reflect on the TV screen immediately.",
+      });
+    } catch (err: unknown) {
+      console.error('Error saving TV display settings:', err);
+      const errMsg = err instanceof Error ? err.message : String(err);
+      toast({
+        title: "Save Failed",
+        description: "Failed to sync settings to Firestore: " + errMsg,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleReset = () => {
@@ -276,7 +294,7 @@ const SettingsPage: React.FC = () => {
                       <Input
                         id="tvUiScalePercent"
                         type="number"
-                        min="90"
+                        min="40"
                         max="120"
                         step="1"
                         value={tvForm.tvUiScalePercent}
@@ -286,7 +304,7 @@ const SettingsPage: React.FC = () => {
                       <span className="text-xs text-muted-foreground shrink-0">%</span>
                     </div>
                     <div className="flex flex-wrap gap-1">
-                      {[100, 105, 110].map(p => (
+                      {[40, 60, 80, 100, 105, 110].map(p => (
                         <button
                           key={p}
                           type="button"

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { db } from '@/integrations/firebase/config';
 
 export type TVDisplayMode = 'single' | 'multi' | 'auto';
 
@@ -50,6 +52,37 @@ export function useTVDisplaySettings() {
     return { ...TV_SETTINGS_DEFAULTS };
   });
 
+  const [loading, setLoading] = useState(true);
+
+  // Sync state with Firestore in real-time
+  useEffect(() => {
+    const docRef = doc(db, 'settings', 'tv_display');
+    const unsubscribe = onSnapshot(
+      docRef,
+      (snapshot) => {
+        setLoading(false);
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          setSettings((prev) => {
+            const next = { ...prev, ...data } as TVDisplaySettings;
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+            } catch {
+              // Ignore quota errors.
+            }
+            return next;
+          });
+        }
+      },
+      (error) => {
+        console.error('Error listening to TV display settings:', error);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
   const updateSettings = useCallback((patch: Partial<TVDisplaySettings>) => {
     setSettings(prev => {
       const next = { ...prev, ...patch };
@@ -60,6 +93,10 @@ export function useTVDisplaySettings() {
       }
       return next;
     });
+
+    // Persist to Firestore asynchronously
+    const docRef = doc(db, 'settings', 'tv_display');
+    return setDoc(docRef, patch, { merge: true });
   }, []);
 
   const saveSettings = useCallback((next: TVDisplaySettings) => {
@@ -69,6 +106,10 @@ export function useTVDisplaySettings() {
       // Ignore quota errors.
     }
     setSettings(next);
+
+    // Persist to Firestore asynchronously
+    const docRef = doc(db, 'settings', 'tv_display');
+    return setDoc(docRef, next, { merge: true });
   }, []);
 
   useEffect(() => {
@@ -86,5 +127,5 @@ export function useTVDisplaySettings() {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  return { settings, updateSettings, saveSettings, defaults: TV_SETTINGS_DEFAULTS };
+  return { settings, updateSettings, saveSettings, defaults: TV_SETTINGS_DEFAULTS, loading };
 }

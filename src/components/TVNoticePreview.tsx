@@ -151,17 +151,17 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
 
     // Badges moved to footer
     const badges = (
-        <div className="flex items-center gap-2 xl:gap-3 shrink-0">
+        <div className="flex items-center gap-2 xl:gap-2.5 shrink-0">
             <div
-                className="flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-full text-white font-bold text-xs sm:text-sm"
+                className="flex items-center gap-1 px-2.5 py-0.5 sm:py-1 rounded-full text-white font-bold text-[10px] sm:text-xs"
                 style={{ backgroundColor: config.accent }}
             >
-                <CategoryIcon className="h-3.5 w-3.5 xl:h-5 xl:w-5" />
+                <CategoryIcon className="h-3 w-3 xl:h-4 xl:w-4" />
                 {notice.customCategory || config.label}
             </div>
             {notice.priority === 'high' && (
-                <div className="flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-full font-black text-rose-500 border-2 border-rose-500 text-xs sm:text-sm">
-                    <Zap className="h-3.5 w-3.5 xl:h-5 xl:w-5 fill-rose-500" />
+                <div className="flex items-center gap-1 px-2.5 py-0.5 sm:py-1 rounded-full font-black text-rose-500 border-2 border-rose-500 text-[10px] sm:text-xs">
+                    <Zap className="h-3 w-3 xl:h-4 xl:w-4 fill-rose-500" />
                     URGENT
                 </div>
             )}
@@ -173,30 +173,27 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
     const hasFooter = showIssuedBy || showValidTill;
     const regUrl = notice.registrationUrl;
 
-    // Always render footer now since it holds badges
+    // Always render footer now since it holds badges (made ultra-compact single line to maximize space)
     const footer = (
-        <div className={`mt-auto pt-3 sm:pt-4 xl:pt-6 border-t ${isLight ? 'border-[#003366]/25' : 'border-white/5'} flex flex-col sm:flex-row sm:items-center justify-between shrink-0 gap-3 sm:gap-0`}>
-            <div className="flex flex-wrap items-center gap-4 sm:gap-6 xl:gap-8">
+        <div className={`mt-auto pt-1.5 border-t ${isLight ? 'border-[#003366]/25' : 'border-white/5'} flex items-center justify-between shrink-0 gap-4`}>
+            <div className="flex items-center gap-3 sm:gap-4 xl:gap-5 min-w-0">
                 {showIssuedBy && (
-                    <div className="flex items-center gap-2 sm:gap-3 xl:gap-4">
-                        <div className={`w-8 h-8 sm:w-10 sm:h-10 xl:w-12 xl:h-12 rounded-full ${isLight ? 'bg-[#003366]/10' : 'bg-white/5'} flex items-center justify-center`}>
-                            <User className={`h-4 w-4 sm:h-5 sm:w-5 xl:h-6 xl:w-6 ${isLight ? 'text-[#003366]/50' : 'text-slate-400'}`} />
-                        </div>
-                        <div>
-                            <p className={`text-[10px] sm:text-xs uppercase tracking-[0.2em] font-bold ${isLight ? 'text-[#003366]/55' : 'text-slate-500'}`}>Issued By</p>
-                            <p className={`text-sm sm:text-base xl:text-xl font-bold ${isLight ? 'text-[#003366]' : 'text-white'}`}>{notice.facultyName || 'Faculty Name'}</p>
-                        </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        <User className={`h-3.5 w-3.5 ${isLight ? 'text-[#003366]/60' : 'text-slate-400'}`} />
+                        <span className={`text-[11px] sm:text-xs font-medium ${isLight ? 'text-[#003366]' : 'text-slate-300'}`}>
+                            By <span className="font-bold">{notice.facultyName || 'Faculty'}</span>
+                        </span>
                     </div>
                 )}
-                <div className={showIssuedBy ? cn('hidden sm:block w-px h-8', isLight ? 'bg-[#003366]/15' : 'bg-white/10') : 'hidden'} />
+                {showIssuedBy && <span className={isLight ? 'text-[#003366]/20' : 'text-white/10'}>&bull;</span>}
                 {badges}
             </div>
             {showValidTill && notice.endTime ? (
-                <div className="text-left sm:text-right">
-                    <p className={`text-[10px] sm:text-xs uppercase tracking-[0.2em] font-bold ${isLight ? 'text-[#003366]/55' : 'text-slate-500'}`}>Valid Till</p>
-                    <p className={`text-sm sm:text-base xl:text-xl font-bold ${isLight ? 'text-[#F15A24]' : 'text-white'}`}>
+                <div className="flex items-center gap-1.5 shrink-0">
+                    <span className={`text-[9px] sm:text-[10px] uppercase tracking-wider font-black ${isLight ? 'text-[#003366]/50' : 'text-slate-500'}`}>Until:</span>
+                    <span className={`text-[11px] sm:text-xs font-black ${isLight ? 'text-[#F15A24]' : 'text-white'}`}>
                         {format(new Date(notice.endTime), 'dd MMM yyyy')}
-                    </p>
+                    </span>
                 </div>
             ) : <div />}
         </div>
@@ -205,7 +202,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
     const containerClass = cn(
         "h-full w-full font-sans",
         isLight ? TV_BRAND_CN.navy : 'text-white',
-        !isHero && "p-4"
+        !isHero && "p-1.5 sm:p-2 xl:p-3"
     );
 
     // Achievement notices — poster-style (light) vs gold cinematic (dark)
@@ -220,22 +217,22 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                         <div className="absolute inset-0 pointer-events-none opacity-[0.04]"
                             style={{ background: `radial-gradient(circle at 30% 20%, ${TV_BRAND.navy}, transparent 55%)` }} />
                         <Trophy className="absolute right-4 sm:right-10 xl:right-16 top-1/2 -translate-y-1/2 h-28 sm:h-44 xl:h-52 w-28 sm:w-44 xl:w-52 text-[#003366] pointer-events-none select-none" />
-                        <div className="relative z-10 h-full flex flex-col p-4 sm:p-6 xl:p-10">
-                            <div className="flex items-center gap-2 sm:gap-3 xl:gap-4 shrink-0 mb-4 sm:mb-6 xl:mb-8">
-                                <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full border-2 border-[#003366]/25 bg-[#F15A24]/10">
-                                    <Trophy className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#F15A24]" />
-                                    <span className={`${TV_BRAND_CN.navy} font-black uppercase tracking-widest text-[10px] sm:text-xs xl:text-sm`}>Achievement</span>
+                        <div className="relative z-10 h-full flex flex-col p-2.5 sm:p-4 xl:p-6">
+                            <div className="flex items-center gap-2 sm:gap-3 xl:gap-4 shrink-0 mb-2 sm:mb-3 xl:mb-4">
+                                <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-0.5 sm:py-1 rounded-full border-2 border-[#003366]/25 bg-[#F15A24]/10">
+                                    <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#F15A24]" />
+                                    <span className={`${TV_BRAND_CN.navy} font-black uppercase tracking-widest text-[10px] sm:text-xs`}>Achievement</span>
                                 </div>
                             </div>
-                            <div className="flex-1 flex min-h-0 flex-col gap-4 xl:flex-row xl:items-center xl:gap-8">
+                            <div className="flex-1 flex min-h-0 flex-row items-center gap-6 xl:gap-8">
                                 <div className="flex-1 flex flex-col justify-center min-h-0">
-                                    <h1 className={`font-black italic leading-[1.0] tracking-tight mb-2 sm:mb-3 xl:mb-5 ${TV_BRAND_CN.orange}`}
+                                    <h1 className={`font-black italic leading-[1.0] tracking-tight mb-1 sm:mb-1.5 xl:mb-2 ${TV_BRAND_CN.orange}`}
                                         style={titleStyle}>
                                         {notice.title || 'Achievement'}
                                     </h1>
-                                    <div className="w-10 sm:w-14 xl:w-20 h-[3px] rounded-full bg-[#F15A24] mb-3 sm:mb-4 xl:mb-6" />
+                                    <div className="w-10 sm:w-14 xl:w-20 h-[3px] rounded-full bg-[#F15A24] mb-2 sm:mb-2.5 xl:mb-3" />
                                     {notice.description && (
-                                        <div className="overflow-hidden max-h-20 sm:max-h-28 xl:max-h-40 relative">
+                                        <div className="flex-1 min-h-0 overflow-hidden relative">
                                             <AutoScrollText
                                                 className={`${TV_BRAND_CN.navy} leading-relaxed font-semibold italic`}
                                                 content={notice.description}
@@ -246,38 +243,38 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                 </div>
                                 {notice.imageUrl && (
                                     <div className={cn(
-                                        'w-full shrink-0 overflow-hidden rounded-2xl border-2 shadow-lg xl:w-[34%]',
+                                        'w-[35%] max-h-[85%] shrink-0 overflow-hidden rounded-2xl border-2 shadow-lg',
                                         TV_BRAND_CN.borderNavyStrong
                                     )}
-                                        style={{ aspectRatio: '4 / 5' }}>
+                                        style={{ aspectRatio: '4 / 3' }}>
                                         <MediaPanel
                                             imageUrl={notice.imageUrl}
                                             className="h-full w-full bg-[#F8FAFC]"
-                                            fit="cover"
+                                            fit="contain"
                                         />
                                     </div>
                                 )}
                             </div>
-                            <div className={cn('flex items-end justify-between gap-4 shrink-0 pt-3 sm:pt-4 xl:pt-6 border-t', TV_BRAND_CN.borderNavy)}>
-                                <div className="flex items-center gap-2 sm:gap-2.5 xl:gap-3 min-w-0">
-                                    <div className="w-7 h-7 sm:w-8 sm:h-8 xl:w-10 xl:h-10 rounded-full bg-[#003366]/10 flex items-center justify-center">
-                                        <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 xl:h-5 xl:w-5 text-[#003366]/50" />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <p className="text-[9px] sm:text-[10px] xl:text-xs uppercase tracking-widest font-bold text-[#003366]/45">Issued By</p>
-                                        <p className={`text-sm sm:text-base xl:text-lg font-bold truncate ${TV_BRAND_CN.navy}`}>{notice.facultyName || 'Faculty'}</p>
-                                    </div>
+                            <div className={cn('flex items-center justify-between gap-4 shrink-0 pt-1.5 border-t', TV_BRAND_CN.borderNavy)}>
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                    <User className="h-3.5 w-3.5 text-[#003366]/50" />
+                                    <span className="text-[11px] sm:text-xs font-medium text-[#003366]">
+                                        By <span className="font-bold">{notice.facultyName || 'Faculty'}</span>
+                                    </span>
                                 </div>
-                                <div className="flex items-end gap-4">
+                                <div className="flex items-center gap-4">
                                     {notice.endTime && (
-                                        <p className={`text-xs sm:text-sm font-bold uppercase tracking-widest whitespace-nowrap ${TV_BRAND_CN.orange}`}>
-                                            {format(new Date(notice.endTime), 'dd MMM yyyy')}
-                                        </p>
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-[9px] sm:text-[10px] uppercase tracking-wider font-black text-[#003366]/50">Until:</span>
+                                            <p className={`text-[11px] sm:text-xs font-black ${TV_BRAND_CN.orange}`}>
+                                                {format(new Date(notice.endTime), 'dd MMM yyyy')}
+                                            </p>
+                                        </div>
                                     )}
                                     {regUrl && (
                                         <div className="flex flex-col items-center gap-1 shrink-0">
                                             <div className="rounded-lg bg-white p-1.5 sm:p-2 shadow-xl border border-[#003366]/20">
-                                                <QRCodeSVG value={regUrl} size={100} includeMargin={false} />
+                                                <QRCodeSVG value={regUrl} size={80} includeMargin={false} />
                                             </div>
                                             <p className="text-[8px] sm:text-[9px] xl:text-[10px] font-black uppercase tracking-wider text-[#F15A24]">Scan to Register</p>
                                         </div>
@@ -298,24 +295,24 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                         style={{ background: 'radial-gradient(ellipse 70% 55% at 40% 40%, rgba(250,204,21,0.1) 0%, transparent 70%)' }} />
                     {/* Trophy watermark — centered right half */}
                     <Trophy className="absolute right-4 sm:right-10 xl:right-20 top-1/2 -translate-y-1/2 h-32 sm:h-52 xl:h-[26rem] w-32 sm:w-52 xl:w-[26rem] text-yellow-400/[0.07] pointer-events-none select-none" />
-                    <div className="relative z-10 h-full flex flex-col p-4 sm:p-6 xl:p-10">
+                    <div className="relative z-10 h-full flex flex-col p-2.5 sm:p-4 xl:p-6">
                         {/* Top badge */}
-                        <div className="flex items-center gap-2 sm:gap-3 xl:gap-4 shrink-0 mb-4 sm:mb-6 xl:mb-10">
-                            <div className="flex items-center gap-1.5 sm:gap-2 xl:gap-2.5 px-3 sm:px-4 xl:px-5 py-1 sm:py-1.5 xl:py-2 rounded-full border border-yellow-400/30 bg-yellow-400/10">
-                                <Trophy className="h-3.5 w-3.5 sm:h-4 sm:w-4 xl:h-5 xl:w-5 text-yellow-400" />
-                                <span className="text-yellow-400 font-black uppercase tracking-widest text-[10px] sm:text-xs xl:text-sm">Achievement</span>
+                        <div className="flex items-center gap-2 sm:gap-3 xl:gap-4 shrink-0 mb-2 sm:mb-3 xl:mb-4">
+                            <div className="flex items-center gap-1.5 sm:gap-2 xl:gap-2.5 px-3 sm:px-4 xl:px-5 py-0.5 sm:py-1 rounded-full border border-yellow-400/30 bg-yellow-400/10">
+                                <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5 xl:h-4 xl:w-4 text-yellow-400" />
+                                <span className="text-yellow-400 font-black uppercase tracking-widest text-[10px] sm:text-xs">Achievement</span>
                             </div>
                         </div>
                         {/* Main content — takes remaining space */}
-                        <div className="flex-1 flex min-h-0 flex-col gap-4 xl:flex-row xl:items-center xl:gap-8">
+                        <div className="flex-1 flex min-h-0 flex-row items-center gap-6 xl:gap-8">
                             <div className="flex-1 flex flex-col justify-center min-h-0">
-                            <h1 className="font-black text-white leading-[1.0] tracking-tight mb-2 sm:mb-3 xl:mb-5"
+                            <h1 className="font-black text-white leading-[1.0] tracking-tight mb-1 sm:mb-1.5 xl:mb-2"
                                 style={{ ...titleStyle, textShadow: '0 0 80px rgba(250,204,21,0.2)' }}>
                                 {notice.title || 'Achievement'}
                             </h1>
-                            <div className="w-10 sm:w-14 xl:w-20 h-[2px] xl:h-[3px] rounded-full bg-yellow-400/60 mb-3 sm:mb-4 xl:mb-6" />
+                            <div className="w-10 sm:w-14 xl:w-20 h-[2px] xl:h-[3px] rounded-full bg-yellow-400/60 mb-2 sm:mb-2.5 xl:mb-3" />
                             {notice.description && (
-                                <div className="overflow-hidden max-h-20 sm:max-h-28 xl:max-h-40 relative">
+                                <div className="flex-1 min-h-0 overflow-hidden relative">
                                     <AutoScrollText
                                         className="text-yellow-100/80 leading-relaxed font-medium"
                                         content={notice.description}
@@ -325,37 +322,36 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                             )}
                             </div>
                             {notice.imageUrl && (
-                                <div className="w-full shrink-0 overflow-hidden rounded-[1.75rem] border border-yellow-400/20 shadow-[0_20px_60px_rgba(0,0,0,0.28)] xl:w-[34%]"
-                                    style={{ aspectRatio: '4 / 5' }}>
+                                <div className="w-[35%] max-h-[85%] shrink-0 overflow-hidden rounded-[1.75rem] border border-yellow-400/20 shadow-[0_20px_60px_rgba(0,0,0,0.28)]"
+                                    style={{ aspectRatio: '4 / 3' }}>
                                     <MediaPanel
                                         imageUrl={notice.imageUrl}
                                         className="h-full w-full bg-[#120c02]"
-                                        fit="cover"
+                                        fit="contain"
                                     />
                                 </div>
                             )}
                         </div>
-                        {/* Footer */}
-                        <div className="flex items-end justify-between gap-4 shrink-0 pt-3 sm:pt-4 xl:pt-6 border-t border-yellow-400/10">
-                            <div className="flex items-center gap-2 sm:gap-2.5 xl:gap-3 min-w-0">
-                                <div className="w-7 h-7 sm:w-8 sm:h-8 xl:w-10 xl:h-10 rounded-full bg-yellow-400/10 flex items-center justify-center">
-                                    <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 xl:h-5 xl:w-5 text-yellow-400/60" />
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="text-[9px] sm:text-[10px] xl:text-xs uppercase tracking-widest font-bold text-yellow-400/40">Issued By</p>
-                                    <p className="text-sm sm:text-base xl:text-lg font-bold text-white/80 truncate">{notice.facultyName || 'Faculty'}</p>
-                                </div>
+                        <div className="flex items-center justify-between gap-4 shrink-0 pt-1.5 border-t border-yellow-400/10">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <User className="h-3.5 w-3.5 text-yellow-400/60" />
+                                <span className="text-[11px] sm:text-xs font-medium text-white/80">
+                                    By <span className="font-bold text-yellow-400">{notice.facultyName || 'Faculty'}</span>
+                                </span>
                             </div>
-                            <div className="flex items-end gap-4">
+                            <div className="flex items-center gap-4">
                                 {notice.endTime && (
-                                    <p className="text-xs sm:text-sm font-bold text-yellow-400/40 uppercase tracking-widest whitespace-nowrap">
-                                        {format(new Date(notice.endTime), 'dd MMM yyyy')}
-                                    </p>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-[9px] sm:text-[10px] uppercase tracking-wider font-black text-yellow-400/45">Until:</span>
+                                        <p className="text-[11px] sm:text-xs font-bold text-white">
+                                            {format(new Date(notice.endTime), 'dd MMM yyyy')}
+                                        </p>
+                                    </div>
                                 )}
                                 {regUrl && (
                                     <div className="flex flex-col items-center gap-1 shrink-0">
                                         <div className="rounded-lg bg-white p-1.5 sm:p-2 shadow-2xl">
-                                            <QRCodeSVG value={regUrl} size={100} includeMargin={false} />
+                                            <QRCodeSVG value={regUrl} size={80} includeMargin={false} />
                                         </div>
                                         <p className="text-[8px] sm:text-[9px] xl:text-[10px] font-black uppercase tracking-wider text-yellow-400/60">Scan to Register</p>
                                     </div>
@@ -377,7 +373,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                 <div className={containerClass}>
                     <div className="h-full flex gap-8">
                         {/* Text side — takes remaining width */}
-                        <div className={cn("flex-1 flex flex-col h-full py-6 min-h-0", isRight && "order-2")}>
+                        <div className={cn("flex-1 flex flex-col h-full py-2 min-h-0", isRight && "order-2")}>
 
                             <h1 className={`font-black ${isLight ? 'italic text-[#F15A24]' : 'text-white'} leading-[1] tracking-tight mb-3 xl:mb-5 shrink-0 line-clamp-3`}
                                 style={titleStyle}>
@@ -459,7 +455,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                         {regUrl && (
                                             <div className="flex flex-col items-center gap-1">
                                                 <div className="rounded-lg bg-white p-1.5 sm:p-2 shadow-2xl">
-                                                    <QRCodeSVG value={regUrl} size={110} includeMargin={false} />
+                                                    <QRCodeSVG value={regUrl} size={80} includeMargin={false} />
                                                 </div>
                                                 <p className="text-[9px] sm:text-[10px] xl:text-[11px] font-black uppercase tracking-wider text-white/70">Scan to Register</p>
                                             </div>
@@ -497,7 +493,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                         {regUrl && (
                             <div className="mt-4 sm:mt-6 xl:mt-8 flex flex-col items-center gap-1.5 sm:gap-2 shrink-0">
                                 <div className="rounded-xl bg-white p-2 sm:p-3 shadow-2xl">
-                                    <QRCodeSVG value={regUrl} size={140} includeMargin={false} />
+                                    <QRCodeSVG value={regUrl} size={90} includeMargin={false} />
                                 </div>
                                 <p className={`text-xs sm:text-sm font-black uppercase tracking-[0.2em] ${isLight ? 'text-[#F15A24]' : 'text-primary'}`}>Scan to Register</p>
                             </div>
@@ -547,7 +543,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                         {layout.showQr && regUrl && (
                             <div className="absolute flex items-center justify-center" style={boxStyle(layout.qr)}>
                                 <div className="rounded-xl bg-white p-2.5 shadow-2xl w-full h-full flex items-center justify-center">
-                                    <QRCodeSVG value={regUrl} size={Math.max(90, Math.floor(140 * (layout.qr.w / 20)))} includeMargin={false} />
+                                    <QRCodeSVG value={regUrl} size={Math.max(70, Math.floor(100 * (layout.qr.w / 20)))} includeMargin={false} />
                                 </div>
                             </div>
                         )}
@@ -605,7 +601,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                 {regUrl && (
                                     <div className="ml-auto flex flex-col items-center gap-1 shrink-0">
                                         <div className="rounded-xl bg-white p-1.5 sm:p-2 xl:p-2.5 shadow-2xl">
-                                            <QRCodeSVG value={regUrl} size={120} includeMargin={false} />
+                                            <QRCodeSVG value={regUrl} size={80} includeMargin={false} />
                                         </div>
                                         <p className={`text-[9px] sm:text-[10px] xl:text-[11px] font-black uppercase tracking-wider ${isLight ? 'text-[#F15A24]' : 'text-primary'}`}>Scan to Register</p>
                                     </div>
@@ -645,8 +641,8 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                     )}
                     <div className="flex flex-col items-center gap-3 shrink-0">
                         <p className="text-xs font-black uppercase tracking-[0.22em]" style={{ color: config.accent }}>Scan to Register</p>
-                        <div className="rounded-2xl bg-white p-3 shadow-[0_0_40px_rgba(255,255,255,0.12)]">
-                            <QRCodeSVG value={regUrl} size={hasMedia ? 140 : 200} includeMargin={false} />
+                        <div className="rounded-2xl bg-white p-2 shadow-[0_0_40px_rgba(255,255,255,0.12)]">
+                            <QRCodeSVG value={regUrl} size={hasMedia ? 85 : 120} includeMargin={false} />
                         </div>
                         <p className="text-xs text-slate-500 text-center">Open registration link</p>
                     </div>
@@ -662,7 +658,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
 
             return (
                 <div className={containerClass}>
-                    <div className="h-full flex flex-col py-6 text-left">
+                    <div className="h-full flex flex-col py-2 text-left">
 
                         <div className={cn('flex-1 min-h-0 flex items-start gap-12', isStandardRight && 'flex-row-reverse')}>
                             <div className="flex-1 flex flex-col min-h-0 h-full justify-center">

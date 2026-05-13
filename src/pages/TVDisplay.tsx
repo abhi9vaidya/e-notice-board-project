@@ -252,10 +252,9 @@ const TVDisplay: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [progressKey, setProgressKey] = useState(0);
 
-  // Main slide items: non-achievement notices only
+  // Main slide items: include achievements in main rotation
   const displayItems = useMemo(() => {
     return [...(activeNotices ?? [])]
-      .filter(n => n.category !== 'achievements')
       .sort((a, b) => {
         const p: Record<string, number> = { high: 0, medium: 1, low: 2 };
         if (p[a.priority] !== p[b.priority]) return p[a.priority] - p[b.priority];
@@ -421,8 +420,15 @@ const TVDisplay: React.FC = () => {
   };
   const safeAreaStyle: React.CSSProperties = {
     inset: `${settings.tvSafeAreaPercent}%`,
-    fontSize: `calc(16px * ${settings.tvUiScalePercent / 100})`,
     position: 'absolute',
+    overflow: 'hidden',
+  };
+  const scaleFactor = settings.tvUiScalePercent / 100;
+  const innerShellStyle: React.CSSProperties & { zoom?: number; WebkitZoom?: number } = {
+    zoom: scaleFactor,
+    WebkitZoom: scaleFactor,
+    width: '100%',
+    height: '100%',
   };
   const outerBackgroundStyle: React.CSSProperties = {
     background: isLight
@@ -435,8 +441,8 @@ const TVDisplay: React.FC = () => {
       : 'radial-gradient(circle at 18% 12%, rgba(241,90,36,0.12), transparent 30%), radial-gradient(circle at 82% 8%, rgba(0,51,102,0.35), transparent 26%)',
   };
   const shellClassName = isLight
-    ? `border-2 ${TV_BRAND_CN.borderNavyStrong} shadow-[0_24px_60px_rgba(0,51,102,0.12)]`
-    : 'border border-[#F15A24]/20 shadow-[0_24px_70px_rgba(0,0,0,0.55)] backdrop-blur-xl';
+    ? `border-2 ${TV_BRAND_CN.borderNavyStrong}`
+    : 'border border-[#F15A24]/20';
   const headerClassName = isLight
     ? `border-b-2 ${TV_BRAND_CN.borderNavy} bg-white`
     : 'border-b border-[#003366]/50 bg-[#001a33]/90';
@@ -489,8 +495,11 @@ const TVDisplay: React.FC = () => {
           style={canvasStyle}
         >
           <div className="absolute inset-0" style={frameGlowStyle} />
-          <div className="absolute flex flex-col" style={safeAreaStyle}>
-            <div className={cn(`h-full w-full ${rootBg} ${rootText} ${shellClassName} flex flex-col overflow-hidden`, tvShellRadiusClass)}>
+          <div className="absolute" style={safeAreaStyle}>
+            <div 
+              className={cn(`${rootBg} ${rootText} ${shellClassName} flex flex-col overflow-hidden`, tvShellRadiusClass)}
+              style={innerShellStyle}
+            >
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <header
         className={`shrink-0 h-12 sm:h-14 xl:h-[4.5rem] px-3 sm:px-6 xl:px-10 flex items-center justify-between border-b ${headerClassName} z-20 relative`}
@@ -651,25 +660,17 @@ const TVDisplay: React.FC = () => {
       </header>
 
       {/* ── Main content row ─────────────────────────────────────────────── */}
-      <AnimatePresence mode="wait">
+      <>
         {/* ── BRANCH 1: No active notices → full-screen achievement cards ── */}
         {showingAchievementsFull && archivedAchievements.length > 0 ? (
-          <motion.div
+          <div
             key="achievements-full"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
             className="flex-1 flex flex-col overflow-hidden min-h-0"
           >
             <div className="flex-1 flex items-center justify-center p-10 min-h-0">
-              <AnimatePresence mode="wait">
-                <motion.div
+              <>
+                <div
                   key={`ach-page-${achPage}`}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -16 }}
-                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                   className="flex items-stretch justify-center gap-6 w-full max-w-7xl h-full"
                 >
                   {currentAchPage.map((ach, i) => (
@@ -693,18 +694,14 @@ const TVDisplay: React.FC = () => {
                       />
                     </div>
                   ))}
-                </motion.div>
-              </AnimatePresence>
+                </div>
+              </>
             </div>
-          </motion.div>
+          </div>
         ) : showingAchievementsFull && archivedAchievements.length === 0 ? (
           /* ── BRANCH 1b: No notices AND no achievements → fallback ── */
-          <motion.div
+          <div
             key="empty-fallback"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
             className="flex-1 flex overflow-hidden min-h-0"
           >
             <div className="flex-1 flex items-center justify-center p-10">
@@ -721,15 +718,11 @@ const TVDisplay: React.FC = () => {
                 )}
               </div>
             </div>
-          </motion.div>
+          </div>
         ) : activeMode === 'multi' ? (
-          /* ── BRANCH 2: Multi-view (unchanged) ── */
-          <motion.div
+          /* ── BRANCH 2: Multi-view ── */
+          <div
             key="multi"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
             className="flex-1 flex overflow-hidden min-h-0"
           >
             <TVMultiView
@@ -740,20 +733,16 @@ const TVDisplay: React.FC = () => {
               settings={settings}
               isLight={isLight}
             />
-          </motion.div>
+          </div>
         ) : (
-          /* ── BRANCH 3: Single-view (unchanged except sidebar data source) ── */
-          <motion.div
+          /* ── BRANCH 3: Single-view ── */
+          <div
             key="single"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
             className="flex-1 flex overflow-hidden min-h-0"
           >
             <div className="flex-1 flex overflow-hidden min-h-0">
               {/* Main slide area */}
-              <div className="flex-1 relative overflow-hidden p-6 pr-4 min-w-0">
+              <div className="flex-1 relative overflow-hidden p-1.5 sm:p-2 xl:p-3 pr-1.5 sm:pr-2 xl:pr-3 min-w-0">
                 {slides.length === 0 ? (
                   <div className="h-full flex items-center justify-center">
                     <div className="text-center opacity-30">
@@ -764,12 +753,15 @@ const TVDisplay: React.FC = () => {
                 ) : (
                   <div className="h-full relative">
                     {slides.map((slide, i) => (
-                      <motion.div
+                      <div
                         key={slide.type === 'single' ? slide.notice.id : `double-${i}`}
                         className="absolute inset-0"
-                        animate={{ opacity: i === currentIndex ? 1 : 0 }}
-                        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                        style={{ pointerEvents: i === currentIndex ? 'auto' : 'none' }}
+                        style={{
+                          opacity: i === currentIndex ? 1 : 0,
+                          transition: 'opacity 0.4s linear',
+                          pointerEvents: i === currentIndex ? 'auto' : 'none',
+                          willChange: 'opacity',
+                        }}
                       >
                         {slide.type === 'double' ? (
                           <div className="h-full flex gap-4">
@@ -783,7 +775,7 @@ const TVDisplay: React.FC = () => {
                         ) : (
                           <TVNoticePreview notice={slide.notice} isLight={isLight} />
                         )}
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -863,34 +855,24 @@ const TVDisplay: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  <AnimatePresence mode="wait">
-                    {spotlight ? (
-                      <motion.div
-                        key={spotlight.id ?? spotlightIdx}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        transition={{ duration: 0.4 }}
-                        className="flex-1 flex flex-col min-h-0"
-                      >
-                        <AchievementSpotlightCard
-                          achievement={spotlight}
-                          isLight={isLight}
-                          titleClassName={upcomingEvents.length === 0 ? 'text-xl' : 'text-base line-clamp-2'}
-                          imageAspectRatio={upcomingEvents.length === 0 ? '4/3' : '16/9'}
-                          textClassName={`${upcomingEvents.length === 0 ? 'text-[0.82rem]' : 'text-[0.75rem]'
-                            } ${isLight ? `${TV_BRAND_CN.navy} font-semibold` : 'text-yellow-100/70'}`}
-                          scrollSpeed={upcomingEvents.length === 0 ? 22 : 18}
-                          className="flex-1 min-h-0"
-                        />
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="quote"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="flex-1 flex flex-col justify-center min-h-0"
-                      >
+                  {spotlight ? (
+                    <div className="flex-1 flex flex-col min-h-0">
+                      <AchievementSpotlightCard
+                        achievement={spotlight}
+                        isLight={isLight}
+                        titleClassName={upcomingEvents.length === 0 ? 'text-xl' : 'text-base line-clamp-2'}
+                        imageAspectRatio={upcomingEvents.length === 0 ? '4/3' : '16/9'}
+                        textClassName={`${upcomingEvents.length === 0 ? 'text-[0.82rem]' : 'text-[0.75rem]'
+                          } ${isLight ? `${TV_BRAND_CN.navy} font-semibold` : 'text-yellow-100/70'}`}
+                        scrollSpeed={upcomingEvents.length === 0 ? 22 : 18}
+                        className="flex-1 min-h-0"
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      key="quote"
+                      className="flex-1 flex flex-col justify-center min-h-0"
+                    >
                         <p
                           className={cn(
                             `${isLight ? 'text-slate-500' : 'text-slate-400'} leading-relaxed italic`,
@@ -906,15 +888,14 @@ const TVDisplay: React.FC = () => {
                             &mdash; {quoteAuthor}
                           </p>
                         )}
-                      </motion.div>
+                      </div>
                     )}
-                  </AnimatePresence>
                 </div>
               </aside>
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
       {/* ── Progress bar — single-view only (above ticker) ───────────────── */}
       {activeMode === 'single' && !showingAchievementsFull && (

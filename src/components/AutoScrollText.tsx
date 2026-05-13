@@ -1,5 +1,4 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -36,8 +35,10 @@ const MdContent: React.FC<{ children: string }> = ({ children }) => (
 export const AutoScrollText: React.FC<AutoScrollTextProps> = ({ content, className = '', speed = 30, style }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
+    // scrollDistance > 0 triggers the CSS scroll animation
     const [scrollDistance, setScrollDistance] = useState(0);
-    const [contentHeight, setContentHeight] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [animKey, setAnimKey] = useState(0); // force re-trigger when content changes
     const gap = 32;
 
     useEffect(() => {
@@ -45,21 +46,32 @@ export const AutoScrollText: React.FC<AutoScrollTextProps> = ({ content, classNa
             if (containerRef.current && contentRef.current) {
                 const containerHeight = containerRef.current.clientHeight;
                 const measuredContentHeight = contentRef.current.scrollHeight;
-                setContentHeight(measuredContentHeight);
                 if (measuredContentHeight > containerHeight + 10) {
-                    setScrollDistance(measuredContentHeight + gap);
+                    const dist = measuredContentHeight + gap;
+                    setScrollDistance(dist);
+                    setDuration(dist / speed);
                 } else {
                     setScrollDistance(0);
+                    setDuration(0);
                 }
             }
         };
 
-        const timeoutId = setTimeout(checkScroll, 100);
+        // Re-measure after a short delay to let layout settle, then restart animation
+        const timeoutId = setTimeout(() => {
+            checkScroll();
+            setAnimKey(k => k + 1);
+        }, 120);
         const observer = new ResizeObserver(checkScroll);
         if (containerRef.current) observer.observe(containerRef.current);
         if (contentRef.current) observer.observe(contentRef.current);
         return () => { clearTimeout(timeoutId); observer.disconnect(); };
-    }, [content]);
+    }, [content, speed]);
+
+    // Build the CSS keyframe animation string dynamically.
+    // We inject it via a <style> tag so we can parameterise the pixel distance,
+    // avoiding the need for Framer Motion's JS timer loop entirely.
+    const animName = `tvscroll-${animKey}-${Math.round(scrollDistance)}`;
 
     return (
         <div
@@ -73,27 +85,31 @@ export const AutoScrollText: React.FC<AutoScrollTextProps> = ({ content, classNa
                 } : {}),
             }}
         >
-            <motion.div
-                initial={{ y: 0 }}
-                animate={{ y: scrollDistance > 0 ? [0, -scrollDistance] : 0 }}
-                transition={scrollDistance > 0 ? {
-                    duration: scrollDistance / speed,
-                    ease: 'linear',
-                    repeat: Infinity,
-                    repeatType: 'loop',
-                    delay: 1,
+            {/* Pure CSS keyframe animation — zero JS per frame, GPU-composited */}
+            {scrollDistance > 0 && (
+                <style>{`
+                  @keyframes ${animName} {
+                    0%   { transform: translateY(0); }
+                    100% { transform: translateY(-${scrollDistance}px); }
+                  }
+                `}</style>
+            )}
+            <div
+                key={animKey}
+                style={scrollDistance > 0 ? {
+                    animation: `${animName} ${duration.toFixed(2)}s ${speed > 0 ? 1 : 0}s linear infinite`,
+                    willChange: 'transform',
                 } : {}}
-                className={scrollDistance > 0 ? 'will-change-transform' : ''}
             >
                 <div ref={contentRef}>
                     <MdContent>{content}</MdContent>
                 </div>
                 {scrollDistance > 0 && (
-                    <div style={{ marginTop: `${gap}px`, minHeight: `${contentHeight}px` }}>
+                    <div style={{ marginTop: `${gap}px` }}>
                         <MdContent>{content}</MdContent>
                     </div>
                 )}
-            </motion.div>
+            </div>
         </div>
     );
 };

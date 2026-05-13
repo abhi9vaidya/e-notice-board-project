@@ -73,5 +73,15 @@ service cloud.firestore {
           || get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.role == 'admin'
         );
     }
+
+    // ── Settings ─────────────────────────────────────────────────────────────
+
+    match /settings/{settingId} {
+      // Public read (TV display etc.)
+      allow read: if true;
+
+      // Only authenticated users can update settings
+      allow create, update, delete: if isAuthenticated();
+    }
   }
 }
