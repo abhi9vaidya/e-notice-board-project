@@ -88,11 +88,7 @@ const CompactCard: React.FC<{ notice: Notice }> = ({ notice }) => {
         </span>
       </div>
       <h3 className={`text-[0.9rem] font-black leading-snug line-clamp-2 shrink-0 ${isLight ? 'italic text-[#F15A24]' : 'text-white'}`}>{notice.title}</h3>
-      {notice.imageUrl ? (
-        <div className={`flex-1 min-h-0 rounded-xl overflow-hidden border-2 ${isLight ? 'border-[#003366]/40' : 'border-white/8'}`}>
-          <MediaPanel imageUrl={notice.imageUrl} className="w-full h-full" fit="cover" />
-        </div>
-      ) : notice.description ? (
+      {notice.description ? (
         <p className={`flex-1 text-[0.72rem] leading-relaxed line-clamp-4 min-h-0 ${isLight ? 'text-[#003366]' : 'text-slate-400'}`}>
           {notice.description.replace(/[#*`_~>[\]]/g, '').trim()}
         </p>
@@ -139,23 +135,8 @@ const LargeNoticeCard: React.FC<{ notice: Notice }> = ({ notice }) => {
       {/* Title */}
       <h2 className={`text-3xl font-black leading-snug shrink-0 line-clamp-3 ${isLight ? 'italic text-[#F15A24]' : 'text-white'}`}>{notice.title}</h2>
 
-      {/* Image + description split */}
-      {notice.imageUrl ? (
-        <div className="flex-1 min-h-0 flex gap-4">
-          <div className={`w-[45%] shrink-0 rounded-xl overflow-hidden border-2 ${isLight ? 'border-[#003366]/40' : 'border-white/8'}`}>
-            <MediaPanel imageUrl={notice.imageUrl} className="w-full h-full" fit="cover" />
-          </div>
-          {notice.description && (
-            <div className="flex-1 min-h-0 overflow-hidden">
-              <AutoScrollText
-                content={notice.description}
-                className={`text-[0.9rem] leading-relaxed ${isLight ? 'text-[#003366] font-medium' : 'text-slate-400'}`}
-                speed={20}
-              />
-            </div>
-          )}
-        </div>
-      ) : notice.description ? (
+      {/* Description Only */}
+      {notice.description ? (
         <div className="flex-1 min-h-0 overflow-hidden">
           <AutoScrollText
             content={notice.description}

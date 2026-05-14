@@ -250,7 +250,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                         <MediaPanel
                                             imageUrl={notice.imageUrl}
                                             className="h-full w-full bg-[#F8FAFC]"
-                                            fit="contain"
+                                            fit="cover"
                                         />
                                     </div>
                                 )}
@@ -327,7 +327,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                     <MediaPanel
                                         imageUrl={notice.imageUrl}
                                         className="h-full w-full bg-[#120c02]"
-                                        fit="contain"
+                                        fit="cover"
                                     />
                                 </div>
                             )}
@@ -395,7 +395,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                     imageUrl={notice.imageUrl}
                                     documentUrl={notice.documentUrl}
                                     className={`h-full w-full rounded-[2rem] border ${isLight ? 'border-[#003366]/40 shadow-[0_12px_40px_rgba(0,51,102,0.12)]' : 'border-white/10'} shadow-2xl`}
-                                    fit="contain"
+                                    fit="cover"
                                 />
                             ) : (
                                 <div className={`h-full rounded-[2rem] ${isLight ? 'bg-[#F8FAFC] border-[#003366]/25' : 'bg-white/5 border-white/10'} border border-dashed flex items-center justify-center`}>
@@ -614,7 +614,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                     imageUrl={notice.imageUrl}
                                     documentUrl={notice.documentUrl}
                                     className={`w-full h-full rounded-[2rem] shadow-2xl border ${isLight ? 'border-[#003366]/40' : 'border-white/10'}`}
-                                    fit="contain"
+                                    fit="cover"
                                 />
                             </div>
                         )}
@@ -636,7 +636,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                             imageUrl={notice.imageUrl}
                             documentUrl={notice.documentUrl}
                             className="w-full rounded-xl shadow-xl flex-1 min-h-0"
-                            fit="contain"
+                            fit="cover"
                         />
                     )}
                     <div className="flex flex-col items-center gap-3 shrink-0">
@@ -652,7 +652,7 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                     imageUrl={notice.imageUrl}
                     documentUrl={notice.documentUrl}
                     className={cn('w-[38%] self-stretch rounded-[2rem] shadow-2xl shrink-0', isStandardRight && 'order-1')}
-                    fit="contain"
+                    fit="cover"
                 />
             ) : null;
 
