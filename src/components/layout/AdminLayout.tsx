@@ -4,7 +4,7 @@ import { AppSidebar } from "./AppSidebar";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Bell, KeyRound, X } from "lucide-react";
+import { User, KeyRound, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import rbuLogo from "@/assets/rbu-logo.png";
 
@@ -77,10 +77,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subtitle }) 
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Bell className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer" />
-                  <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary" />
-                </div>
+
 
                 <ThemeToggle />
 

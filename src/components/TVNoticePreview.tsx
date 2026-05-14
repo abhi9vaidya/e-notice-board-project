@@ -485,17 +485,17 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
                                 style={descStyle}
                             />
                         </div>
-                        <div className={`mt-6 sm:mt-10 xl:mt-20 flex items-center gap-4 sm:gap-8 xl:gap-16 ${isLight ? 'text-[#003366]/70' : 'text-slate-500'} font-bold uppercase tracking-[0.2em] text-xs sm:text-sm xl:text-lg shrink-0`}>
+                        <div className={`mt-4 sm:mt-5 xl:mt-6 flex items-center gap-4 sm:gap-6 xl:gap-10 ${isLight ? 'text-[#003366]/70' : 'text-slate-500'} font-bold uppercase tracking-[0.2em] text-[10px] sm:text-xs xl:text-base shrink-0`}>
                             <span>{notice.facultyName || 'Faculty Name'}</span>
                             <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isLight ? 'bg-[#F15A24]/50' : 'bg-white/10'}`} />
                             <span>{notice.endTime ? format(new Date(notice.endTime), 'dd MMM yyyy') : 'DD MMM YYYY'}</span>
                         </div>
                         {regUrl && (
-                            <div className="mt-4 sm:mt-6 xl:mt-8 flex flex-col items-center gap-1.5 sm:gap-2 shrink-0">
-                                <div className="rounded-xl bg-white p-2 sm:p-3 shadow-2xl">
-                                    <QRCodeSVG value={regUrl} size={90} includeMargin={false} />
+                            <div className="mt-2 sm:mt-3 xl:mt-4 flex flex-col items-center gap-1 sm:gap-1.5 shrink-0">
+                                <div className="rounded-lg bg-white p-1.5 sm:p-2 shadow-2xl border border-white/10">
+                                    <QRCodeSVG value={regUrl} size={64} includeMargin={false} />
                                 </div>
-                                <p className={`text-xs sm:text-sm font-black uppercase tracking-[0.2em] ${isLight ? 'text-[#F15A24]' : 'text-primary'}`}>Scan to Register</p>
+                                <p className={`text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] ${isLight ? 'text-[#F15A24]' : 'text-primary'}`}>Scan to Register</p>
                             </div>
                         )}
                     </div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useActiveNotices } from '@/hooks/useFirebaseNotices';
 import { useArchive } from '@/hooks/useArchive';
-import { Sparkles, Trophy, CalendarDays, LayoutGrid, MonitorPlay, RefreshCw, WifiOff, Laptop } from 'lucide-react';
+import { Sparkles, Trophy, CalendarDays, LayoutGrid, MonitorPlay, RefreshCw, WifiOff } from 'lucide-react';
 import { format, isToday, isTomorrow } from 'date-fns';
 import rbuLogo from '@/assets/rbu-logo.png';
 import { TVNoticePreview, MediaPanel } from '@/components/TVNoticePreview';
@@ -615,13 +615,7 @@ const TVDisplay: React.FC = () => {
           )}
         </div>
 
-        <div
-          className="hidden md:flex absolute right-[clamp(8rem,18vw,14rem)] top-1/2 -translate-y-1/2 h-9 w-9 xl:h-11 xl:w-11 rounded-full items-center justify-center shrink-0"
-          style={{ backgroundColor: TV_BRAND.navy }}
-          aria-hidden
-        >
-          <Laptop className="h-4 w-4 xl:h-5 xl:w-5 text-white" strokeWidth={2} />
-        </div>
+
 
         {/* Clock */}
         <TVClock isLight={isLight} />
