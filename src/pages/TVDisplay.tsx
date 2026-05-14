@@ -5,7 +5,7 @@ import { useArchive } from '@/hooks/useArchive';
 import { Sparkles, Trophy, CalendarDays, LayoutGrid, MonitorPlay, RefreshCw, WifiOff } from 'lucide-react';
 import { format, isToday, isTomorrow } from 'date-fns';
 import rbuLogo from '@/assets/rbu-logo.png';
-import { TVNoticePreview, MediaPanel } from '@/components/TVNoticePreview';
+  import { TVNoticePreview, MediaPanel } from '@/components/TVNoticePreview';
 import { toDisplayImageUrl } from '@/lib/mediaUtils';
 import { AutoScrollText } from '@/components/AutoScrollText';
 import { TVMultiView } from '@/components/TVMultiView';
