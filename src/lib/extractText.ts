@@ -166,7 +166,7 @@ export async function extractTextFromFile(base64Data: string, fileType: 'image' 
     'If there are no links, omit the LINKS section entirely.';
 
   const body = {
-    model: 'llama-3.2-11b-vision-preview',
+    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
     messages: [
       {
         role: 'user',

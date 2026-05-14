@@ -182,6 +182,58 @@ const AchievementSpotlightCard: React.FC<{
     );
   };
 
+  const TVClock: React.FC<{ isLight: boolean }> = ({ isLight }) => {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const t = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <div className="flex items-center gap-3 sm:gap-4 xl:gap-5 text-right">
+      <div>
+        <div className={`text-base sm:text-lg xl:text-2xl font-bold tabular-nums tracking-tight leading-none ${isLight ? 'text-[#003366]' : 'text-white'}`}>
+          {format(currentTime, 'HH:mm:ss')}
+        </div>
+        <div className={`text-[0.5rem] sm:text-[0.55rem] xl:text-[0.65rem] font-bold uppercase tracking-widest mt-0.5 ${isLight ? 'text-[#003366]/55' : 'text-slate-500'}`}>
+          {format(currentTime, 'EEEE, MMMM d')}
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <div className="w-1.5 h-1.5 rounded-full bg-[#F15A24] shadow-[0_0_8px_#F15A24]" />
+        <span className={`text-[0.6rem] font-black uppercase tracking-widest ${isLight ? 'text-[#F15A24]' : 'text-[#F15A24]'}`}>Live</span>
+      </div>
+    </div>
+  );
+};
+
+const GPUProgressBar: React.FC<{
+  duration: number;
+  className: string;
+  uniqueKey: string | number;
+}> = ({ duration, className, uniqueKey }) => {
+  const animName = `gpu-progress-${duration}-${String(uniqueKey).replace(/[^a-zA-Z0-9]/g, '')}`;
+  return (
+    <div className="absolute inset-y-0 left-0 w-full" style={{ transformOrigin: 'left' }}>
+      <style>{`
+        @keyframes ${animName} {
+          0% { transform: scaleX(1); }
+          100% { transform: scaleX(0); }
+        }
+      `}</style>
+      <div
+        className={cn("h-full w-full", className)}
+        style={{
+          transformOrigin: 'left',
+          animation: `${animName} ${duration.toFixed(2)}s linear forwards`,
+          willChange: 'transform',
+        }}
+      />
+    </div>
+  );
+};
+
 const TVDisplay: React.FC = () => {
   const { notices: activeNotices, loading: noticesLoading } = useActiveNotices();
   const { archivedNotices } = useArchive();
@@ -249,12 +301,12 @@ const TVDisplay: React.FC = () => {
 
   // ─── Single-view state ─────────────────────────────────────────────────────
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [progressKey, setProgressKey] = useState(0);
 
-  // Main slide items: include achievements in main rotation
+  // Main slide items: exclude achievements from the main rotation (only show if no notices)
   const displayItems = useMemo(() => {
     return [...(activeNotices ?? [])]
+      .filter(n => n.category !== 'achievements')
       .sort((a, b) => {
         const p: Record<string, number> = { high: 0, medium: 1, low: 2 };
         if (p[a.priority] !== p[b.priority]) return p[a.priority] - p[b.priority];
@@ -399,11 +451,7 @@ const TVDisplay: React.FC = () => {
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
   }, []);
 
-  // Clock tick
-  useEffect(() => {
-    const t = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
+
 
   const [quoteText, quoteAuthor] = useMemo(() => {
     const q = getDailyQuote();
@@ -600,12 +648,6 @@ const TVDisplay: React.FC = () => {
                       </>
                     )}
                   </div>
-                  {autoCountdown > 0 && (
-                    <div className="flex items-center gap-1 text-[0.52rem] font-bold">
-                      <RefreshCw className={cn('h-2.5 w-2.5', isLight ? 'text-[#003366]/70' : 'text-slate-400')} />
-                      <span className={isLight ? 'text-[#003366]/70' : 'text-slate-400'}>{autoCountdown}s</span>
-                    </div>
-                  )}
                 </div>
               )}
               {settings.displayMode !== 'auto' && (
@@ -643,23 +685,9 @@ const TVDisplay: React.FC = () => {
         </div>
 
         {/* Clock */}
-        <div className="flex items-center gap-3 sm:gap-4 xl:gap-5 text-right">
-          <div>
-            <div className={`text-base sm:text-lg xl:text-2xl font-bold tabular-nums tracking-tight leading-none ${isLight ? TV_BRAND_CN.navy : 'text-white'}`}>
-              {format(currentTime, 'HH:mm:ss')}
-            </div>
-            <div className={`text-[0.5rem] sm:text-[0.55rem] xl:text-[0.65rem] font-bold uppercase tracking-widest mt-0.5 ${isLight ? 'text-[#003366]/55' : 'text-slate-500'}`}>
-              {format(currentTime, 'EEEE, MMMM d')}
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#F15A24] shadow-[0_0_8px_#F15A24]" />
-            <span className={`text-[0.6rem] font-black uppercase tracking-widest ${isLight ? TV_BRAND_CN.orange : 'text-[#F15A24]'}`}>Live</span>
-          </div>
-        </div>
+        <TVClock isLight={isLight} />
       </header>
 
-      {/* ── Main content row ─────────────────────────────────────────────── */}
       <>
         {/* ── BRANCH 1: No active notices → full-screen achievement cards ── */}
         {showingAchievementsFull && archivedAchievements.length > 0 ? (
@@ -902,12 +930,11 @@ const TVDisplay: React.FC = () => {
         <div
           className={`h-[3px] ${progressTrackClassName} shrink-0 relative overflow-hidden`}
         >
-          <motion.div
+          <GPUProgressBar
             key={`${progressKey}-${currentIndex}`}
-            className={cn('absolute inset-y-0 left-0', isLight ? 'bg-[#F15A24]' : 'bg-primary')}
-            initial={{ width: '100%' }}
-            animate={{ width: '0%' }}
-            transition={{ duration: slideDuration / 1000, ease: 'linear' }}
+            uniqueKey={`${progressKey}-${currentIndex}`}
+            duration={slideDuration / 1000}
+            className={isLight ? 'bg-[#F15A24]' : 'bg-primary'}
           />
         </div>
       )}
@@ -917,12 +944,11 @@ const TVDisplay: React.FC = () => {
         <div
           className={`h-[3px] ${progressTrackClassName} shrink-0 relative overflow-hidden`}
         >
-          <motion.div
+          <GPUProgressBar
             key={`ach-prog-${achPage}`}
-            className="absolute inset-y-0 left-0 bg-[#F5C518]"
-            initial={{ width: '100%' }}
-            animate={{ width: '0%' }}
-            transition={{ duration: 12, ease: 'linear' }}
+            uniqueKey={`ach-prog-${achPage}`}
+            duration={12}
+            className="bg-[#F5C518]"
           />
         </div>
       )}
@@ -932,21 +958,15 @@ const TVDisplay: React.FC = () => {
         <div
           className={`h-[2px] ${progressTrackClassName} shrink-0 relative overflow-hidden`}
         >
-          <motion.div
+          <GPUProgressBar
             key={`auto-${activeMode}`}
-            className={cn(
-              'absolute inset-y-0 left-0',
-              activeMode === 'single' ? 'bg-[#F15A24]/80' : 'bg-[#F5C518]/70'
-            )}
-            initial={{ width: '100%' }}
-            animate={{ width: '0%' }}
-            transition={{
-              duration:
-                activeMode === 'single'
-                  ? settings.autoSingleDuration
-                  : settings.autoMultiDuration,
-              ease: 'linear',
-            }}
+            uniqueKey={`auto-${activeMode}`}
+            duration={
+              activeMode === 'single'
+                ? settings.autoSingleDuration
+                : settings.autoMultiDuration
+            }
+            className={activeMode === 'single' ? 'bg-[#F15A24]/80' : 'bg-[#F5C518]/70'}
           />
         </div>
       )}
@@ -982,11 +1002,19 @@ const TVDisplay: React.FC = () => {
           <div className="shrink-0 h-full px-3 sm:px-4 xl:px-5 flex items-center bg-[#F15A24] text-white font-black uppercase tracking-widest text-[0.45rem] sm:text-[0.5rem] xl:text-[0.6rem]">
             Thought of the Day
           </div>
-          <div className="flex flex-1 min-h-0 min-w-0 items-center overflow-hidden">
-            <motion.div
+          <div className="flex flex-1 min-h-0 min-w-0 items-center overflow-hidden relative">
+            <style>{`
+              @keyframes ticker-marquee {
+                0% { transform: translate3d(0, 0, 0); }
+                100% { transform: translate3d(-50%, 0, 0); }
+              }
+            `}</style>
+            <div
               className="flex items-center whitespace-nowrap"
-              animate={{ x: ['0%', '-50%'] }}
-              transition={{ duration: 80, repeat: Infinity, ease: 'linear' }}
+              style={{
+                animation: 'ticker-marquee 80s linear infinite',
+                willChange: 'transform',
+              }}
             >
               {[0, 1].map((dup) => (
                 <span key={dup} className="inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-5 xl:px-7">
@@ -998,7 +1026,7 @@ const TVDisplay: React.FC = () => {
                   </span>
                 </span>
               ))}
-            </motion.div>
+            </div>
           </div>
         </footer>
       </div>
