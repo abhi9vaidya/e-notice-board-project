@@ -1,4 +1,4 @@
-﻿/**
+/**
  * TVMultiView â€” the "overview" layout for the TV notice board.
  *
  * Adaptive layout â€” automatically chosen based on notice count:
@@ -255,7 +255,7 @@ const Spotlight: React.FC<SpotlightProps> = ({ achievement, quoteText, quoteAuth
       >
         <p className={`text-xl font-black leading-snug shrink-0 ${isLight ? 'italic text-[#F15A24]' : 'text-white'}`}>{achievement.title}</p>
         {achievement.imageUrl && (
-          <div className={`w-full rounded-xl overflow-hidden shrink-0 border-2 ${isLight ? 'border-[#003366]/40' : 'border-yellow-400/10'}`} style={{ aspectRatio: '4/3' }}>
+          <div className={`w-full rounded-xl overflow-hidden shrink-0 border-2 ${isLight ? 'border-[#003366]/40' : 'border-yellow-400/10'}`} style={{ aspectRatio: '16/9' }}>
             <MediaPanel imageUrl={achievement.imageUrl} className="w-full h-full" fit="cover" />
           </div>
         )}
@@ -341,7 +341,7 @@ const MultiAchievementSidebar: React.FC<{
                   <div className="flex gap-3 items-start shrink-0">
                     {ach.imageUrl && (
                       <div className={`w-24 rounded-xl overflow-hidden shrink-0 border-2 ${isLight ? 'border-[#003366]/40' : 'border-yellow-400/10'}`}
-                        style={{ aspectRatio: '4/3' }}>
+                        style={{ aspectRatio: '16/9' }}>
                         <MediaPanel imageUrl={ach.imageUrl} className="w-full h-full" fit="cover" />
                       </div>
                     )}

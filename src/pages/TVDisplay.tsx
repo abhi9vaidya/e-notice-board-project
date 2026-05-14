@@ -84,7 +84,7 @@ const AchievementSpotlightCard: React.FC<{
               'w-full rounded-xl overflow-hidden shrink-0 border-2 relative',
               isLight ? `${TV_BRAND_CN.borderNavyStrong} bg-white` : 'border-yellow-400/10 bg-yellow-500/5'
             )}
-            style={{ aspectRatio: imageAspectRatio ?? '4/3' }}
+            style={{ aspectRatio: imageAspectRatio ?? '16/9' }}
           >
             {/* Loading overlay */}
             {imgLoading && (
@@ -131,7 +131,7 @@ const AchievementSpotlightCard: React.FC<{
                 ? `${TV_BRAND_CN.borderNavyStrong} bg-[#F8FAFC]`
                 : 'border-yellow-400/10 bg-yellow-500/5'
             )}
-            style={{ aspectRatio: imageAspectRatio ?? '4/3' }}
+            style={{ aspectRatio: imageAspectRatio ?? '16/9' }}
           >
             <div className="text-center p-4">
               <Trophy
@@ -161,7 +161,7 @@ const AchievementSpotlightCard: React.FC<{
                 ? `${TV_BRAND_CN.borderNavyStrong} bg-[#F8FAFC]`
                 : 'border-yellow-400/5 bg-yellow-500/[0.02]'
             )}
-            style={{ aspectRatio: imageAspectRatio ?? '4/3' }}
+            style={{ aspectRatio: imageAspectRatio ?? '16/9' }}
           >
             <div className="text-center p-4 opacity-20">
               <Trophy className={cn("h-12 w-12 mx-auto", isLight ? 'text-yellow-500' : 'text-yellow-400')} />
@@ -889,7 +889,7 @@ const TVDisplay: React.FC = () => {
                         achievement={spotlight}
                         isLight={isLight}
                         titleClassName={upcomingEvents.length === 0 ? 'text-xl' : 'text-base line-clamp-2'}
-                        imageAspectRatio={upcomingEvents.length === 0 ? '4/3' : '16/9'}
+                        imageAspectRatio={upcomingEvents.length === 0 ? '16/9' : '21/9'}
                         textClassName={`${upcomingEvents.length === 0 ? 'text-[0.82rem]' : 'text-[0.75rem]'
                           } ${isLight ? `${TV_BRAND_CN.navy} font-semibold` : 'text-yellow-100/70'}`}
                         scrollSpeed={upcomingEvents.length === 0 ? 22 : 18}
