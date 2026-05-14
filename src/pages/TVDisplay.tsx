@@ -5,7 +5,7 @@ import { useArchive } from '@/hooks/useArchive';
 import { Sparkles, Trophy, CalendarDays, LayoutGrid, MonitorPlay, RefreshCw, WifiOff, Laptop } from 'lucide-react';
 import { format, isToday, isTomorrow } from 'date-fns';
 import rbuLogo from '@/assets/rbu-logo.png';
-import { TVNoticePreview } from '@/components/TVNoticePreview';
+import { TVNoticePreview, MediaPanel } from '@/components/TVNoticePreview';
 import { toDisplayImageUrl } from '@/lib/mediaUtils';
 import { AutoScrollText } from '@/components/AutoScrollText';
 import { TVMultiView } from '@/components/TVMultiView';
@@ -49,23 +49,6 @@ const AchievementSpotlightCard: React.FC<{
   scrollSpeed = 22,
   className,
 }) => {
-    const [imgError, setImgError] = useState(false);
-    const [imgLoading, setImgLoading] = useState(true);
-
-    // Reset states when achievement changes
-    useEffect(() => {
-      setImgError(false);
-      setImgLoading(true);
-    }, [achievement.id]);
-
-    // Clean up object URLs if they exist (prevent memory leaks from blob URLs)
-    useEffect(() => {
-      return () => {
-        setImgError(false);
-        setImgLoading(true);
-      };
-    }, []);
-
     return (
       <div className={cn('flex flex-col gap-3 h-full', className)}>
         <p
@@ -78,7 +61,7 @@ const AchievementSpotlightCard: React.FC<{
         </p>
 
         {/* ── Image container ── */}
-        {achievement.imageUrl && !imgError && (
+        {achievement.imageUrl && (
           <div
             className={cn(
               'w-full rounded-xl overflow-hidden shrink-0 border-2 relative',
@@ -86,69 +69,11 @@ const AchievementSpotlightCard: React.FC<{
             )}
             style={{ aspectRatio: imageAspectRatio ?? '16/9' }}
           >
-            {/* Loading overlay */}
-            {imgLoading && (
-              <div className="absolute inset-0 flex items-center justify-center z-10">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-8 h-8 border-2 border-current border-t-transparent rounded-full animate-spin opacity-30" />
-                  <p className={cn("text-[10px] uppercase tracking-widest font-bold opacity-30",
-                    isLight ? 'text-yellow-600' : 'text-yellow-400'
-                  )}>
-                    Loading
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <img
-              src={toDisplayImageUrl(achievement.imageUrl)}
-              alt={achievement.title}
-              className={cn(
-                "w-full h-full object-cover transition-opacity duration-300 relative z-20",
-                imgLoading ? "opacity-0" : "opacity-100"
-              )}
-              loading="eager"
-              onLoad={() => setImgLoading(false)}
-              onError={(e) => {
-                const img = e.currentTarget;
-                if (img.src !== achievement.imageUrl) {
-                  img.src = achievement.imageUrl;
-                } else {
-                  setImgError(true);
-                  setImgLoading(false);
-                }
-              }}
+            <MediaPanel 
+              imageUrl={achievement.imageUrl} 
+              className="w-full h-full" 
+              fit="cover" 
             />
-          </div>
-        )}
-
-        {/* ── Image: error / unavailable fallback ── */}
-        {achievement.imageUrl && imgError && (
-          <div
-              className={cn(
-              'w-full rounded-xl overflow-hidden shrink-0 border-2 flex items-center justify-center',
-              isLight
-                ? `${TV_BRAND_CN.borderNavyStrong} bg-[#F8FAFC]`
-                : 'border-yellow-400/10 bg-yellow-500/5'
-            )}
-            style={{ aspectRatio: imageAspectRatio ?? '16/9' }}
-          >
-            <div className="text-center p-4">
-              <Trophy
-                className={cn(
-                  "h-10 w-10 mx-auto mb-2",
-                  isLight ? 'text-yellow-300' : 'text-yellow-500/40'
-                )}
-              />
-              <p
-                className={cn(
-                  "text-[11px] font-semibold uppercase tracking-wider",
-                  isLight ? 'text-yellow-500/70' : 'text-yellow-400/30'
-                )}
-              >
-                Image unavailable
-              </p>
-            </div>
           </div>
         )}
 
