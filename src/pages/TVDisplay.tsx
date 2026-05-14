@@ -251,6 +251,20 @@ const TVDisplay: React.FC = () => {
     };
   }, []);
 
+  const [tickerMode, setTickerMode] = useState<'thought' | 'notices'>('thought');
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTickerMode(prev => prev === 'thought' ? 'notices' : 'thought');
+    }, 45000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const noticesTickerText = React.useMemo(() => {
+    const titles = activeNotices.map(n => n.title).filter(Boolean);
+    if (titles.length === 0) return "Welcome to Ramdeobaba University";
+    return titles.join("   •   ");
+  }, [activeNotices]);
+
   // ─── Active display mode (single | multi) ─────────────────────────────────
   const [activeMode, setActiveMode] = useState<'single' | 'multi'>(
     resolveTVMode(settings.displayMode, settings.autoStartMode)
@@ -999,8 +1013,8 @@ const TVDisplay: React.FC = () => {
             isLight ? 'border-t-2 border-[#003366]' : 'border-t border-[#F15A24]/25'
           )}
         >
-          <div className="shrink-0 h-full px-3 sm:px-4 xl:px-5 flex items-center bg-[#F15A24] text-white font-black uppercase tracking-widest text-[0.45rem] sm:text-[0.5rem] xl:text-[0.6rem]">
-            Thought of the Day
+          <div className="shrink-0 h-full px-3 sm:px-4 xl:px-5 flex items-center bg-[#F15A24] text-white font-black uppercase tracking-widest text-[0.45rem] sm:text-[0.5rem] xl:text-[0.6rem] transition-all duration-500">
+            {tickerMode === 'thought' ? 'Thought of the Day' : 'Latest Notices'}
           </div>
           <div className="flex flex-1 min-h-0 min-w-0 items-center overflow-hidden relative">
             <style>{`
@@ -1009,24 +1023,32 @@ const TVDisplay: React.FC = () => {
                 100% { transform: translate3d(-50%, 0, 0); }
               }
             `}</style>
-            <div
-              className="flex items-center whitespace-nowrap"
-              style={{
-                animation: 'ticker-marquee 80s linear infinite',
-                willChange: 'transform',
-              }}
-            >
-              {[0, 1].map((dup) => (
-                <span key={dup} className="inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-5 xl:px-7">
-                  <span
-                    className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full shrink-0 bg-[#F5C518]"
-                  />
-                  <span className="text-[0.65rem] sm:text-[0.7rem] xl:text-[0.78rem] font-medium leading-snug text-white/90">
-                    &ldquo;{quoteText}&rdquo;{quoteAuthor ? ` — ${quoteAuthor}` : ''}
-                  </span>
-                </span>
-              ))}
-            </div>
+            {(() => {
+              const text = tickerMode === 'thought' 
+                ? `“${quoteText}”${quoteAuthor ? ` — ${quoteAuthor}` : ''}`
+                : noticesTickerText;
+              // Dynamic duration so longer text scrolls at a readable pace
+              const duration = Math.max(40, text.length * 0.25);
+              return (
+                <div
+                  key={tickerMode} // restarts animation cleanly on mode switch
+                  className="flex items-center whitespace-nowrap"
+                  style={{
+                    animation: `ticker-marquee ${duration}s linear infinite`,
+                    willChange: 'transform',
+                  }}
+                >
+                  {[0, 1].map((dup) => (
+                    <span key={dup} className="inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-5 xl:px-7">
+                      <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full shrink-0 bg-[#F5C518]" />
+                      <span className="text-[0.65rem] sm:text-[0.7rem] xl:text-[0.78rem] font-medium leading-snug text-white/90">
+                        {text}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         </footer>
       </div>
