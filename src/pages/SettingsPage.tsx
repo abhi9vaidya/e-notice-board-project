@@ -109,6 +109,7 @@ const SettingsPage: React.FC = () => {
       autoMultiDuration:         Math.max(15, Math.min(3600, parseField(tvForm.autoMultiDuration, tvDefaults.autoMultiDuration))),
       tvSafeAreaPercent:        Math.max(0,  Math.min(10, parseField(tvForm.tvSafeAreaPercent, tvDefaults.tvSafeAreaPercent))),
       tvUiScalePercent:         Math.max(40, Math.min(120, parseField(tvForm.tvUiScalePercent, tvDefaults.tvUiScalePercent))),
+      tvFontScalePercent:       Math.max(50, Math.min(200, parseField(tvForm.tvFontScalePercent, tvDefaults.tvFontScalePercent))),
     };
 
     try {
@@ -246,7 +247,7 @@ const SettingsPage: React.FC = () => {
                   Safe area keeps content away from the screen edge to avoid bezel cut-off and overscan.
                   UI scale increases readability for the actual TV viewing distance.
                 </p>
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-2">
                     <Label htmlFor="tvSafeAreaPercent" className="text-xs font-bold text-sky-600">
                       Safe Area Margin
@@ -322,6 +323,45 @@ const SettingsPage: React.FC = () => {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       105% gives better readability on a 4K campus TV without crowding the layout.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="tvFontScalePercent" className="text-xs font-bold text-purple-500">
+                      UI Font Scale
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="tvFontScalePercent"
+                        type="number"
+                        min="50"
+                        max="200"
+                        step="5"
+                        value={tvForm.tvFontScalePercent}
+                        onChange={e => setTVForm(f => ({ ...f, tvFontScalePercent: Number(e.target.value) }))}
+                        className="h-9 text-sm"
+                      />
+                      <span className="text-xs text-muted-foreground shrink-0">%</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {[80, 100, 120, 150].map(p => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setTVForm(f => ({ ...f, tvFontScalePercent: p }))}
+                          className={cn(
+                            "text-[0.6rem] px-2 py-0.5 rounded-full border transition-colors",
+                            tvForm.tvFontScalePercent === p
+                              ? "border-purple-500 bg-purple-500/10 text-purple-500"
+                              : "border-border text-muted-foreground hover:border-purple-500/40"
+                          )}
+                        >
+                          {p}%
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Scales the text size within notices to improve readability from afar.
                     </p>
                   </div>
                 </div>

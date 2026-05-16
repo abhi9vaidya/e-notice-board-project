@@ -26,6 +26,17 @@ const MdContent: React.FC<{ children: string }> = ({ children }) => (
             ol: ({ children: c }) => <ol style={{ display: 'inline-block', marginBottom: '0.6em', marginTop: '0.2em', paddingLeft: '1.6em', listStyleType: 'decimal', textAlign: 'left' }}>{c}</ol>,
             li: ({ children: c }) => <li style={{ display: 'list-item', marginBottom: '0.3em' }}>{c}</li>,
             hr: () => <hr style={{ display: 'block', border: 'none', borderTop: '1px solid currentColor', opacity: 0.15, margin: '0.8em 0' }} />,
+            table: ({ children: c }) => (
+                <div style={{ overflowX: 'auto', marginBottom: '1em', marginTop: '0.5em', width: '100%' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid currentColor', fontSize: '0.9em' }}>
+                        {c}
+                    </table>
+                </div>
+            ),
+            thead: ({ children: c }) => <thead style={{ backgroundColor: 'rgba(128, 128, 128, 0.15)', fontWeight: 800 }}>{c}</thead>,
+            th: ({ children: c }) => <th style={{ border: '1px solid currentColor', padding: '0.6em 0.8em', textAlign: 'left', fontWeight: 800 }}>{c}</th>,
+            td: ({ children: c }) => <td style={{ border: '1px solid currentColor', padding: '0.5em 0.8em' }}>{c}</td>,
+            tr: ({ children: c }) => <tr style={{ borderBottom: '1px solid currentColor' }}>{c}</tr>,
         }}
     >
         {children}

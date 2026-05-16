@@ -19,6 +19,7 @@ export interface TVDisplaySettings {
   tvTheme: 'dark' | 'light';
   tvSafeAreaPercent: number;
   tvUiScalePercent: number;
+  tvFontScalePercent: number;
 }
 
 export const TV_SETTINGS_DEFAULTS: TVDisplaySettings = {
@@ -36,6 +37,7 @@ export const TV_SETTINGS_DEFAULTS: TVDisplaySettings = {
   tvTheme: 'dark',
   tvSafeAreaPercent: 4,
   tvUiScalePercent: 105,
+  tvFontScalePercent: 100,
 };
 
 const STORAGE_KEY = 'rbu-tv-display-settings';

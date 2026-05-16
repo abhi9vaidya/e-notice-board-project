@@ -13,6 +13,7 @@ import { TV_BRAND, TV_BRAND_CN } from '@/config/tvBrandTheme';
 import { format } from 'date-fns';
 import { AutoScrollText } from '@/components/AutoScrollText';
 import { QRCodeSVG } from 'qrcode.react';
+import { useTVDisplaySettings } from '@/hooks/useTVDisplaySettings';
 
 import { isPdfUrl, toDisplayImageUrl } from '@/lib/mediaUtils';
 
@@ -130,9 +131,12 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
     const CategoryIcon = config.icon;
     const template: Template = notice.template as Template || 'standard';
     const placement = notice.templatePlacement || 'left';
+    
+    const { settings } = useTVDisplaySettings();
+    const globalFontScale = (settings.tvFontScalePercent || 100) / 100;
 
     // Per-notice text scale factor (0.8 - 1.5, default 1.0)
-    const scale = notice.textScale ?? 1.0;
+    const scale = (notice.textScale ?? 1.0) * globalFontScale;
 
     // ── Adaptive title font size ────────────────────────────────────────
     const titleLen = (notice.title || '').length;

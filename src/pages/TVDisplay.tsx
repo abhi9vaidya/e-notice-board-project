@@ -40,6 +40,7 @@ const AchievementSpotlightCard: React.FC<{
   textClassName?: string;
   scrollSpeed?: number;
   className?: string;
+  fontScale?: number;
 }> = ({
   achievement,
   isLight,
@@ -48,6 +49,7 @@ const AchievementSpotlightCard: React.FC<{
   textClassName,
   scrollSpeed = 22,
   className,
+  fontScale = 1,
 }) => {
     return (
       <div className={cn('flex flex-col gap-3 h-full', className)}>
@@ -56,6 +58,7 @@ const AchievementSpotlightCard: React.FC<{
             `font-black leading-snug shrink-0 ${isLight ? `${TV_BRAND_CN.orange} italic` : 'text-white'}`,
             titleClassName
           )}
+          style={{ fontSize: `${fontScale * 100}%` }}
         >
           {achievement.title}
         </p>
@@ -100,6 +103,7 @@ const AchievementSpotlightCard: React.FC<{
               content={achievement.description}
               className={textClassName ?? (isLight ? `${TV_BRAND_CN.navy} font-semibold` : 'text-yellow-100/70')}
               speed={scrollSpeed}
+              style={{ fontSize: `${fontScale * 100}%` }}
             />
           </div>
         )}
@@ -652,6 +656,7 @@ const TVDisplay: React.FC = () => {
                         textClassName={isLight ? `text-[0.82rem] ${TV_BRAND_CN.navy} font-semibold` : 'text-[0.82rem] text-yellow-100/70'}
                         scrollSpeed={22}
                         className="flex-1 min-h-0"
+                        fontScale={(settings.tvFontScalePercent || 100) / 100}
                       />
                     </div>
                   ))}
@@ -827,6 +832,7 @@ const TVDisplay: React.FC = () => {
                           } ${isLight ? `${TV_BRAND_CN.navy} font-semibold` : 'text-yellow-100/70'}`}
                         scrollSpeed={upcomingEvents.length === 0 ? 22 : 18}
                         className="flex-1 min-h-0"
+                        fontScale={(settings.tvFontScalePercent || 100) / 100}
                       />
                     </div>
                   ) : (
