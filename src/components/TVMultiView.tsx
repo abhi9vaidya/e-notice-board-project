@@ -670,10 +670,18 @@ export const TVMultiView: React.FC<TVMultiViewProps> = ({
                   transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                   className="h-full"
                 >
-                  <div className={`h-full rounded-2xl border-2 overflow-hidden ${isLight ? 'border-[#003366]/30 bg-white' : 'border-white/8 bg-white/[0.02]'}`}
+                  <div className={`h-full rounded-2xl border-2 overflow-hidden p-1 ${isLight ? 'border-[#003366]/30 bg-white' : 'border-white/8 bg-white/[0.02]'}`}
                     style={{ containerType: 'size' }}>
-                    <div className="h-full" style={{ transform: 'scale(0.55)', transformOrigin: 'top left', width: '181.8%', height: '181.8%' }}>
-                      <TVNoticePreview notice={heroNotice} isLight={isLight} />
+                    <div className="h-full w-full flex items-center justify-center overflow-hidden">
+                      <div style={{ 
+                        transform: 'scale(0.55)', 
+                        transformOrigin: 'center center', 
+                        width: '181.818%', 
+                        height: '181.818%',
+                        flexShrink: 0
+                      }}>
+                        <TVNoticePreview notice={heroNotice} isLight={isLight} isHero={false} />
+                      </div>
                     </div>
                   </div>
                 </motion.div>

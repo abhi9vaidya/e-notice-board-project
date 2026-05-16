@@ -140,18 +140,24 @@ export const TVNoticePreview: React.FC<TVNoticePreviewProps> = ({ notice, isHero
 
     // ── Adaptive title font size ────────────────────────────────────────
     const titleLen = (notice.title || '').length;
-    const baseTitleRem =
+    const baseTitleRem = isHero ? (
         titleLen > 100 ? 2.4 :
             titleLen > 70 ? 2.8 :
                 titleLen > 45 ? 3.4 :
-                    4.2;
+                    4.2
+    ) : (
+        titleLen > 100 ? 1.6 :
+            titleLen > 70 ? 1.8 :
+                titleLen > 45 ? 2.0 :
+                    2.4
+    );
     const scaledTitle = baseTitleRem * scale;
-    const titleStyle: React.CSSProperties = { fontSize: `clamp(1rem, ${(scaledTitle / 19.2).toFixed(2)}vw, ${scaledTitle.toFixed(2)}rem)` };
+    const titleStyle: React.CSSProperties = { fontSize: `clamp(1rem, ${(scaledTitle * 0.833).toFixed(2)}vw, ${scaledTitle.toFixed(2)}rem)` };
 
     // ── Description font size ───────────────────────────────────────────
-    const baseDescRem = 1.35;
+    const baseDescRem = isHero ? 1.35 : 1.3;
     const scaledDesc = baseDescRem * scale;
-    const descStyle: React.CSSProperties = { fontSize: `clamp(0.75rem, ${(scaledDesc / 19.2).toFixed(2)}vw, ${scaledDesc.toFixed(2)}rem)` };
+    const descStyle: React.CSSProperties = { fontSize: `clamp(0.75rem, ${(scaledDesc * 0.833).toFixed(2)}vw, ${scaledDesc.toFixed(2)}rem)` };
 
     // Badges moved to footer
     const badges = (
